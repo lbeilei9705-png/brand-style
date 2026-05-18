@@ -7,6 +7,6 @@
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["none"],
-    "devAllowedDomains": ["http://localhost:5180", "https://tracker-create-huge-attach.trycloudflare.com"]
+    "devAllowedDomains": ["http://localhost:5180", "https://brand-style-api.onrender.com"]
   }
 }

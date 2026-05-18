@@ -22,6 +22,7 @@ const projectRoot = path.resolve(__dirname, "../../..");
 loadDotEnv(projectRoot);
 const appConfig = getAppConfig();
 const port = Number(process.env.PORT || 5180);
+const accessToken = process.env.BRAND_STYLE_ACCESS_TOKEN || "";
 const webDir = path.resolve(__dirname, "../../web/public");
 const dataDir = path.resolve(projectRoot, "data");
 const configStore = new ConfigStore(dataDir);
@@ -142,6 +143,14 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
   });
 }
 
+function isAuthorizedRequest(req: http.IncomingMessage): boolean {
+  if (!accessToken) {
+    return true;
+  }
+
+  return req.headers["x-brand-style-token"] === accessToken;
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://localhost:${port}`);
   const pathname = url.pathname;
@@ -159,6 +168,11 @@ const server = http.createServer(async (req, res) => {
         provider: appConfig.imageProvider,
         model: appConfig.imageProvider === "fintopia" ? appConfig.fintopia?.model : undefined,
       });
+      return;
+    }
+
+    if (pathname.startsWith("/api/") && !isAuthorizedRequest(req)) {
+      sendJson(res, 401, { error: "Unauthorized." });
       return;
     }
 

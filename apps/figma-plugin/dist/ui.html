@@ -989,7 +989,8 @@
     </main>
 
     <script>
-      const apiBase = "https://tracker-create-huge-attach.trycloudflare.com";
+      const apiBase = "https://brand-style-api.onrender.com";
+      const accessToken = "brand-style-internal-test-2026";
       const modelSelect = document.querySelector("#model-select");
       const agentSelect = document.querySelector("#agent-select");
       const aspectRatioSelect = document.querySelector("#aspect-ratio-select");
@@ -1022,6 +1023,20 @@
       let isLoadingConfig = false;
       let activeConversationId = null;
       let conversations = [];
+
+      function authHeaders(extraHeaders = {}) {
+        return {
+          ...extraHeaders,
+          "x-brand-style-token": accessToken,
+        };
+      }
+
+      function apiFetch(path, options = {}) {
+        return fetch(`${apiBase}${path}`, {
+          ...options,
+          headers: authHeaders(options.headers || {}),
+        });
+      }
 
       function addMessage(role, content, attachments = []) {
         const node = document.createElement("article");
@@ -1454,12 +1469,12 @@
 
         try {
           const [modelsResponse, agentsResponse, materialsResponse, colorPalettesResponse, shapeArchitecturesResponse, scenariosResponse] = await Promise.all([
-            fetch(`${apiBase}/api/config/models`),
-            fetch(`${apiBase}/api/config/style-skills`),
-            fetch(`${apiBase}/api/config/materials`),
-            fetch(`${apiBase}/api/config/color-palettes`),
-            fetch(`${apiBase}/api/config/shape-architectures`),
-            fetch(`${apiBase}/api/config/operation-scenarios`),
+            apiFetch("/api/config/models"),
+            apiFetch("/api/config/style-skills"),
+            apiFetch("/api/config/materials"),
+            apiFetch("/api/config/color-palettes"),
+            apiFetch("/api/config/shape-architectures"),
+            apiFetch("/api/config/operation-scenarios"),
           ]);
           const modelsData = await modelsResponse.json();
           const agentsData = await agentsResponse.json();
@@ -1547,7 +1562,7 @@
       }
 
       async function loadHistory() {
-        const response = await fetch(`${apiBase}/api/conversations`);
+        const response = await apiFetch("/api/conversations");
         const data = await response.json();
         conversations = data.conversations;
         historyPanel.innerHTML = "";
@@ -1604,7 +1619,7 @@
           return activeConversationId;
         }
 
-        const response = await fetch(`${apiBase}/api/conversations`, {
+        const response = await apiFetch("/api/conversations", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1654,7 +1669,7 @@
 
         try {
           const conversationId = await ensureConversation();
-          const response = await fetch(`${apiBase}/api/conversations/${conversationId}/messages`, {
+          const response = await apiFetch(`/api/conversations/${conversationId}/messages`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

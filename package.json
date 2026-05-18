@@ -1,0 +1,20 @@
+{
+  "name": "icon-style-mvp",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:server": "node --experimental-strip-types apps/server/src/index.ts",
+    "dev": "node --experimental-strip-types apps/server/src/index.ts",
+    "check:server": "node --experimental-strip-types --check apps/server/src/index.ts",
+    "open:web": "open http://localhost:5180",
+    "plugin:files": "open apps/figma-plugin"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "latest",
+    "typescript": "latest"
+  }
+}

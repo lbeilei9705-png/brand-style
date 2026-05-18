@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Icon Style Engine</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">Figma Plugin Pipeline Tester</p>
+        <h1>3D 图标风格转译完整链路</h1>
+        <p>
+          Web 端只用于验证流程。真实入口会是 Figma 插件；当前无 API key 时，后端使用 Mock Provider 跑通完整任务链路。
+        </p>
+        <p><a href="/admin.html">进入模型与 Agent 配置后台</a></p>
+      </section>
+
+      <section class="workflow">
+        <article>Figma / Web 输入</article>
+        <span>→</span>
+        <article>Input Parser</article>
+        <span>→</span>
+        <article>Preprocess</article>
+        <span>→</span>
+        <article>Style Engine</article>
+        <span>→</span>
+        <article>Prompt Builder</article>
+        <span>→</span>
+        <article>Mock Provider</article>
+        <span>→</span>
+        <article>Result Scoring</article>
+      </section>
+
+      <section class="studio-grid">
+        <section class="panel input-panel">
+          <div class="panel-header">
+            <p class="eyebrow">Create Task</p>
+            <h2>任务输入</h2>
+          </div>
+
+          <form id="task-form" class="form">
+            <label class="field">
+              <span>输入图形</span>
+              <input id="asset" name="asset" type="file" accept="image/*,.svg,.pdf" />
+            </label>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>输入类型</span>
+                <select id="inputType" name="inputType">
+                  <option value="auto">自动识别</option>
+                  <option value="line_sketch">线稿</option>
+                  <option value="flat_icon">扁平 icon</option>
+                  <option value="3d_other">其他 3D icon</option>
+                  <option value="illustration">插画</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>风格模板</span>
+                <select id="stylePresetId" name="stylePresetId"></select>
+              </label>
+            </div>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>保真等级</span>
+                <select id="fidelityLevel" name="fidelityLevel">
+                  <option value="balanced">balanced</option>
+                  <option value="strict">strict</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>变化强度</span>
+                <select id="variationStrength" name="variationStrength">
+                  <option value="medium">medium</option>
+                  <option value="low">low</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="switch-list">
+              <label>
+                <input id="preserveStructure" type="checkbox" checked />
+                <span>保持原结构</span>
+              </label>
+              <label>
+                <input id="styleLock" type="checkbox" checked />
+                <span>风格锁定</span>
+              </label>
+              <label>
+                <input id="transparentBackground" type="checkbox" checked />
+                <span>透明背景</span>
+              </label>
+            </div>
+
+            <button id="create-task-button" type="submit">创建生成任务</button>
+            <p id="error-message" class="error-message" hidden></p>
+          </form>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="panel-header">
+            <p class="eyebrow">Task State</p>
+            <h2>中间态</h2>
+          </div>
+
+          <div class="summary-list">
+            <div>
+              <span>任务 ID</span>
+              <strong id="task-id">未创建</strong>
+            </div>
+            <div>
+              <span>识别类型 / 生成模式</span>
+              <strong id="task-mode">等待生成</strong>
+            </div>
+            <div>
+              <span>风格模板</span>
+              <strong id="style-name">未选择</strong>
+            </div>
+          </div>
+
+          <div class="prompt-box">
+            <span>Prompt Builder 输出：正向提示词</span>
+            <p id="prompt-positive">生成后展示中文正向提示词。</p>
+            <p id="prompt-negative" class="negative-text"></p>
+          </div>
+
+          <div class="prompt-box">
+            <span>预处理步骤</span>
+            <ul id="preprocess-steps"></ul>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="panel-header results-header">
+          <div>
+            <p class="eyebrow">Result Scoring</p>
+            <h2>4 宫格结果与评分</h2>
+          </div>
+          <span id="provider-pill" class="task-pill">provider: mock</span>
+        </div>
+
+        <div id="results-grid" class="results-grid">
+          <div class="empty-state">创建任务后，这里会出现 4 张候选图和评分明细。</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

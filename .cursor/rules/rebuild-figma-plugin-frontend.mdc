@@ -1,0 +1,14 @@
+---
+description: Rebuild or sync the Figma plugin frontend after HTML/JS edits
+globs: apps/figma-plugin/**/*.{html,js,ts},apps/figma-plugin/package.json,package.json
+alwaysApply: false
+---
+
+# Figma Plugin Frontend Build
+
+When changing plugin frontend files, make sure the files loaded by Figma are updated before finishing.
+
+- If editing `apps/figma-plugin/dist/ui.html` or `apps/figma-plugin/dist/code.js`, no separate build is needed; remind the user to reopen the plugin.
+- If editing `apps/figma-plugin/src/code.ts`, rebuild or manually sync the generated change into `apps/figma-plugin/dist/code.js`.
+- If a build script exists, prefer running the project build command after HTML/JS/TS frontend edits.
+- After frontend edits, check lints for the changed files.

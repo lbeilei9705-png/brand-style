@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Icon Style MVP</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero">
+        <p class="eyebrow">3D Icon Style Translation Engine</p>
+        <h1>把线稿 / 扁平 icon 洗成统一 3D 风格</h1>
+        <p>
+          最简 MVP：输入素材，选择输入类型和风格模板，生成 4 张 mock 结果，并推荐最稳定的一张。
+        </p>
+      </section>
+
+      <section class="workflow">
+        <article>输入图形</article>
+        <span>→</span>
+        <article>结构归一</article>
+        <span>→</span>
+        <article>风格映射</article>
+        <span>→</span>
+        <article>AI 渲染</article>
+        <span>→</span>
+        <article>结果筛选</article>
+      </section>
+
+      <section class="studio-grid">
+        <section class="panel input-panel">
+          <div class="panel-header">
+            <p class="eyebrow">Input / Style</p>
+            <h2>生成任务</h2>
+          </div>
+
+          <form id="generate-form" class="form">
+            <label class="field">
+              <span>输入图形</span>
+              <input id="asset" name="asset" type="file" accept="image/*,.svg,.pdf" />
+            </label>
+
+            <div class="field-grid">
+              <label class="field">
+                <span>输入类型</span>
+                <select id="inputType" name="inputType">
+                  <option value="auto">自动识别</option>
+                  <option value="line_sketch">线稿</option>
+                  <option value="flat_icon">扁平 icon</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>风格模板</span>
+                <select id="stylePreset" name="stylePreset">
+                  <option value="">不使用风格模板</option>
+                  <option value="finance_soft_3d">Finance Soft 3D</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="switch-list">
+              <label>
+                <input id="preserveStructure" name="preserveStructure" type="checkbox" checked />
+                <span>保持原结构</span>
+              </label>
+              <label>
+                <input id="styleLock" name="styleLock" type="checkbox" checked />
+                <span>风格锁定</span>
+              </label>
+              <label>
+                <input id="transparentBg" name="transparentBg" type="checkbox" checked />
+                <span>背景透明（MVP 标记）</span>
+              </label>
+            </div>
+
+            <button id="generate-button" type="submit">生成 4 张结果</button>
+            <p id="error-message" class="error-message" hidden></p>
+          </form>
+        </section>
+
+        <section class="panel summary-panel">
+          <div class="panel-header">
+            <p class="eyebrow">Preprocess / Prompt</p>
+            <h2>任务中间态</h2>
+          </div>
+
+          <div class="summary-list">
+            <div>
+              <span>识别类型</span>
+              <strong id="detected-type">等待生成</strong>
+            </div>
+            <div>
+              <span>风格模板</span>
+              <strong id="style-name">未选择</strong>
+            </div>
+            <div>
+              <span>输入文件</span>
+              <strong id="file-name">未上传</strong>
+            </div>
+          </div>
+
+          <div class="prompt-box">
+            <span>Prompt Builder 输出</span>
+            <p id="prompt-output">生成后会展示结构保真、风格约束和负面约束。</p>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel results-panel">
+        <div class="panel-header results-header">
+          <div>
+            <p class="eyebrow">Multi-Result Generator</p>
+            <h2>4 宫格结果筛选</h2>
+          </div>
+          <span id="task-id" class="task-pill">未生成任务</span>
+        </div>
+
+        <div id="results-grid" class="results-grid">
+          <div class="empty-state">上传或选择输入后，点击生成。这里会出现 4 张候选图。</div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D Icon Style Skill Admin</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      body {
+        background: #f4f6fb;
+        color: #101828;
+      }
+
+      .admin-shell {
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      .admin-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        border-right: 1px solid #e4e7ec;
+        padding: 28px 20px;
+        background: #ffffff;
+      }
+
+      .admin-brand h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        letter-spacing: -0.04em;
+      }
+
+      .admin-brand p,
+      .muted {
+        margin: 0;
+        color: #667085;
+        line-height: 1.55;
+      }
+
+      .admin-nav {
+        display: grid;
+        gap: 8px;
+      }
+
+      .nav-button {
+        justify-content: flex-start;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: #344054;
+        box-shadow: none;
+      }
+
+      .nav-button.active {
+        background: #eef4ff;
+        color: #175cd3;
+      }
+
+      .admin-main {
+        padding: 28px;
+      }
+
+      .resource-page {
+        display: none;
+      }
+
+      .resource-page.active {
+        display: block;
+      }
+
+      .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+
+      .page-header h2 {
+        margin: 0 0 8px;
+        color: #101828;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .admin-card {
+        overflow: hidden;
+        border: 1px solid #e4e7ec;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 18px 50px rgba(16, 24, 40, 0.06);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid #eaecf0;
+        padding: 14px 16px;
+        color: #344054;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f9fafb;
+        color: #667085;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      td strong {
+        display: block;
+        color: #101828;
+      }
+
+      .pill {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 4px 8px;
+        background: #ecfdf3;
+        color: #027a48;
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .pill.off {
+        background: #f2f4f7;
+        color: #667085;
+      }
+
+      .row-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .secondary-button,
+      .danger-button {
+        min-height: 34px;
+        border-radius: 10px;
+        padding: 0 12px;
+        box-shadow: none;
+      }
+
+      .secondary-button {
+        border: 1px solid #d0d5dd;
+        background: #ffffff;
+        color: #344054;
+      }
+
+      .danger-button {
+        border: 1px solid #fecdca;
+        background: #fff1f3;
+        color: #b42318;
+      }
+
+      .primary-button {
+        min-height: 38px;
+        border-radius: 10px;
+        background: #175cd3;
+        color: #ffffff;
+        box-shadow: none;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        padding: 24px;
+        background: rgba(16, 24, 40, 0.54);
+      }
+
+      .modal-backdrop.open {
+        display: grid;
+      }
+
+      .modal {
+        width: min(760px, 100%);
+        max-height: min(760px, calc(100vh - 48px));
+        overflow: auto;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 24px 80px rgba(16, 24, 40, 0.24);
+      }
+
+      .modal-header,
+      .modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px 22px;
+        border-bottom: 1px solid #eaecf0;
+      }
+
+      .modal-footer {
+        border-top: 1px solid #eaecf0;
+        border-bottom: 0;
+      }
+
+      .modal-body {
+        display: grid;
+        gap: 16px;
+        padding: 22px;
+      }
+
+      .admin-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .admin-field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .admin-field.full {
+        grid-column: 1 / -1;
+      }
+
+      .admin-field span {
+        color: #344054;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .admin-field input,
+      .admin-field select,
+      .admin-field textarea {
+        width: 100%;
+        border: 1px solid #d0d5dd;
+        border-radius: 12px;
+        background: #ffffff;
+        color: #101828;
+        padding: 12px;
+      }
+
+      .admin-field textarea {
+        min-height: 140px;
+      }
+
+      @media (max-width: 860px) {
+        .admin-shell {
+          grid-template-columns: 1fr;
+        }
+
+        .admin-sidebar {
+          border-right: 0;
+          border-bottom: 1px solid #e4e7ec;
+        }
+
+        .admin-form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <h1>Style Skill Admin</h1>
+          <p>管理模型、品牌风格和 Markdown 导入规则。</p>
+        </div>
+        <nav class="admin-nav">
+          <button class="nav-button active" data-page="models-page" type="button">模型管理</button>
+          <button class="nav-button" data-page="agents-page" type="button">品牌风格管理</button>
+          <button class="nav-button" data-page="materials-page" type="button">材质球管理</button>
+          <button class="nav-button" data-page="palettes-page" type="button">配色管理</button>
+          <button class="nav-button" data-page="shape-architectures-page" type="button">形体结构管理</button>
+          <button class="nav-button" data-page="scenarios-page" type="button">运营场景管理</button>
+        </nav>
+      </aside>
+
+      <section class="admin-main">
+        <section id="models-page" class="resource-page active">
+          <header class="page-header">
+            <div>
+              <h2>模型管理</h2>
+              <p class="muted">配置插件和品牌风格可选择的模型，包含 provider、版本、quality 和 API key。</p>
+            </div>
+            <button id="new-model-button" class="primary-button" type="button">新建模型</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>模型</th>
+                  <th>Provider</th>
+                  <th>接口 / 版本 / Quality</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="models-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="agents-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>品牌风格管理</h2>
+              <p class="muted">通过编辑或上传 Markdown 创建品牌风格，并指定驱动模型。</p>
+            </div>
+            <div class="toolbar">
+              <input id="agent-md-file" type="file" accept=".md,text/markdown,text/plain" hidden />
+              <select id="import-driver-model" title="Markdown 解析驱动模型"></select>
+              <button id="import-agent-button" class="secondary-button" type="button">从 Markdown 导入 Skill</button>
+              <button id="new-agent-button" class="primary-button" type="button">新建品牌风格</button>
+            </div>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>品牌风格</th>
+                  <th>驱动模型</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="agents-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="materials-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>材质球管理</h2>
+              <p class="muted">配置插件前台可选择的材质球提示词。</p>
+            </div>
+            <button id="new-material-button" class="primary-button" type="button">新建材质球</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>材质球</th>
+                  <th>提示词</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="materials-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="palettes-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>配色管理</h2>
+              <p class="muted">配置插件前台可选择的配色方案。</p>
+            </div>
+            <button id="new-palette-button" class="primary-button" type="button">新建配色</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>配色</th>
+                  <th>色值</th>
+                  <th>提示词</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="palettes-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="shape-architectures-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>形体结构管理</h2>
+              <p class="muted">配置插件前台可选择的形体结构，用于控制原图保留、体块、层叠、软体等形体转译方式。</p>
+            </div>
+            <button id="new-shape-architecture-button" class="primary-button" type="button">新建形体结构</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>形体结构</th>
+                  <th>提示词</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="shape-architectures-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="scenarios-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>运营场景管理</h2>
+              <p class="muted">配置插件输入框中可通过 @ 调用的运营场景文案。</p>
+            </div>
+            <button id="new-scenario-button" class="primary-button" type="button">新建运营场景</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>场景</th>
+                  <th>固定规则</th>
+                  <th>场景变量</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="scenarios-table"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="model-modal" class="modal-backdrop">
+      <form id="model-form" class="modal">
+        <header class="modal-header">
+          <h2 id="model-modal-title">新建模型</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="model-id" type="hidden" />
+          <label class="admin-field">
+            <span>显示名称</span>
+            <input id="model-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>Provider</span>
+            <select id="model-provider">
+              <option value="mock">mock</option>
+              <option value="fintopia">fintopia</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>模型 ID</span>
+            <input id="model-value" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>Quality</span>
+            <select id="model-quality">
+              <option value="auto">auto</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>用途</span>
+            <select id="model-purpose">
+              <option value="image">生图模型</option>
+              <option value="language">语言模型</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>接口风格</span>
+            <select id="model-api-style">
+              <option value="azure">Azure/OpenAI Deployment（拼 deployments 和 api-version）</option>
+              <option value="openai">OpenAI 兼容（/v1/images/generations）</option>
+              <option value="custom">自定义 Path</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>API Version（可留空）</span>
+            <input id="model-api-version" type="text" placeholder="例如 2024-02-01；无则留空" />
+          </label>
+          <label class="admin-field full">
+            <span>API URL</span>
+            <input id="model-api-url" type="text" placeholder="例如 https://api.openai.com 或中转站 base URL" />
+          </label>
+          <label class="admin-field full">
+            <span>自定义 API Path（仅 custom 或特殊中转站需要）</span>
+            <input id="model-api-path" type="text" placeholder="/v1/images/generations，可用 {model} 作为模型占位" />
+          </label>
+          <label class="admin-field">
+            <span>API Key</span>
+            <input id="model-api-key" type="password" autocomplete="off" />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="model-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存模型</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="agent-modal" class="modal-backdrop">
+      <form id="agent-form" class="modal">
+        <header class="modal-header">
+          <h2 id="agent-modal-title">新建品牌风格</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="agent-id" type="hidden" />
+          <label class="admin-field">
+            <span>品牌风格名称</span>
+            <input id="agent-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <input id="agent-style-preset" type="hidden" value="" />
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="agent-description" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>驱动模型</span>
+            <select id="agent-driver-model"></select>
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="agent-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>风格规则提示词</span>
+            <textarea id="agent-system-prompt" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>默认负向规则（一行一个）</span>
+            <textarea id="agent-negative-rules"></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存品牌风格</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="material-modal" class="modal-backdrop">
+      <form id="material-form" class="modal">
+        <header class="modal-header">
+          <h2 id="material-modal-title">新建材质球</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="material-id" type="hidden" />
+          <label class="admin-field">
+            <span>材质球名称</span>
+            <input id="material-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>预览色</span>
+            <input id="material-preview-color" type="text" placeholder="#DFF7FF" />
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="material-description" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="material-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>材质提示词</span>
+            <textarea id="material-prompt" required></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存材质球</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="palette-modal" class="modal-backdrop">
+      <form id="palette-form" class="modal">
+        <header class="modal-header">
+          <h2 id="palette-modal-title">新建配色</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="palette-id" type="hidden" />
+          <label class="admin-field">
+            <span>配色名称</span>
+            <input id="palette-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="palette-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="palette-description" type="text" required />
+          </label>
+          <label class="admin-field full">
+            <span>色值（一行一个或逗号分隔）</span>
+            <textarea id="palette-colors" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>配色提示词</span>
+            <textarea id="palette-prompt"></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存配色</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="shape-architecture-modal" class="modal-backdrop">
+      <form id="shape-architecture-form" class="modal">
+        <header class="modal-header">
+          <h2 id="shape-architecture-modal-title">新建形体结构</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="shape-architecture-id" type="hidden" />
+          <label class="admin-field">
+            <span>形体结构名称</span>
+            <input id="shape-architecture-name" type="text" placeholder="例如 2-圆润体块" required />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="shape-architecture-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="shape-architecture-description" type="text" required />
+          </label>
+          <label class="admin-field full">
+            <span>形体结构提示词</span>
+            <textarea id="shape-architecture-prompt" placeholder="描述如何保留或转译主体轮廓、层级、厚度、圆角、构图等形体关系" required></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存形体结构</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="scenario-modal" class="modal-backdrop">
+      <form id="scenario-form" class="modal">
+        <header class="modal-header">
+          <h2 id="scenario-modal-title">新建运营场景</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="scenario-id" type="hidden" />
+          <label class="admin-field">
+            <span>场景名称</span>
+            <input id="scenario-name" type="text" placeholder="例如 新客增长" required />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="scenario-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="scenario-description" type="text" required />
+          </label>
+          <label class="admin-field full">
+            <span>固定规则</span>
+            <textarea id="scenario-fixed-prompt" placeholder="每次调用该运营场景都会保留的基础规则" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>场景变量</span>
+            <textarea id="scenario-variable-prompt" placeholder="该场景特有的业务目标、对象、信息点或限制" required></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存运营场景</button>
+        </footer>
+      </form>
+    </div>
+
+    <script src="/admin.js"></script>
+  </body>
+</html>

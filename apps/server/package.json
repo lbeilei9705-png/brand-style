@@ -1,0 +1,8 @@
+{
+  "name": "@icon-style/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types src/index.ts"
+  }
+}

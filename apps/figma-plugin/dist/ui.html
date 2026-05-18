@@ -1,0 +1,1887 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      :root {
+        color: #f4f7fb;
+        background: #0b0f17;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: #0b0f17;
+      }
+
+      button,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .app {
+        position: relative;
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        height: 100vh;
+        background: radial-gradient(circle at 50% 0%, #172238 0%, #0b0f17 48%, #070a0f 100%);
+      }
+
+      button,
+      select {
+        min-height: 20px;
+        border: 1px solid #283244;
+        background: #121826;
+        color: #f4f7fb;
+        cursor: pointer;
+        font-size: 9px;
+        font-weight: 650;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.58;
+      }
+
+      .selection-bar {
+        display: none;
+      }
+
+      .history-panel {
+        position: fixed;
+        z-index: 30;
+        display: none;
+        pointer-events: none;
+        width: min(360px, calc(100vw - 24px));
+        max-height: 220px;
+        overflow: auto;
+        border: 1px solid #283244;
+        border-radius: 20px;
+        background: #101624;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+      }
+
+      .history-panel.open {
+        display: block;
+        pointer-events: auto;
+      }
+
+      .history-item {
+        width: 100%;
+        min-height: auto;
+        border: 0;
+        border-bottom: 1px solid #202a3a;
+        border-radius: 20px;
+        padding: 12px 14px;
+        background: transparent;
+        color: #e5e7eb;
+        text-align: left;
+      }
+
+      .chat {
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        min-height: 0;
+        overflow: auto;
+        padding: 16px 14px 12px;
+        background: transparent;
+      }
+
+      .message {
+        display: grid;
+        gap: 8px;
+        max-width: 94%;
+        border: 1px solid #24324a;
+        border-radius: 20px;
+        padding: 14px 16px;
+        background: #111827;
+        color: #dbeafe;
+        font-size: 12px;
+        font-weight: 620;
+        line-height: 1.7;
+      }
+
+      .message-content {
+        white-space: pre-wrap;
+      }
+
+      .message-attachments {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .message-attachment {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.28);
+      }
+
+      .message-attachment img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .message-attachment-label {
+        position: absolute;
+        left: 4px;
+        bottom: 4px;
+        border-radius: 999px;
+        padding: 1px 5px;
+        background: rgba(2, 6, 23, 0.72);
+        color: #ffffff;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .message.user {
+        justify-self: end;
+        border-color: #2f6fed;
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+        color: #ffffff;
+      }
+
+      .reuse-message-button {
+        justify-self: end;
+        position: relative;
+        width: 20px;
+        height: 20px;
+        border: 0;
+        border-radius: 6px;
+        padding: 0;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.78);
+      }
+
+      .reuse-message-button:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+      }
+
+      .reuse-message-button::before,
+      .reuse-message-button::after {
+        position: absolute;
+        width: 8px;
+        height: 10px;
+        border: 1.4px solid currentColor;
+        border-radius: 2px;
+        content: "";
+      }
+
+      .reuse-message-button::before {
+        top: 4px;
+        left: 5px;
+        opacity: 0.55;
+      }
+
+      .reuse-message-button::after {
+        top: 6px;
+        left: 8px;
+        background: #2563eb;
+      }
+
+      .message.system {
+        max-width: 100%;
+        border-color: #202a3a;
+        background: rgba(17, 24, 39, 0.72);
+        color: #9ca3af;
+        font-weight: 500;
+      }
+
+      .results {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .result-card {
+        overflow: hidden;
+        border: 1px solid #283244;
+        border-radius: 20px;
+        background: #0f172a;
+      }
+
+      .result-card img {
+        display: block;
+        width: 100%;
+      }
+
+      .result-card div {
+        display: grid;
+        gap: 6px;
+        padding: 8px;
+      }
+
+      .debug-panel {
+        border: 1px solid #283244;
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.72);
+        color: #cbd5e1;
+        font-size: 10px;
+        line-height: 1.6;
+      }
+
+      .debug-panel summary {
+        cursor: pointer;
+        padding: 8px 10px;
+        color: #e5e7eb;
+        font-weight: 700;
+      }
+
+      .debug-copy-button {
+        margin: 0 10px 8px;
+        min-height: 24px;
+        border-radius: 999px;
+        padding: 0 10px;
+        background: #182235;
+        color: #bfdbfe;
+      }
+
+      .debug-section {
+        display: grid;
+        gap: 4px;
+        border-top: 1px solid #283244;
+        padding: 8px 10px;
+      }
+
+      .debug-section strong {
+        color: #93c5fd;
+      }
+
+      .debug-section pre {
+        max-height: 180px;
+        overflow: auto;
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: #e5e7eb;
+        font-family: inherit;
+      }
+
+      .agent-console {
+        display: grid;
+        gap: 10px;
+        min-width: 0;
+        padding: clamp(8px, 1.8vw, 12px);
+        border-top: 1px solid #161e2c;
+        background: rgba(7, 10, 15, 0.96);
+      }
+
+      .control-strip {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        width: 100%;
+        grid-template-columns: minmax(74px, 88px) minmax(82px, 96px) minmax(96px, 112px) minmax(120px, 1fr);
+        overflow: visible;
+        gap: 8px;
+      }
+
+      .control-select,
+      .icon-button {
+        min-height: 27px;
+        border-radius: 20px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .control-select {
+        width: 100%;
+        min-width: 0;
+        padding: 0 14px;
+        appearance: auto;
+        -webkit-appearance: menulist;
+        pointer-events: auto;
+      }
+
+      #agent-select {
+        min-width: 120px;
+      }
+
+      .icon-button {
+        display: grid;
+        place-items: center;
+        padding: 0;
+        font-size: 9px;
+      }
+
+      .composer-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        min-height: clamp(176px, 34vh, 280px);
+        overflow: hidden;
+        padding-top: clamp(18px, 4vh, 29px);
+        padding-bottom: clamp(18px, 4vh, 29px);
+        border: 1px solid #283244;
+        border-radius: 20px;
+        background: #111827;
+      }
+
+      .attachment-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 18px 24px 0;
+      }
+
+      .selection-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 24px 0;
+      }
+
+      .add-selection-button {
+        min-height: 28px;
+        border-radius: 999px;
+        padding: 0 12px;
+        background: #182235;
+        color: #e5e7eb;
+        white-space: nowrap;
+      }
+
+      .selection-status {
+        min-width: 0;
+        overflow: hidden;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .attachment-row:empty {
+        display: none;
+      }
+
+      .thumb {
+        position: relative;
+        width: 46px;
+        height: 46px;
+        overflow: hidden;
+        border: 1px solid #334155;
+        border-radius: 20px;
+        background: #0b1220;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+      }
+
+      .thumb img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .thumb-label {
+        position: absolute;
+        left: 3px;
+        bottom: 3px;
+        border-radius: 999px;
+        padding: 1px 5px;
+        background: rgba(2, 6, 23, 0.72);
+        color: #ffffff;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .thumb button {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        display: none;
+        width: 18px;
+        min-width: 18px;
+        height: 18px;
+        min-height: 18px;
+        border: 0;
+        border-radius: 20px;
+        padding: 0;
+        background: rgba(0, 0, 0, 0.72);
+        color: #ffffff;
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .thumb:hover button {
+        display: block;
+      }
+
+      textarea {
+        width: 100%;
+        flex: 1 1 auto;
+        height: auto;
+        min-height: clamp(118px, 24vh, 210px);
+        resize: none;
+        border: 0;
+        outline: 0;
+        padding: 9px 12px;
+        background: transparent;
+        color: #f8fafc;
+        font-size: 12px;
+      }
+
+      textarea::placeholder {
+        color: #64748b;
+      }
+
+      .scenario-panel {
+        position: absolute;
+        right: 14px;
+        bottom: 82px;
+        left: 14px;
+        z-index: 18;
+        display: none;
+        max-height: 180px;
+        overflow: auto;
+        border: 1px solid #334155;
+        border-radius: 20px;
+        padding: 6px;
+        background: #1f2937;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.36);
+      }
+
+      .scenario-panel.open {
+        display: grid;
+        gap: 4px;
+      }
+
+      .scenario-option {
+        display: grid;
+        gap: 2px;
+        width: 100%;
+        border: 0;
+        border-radius: 14px;
+        padding: 8px 10px;
+        background: transparent;
+        color: #f8fafc;
+        text-align: left;
+      }
+
+      .scenario-option:hover,
+      .scenario-option.active {
+        background: #111827;
+      }
+
+      .scenario-option span {
+        color: #94a3b8;
+        font-size: 10px;
+        font-weight: 500;
+      }
+
+      .composer-footer {
+        display: grid;
+        grid-template-columns: minmax(58px, 72px) minmax(74px, 92px) minmax(108px, 1fr) 52px 52px minmax(76px, 1fr);
+        flex: 0 0 auto;
+        align-items: center;
+        overflow: visible;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+        padding: 0 10px;
+      }
+
+      .pill-select {
+        min-height: 26px;
+        border-radius: 20px;
+        background: #0b1220;
+      }
+
+      .pill-select {
+        width: 100%;
+        min-width: 0;
+        padding: 0 7px;
+        appearance: auto;
+        -webkit-appearance: menulist;
+        text-align: center;
+      }
+
+      #material-select,
+      #color-palette-select {
+        width: 92px;
+        min-width: 92px;
+      }
+
+      #model-select {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .multi-select-wrap {
+        position: relative;
+        min-width: 0;
+      }
+
+      .multi-select-button {
+        width: 100%;
+        min-width: 0;
+        min-height: 26px;
+        border-radius: 20px;
+        background: #0b1220;
+        font-size: 9px;
+      }
+
+      .multi-select-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 20;
+        display: none;
+        width: max-content;
+        max-width: calc(100vw - 24px);
+        max-height: 220px;
+        overflow: auto;
+        border: 1px solid #334155;
+        border-radius: 20px;
+        padding: 8px;
+        background: #1f2937;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+      }
+
+      .multi-select-panel.open {
+        display: grid;
+        gap: 4px;
+      }
+
+      .multi-select-panel-header {
+        display: flex;
+        justify-content: flex-start;
+        padding: 0 8px 4px;
+      }
+
+      .multi-select-clear-button {
+        min-height: 22px;
+        border: 1px solid #475569;
+        border-radius: 999px;
+        padding: 0 10px;
+        background: #111827;
+        color: #cbd5e1;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .multi-select-clear-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .material-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 14px;
+        padding: 7px 8px;
+        color: #f8fafc;
+        font-size: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .material-option:hover {
+        background: #111827;
+      }
+
+      .material-option input {
+        flex: 0 0 auto;
+        width: 14px;
+        height: 14px;
+      }
+
+      .material-option span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .quantity-label {
+        color: #94a3b8;
+        font-size: 9px;
+        font-weight: 650;
+      }
+
+      .run-button {
+        width: 100%;
+        min-width: 0;
+        min-height: 26px;
+        border: 0;
+        border-radius: 20px;
+        background: #1f2937;
+        color: #64748b;
+        font-size: 9px;
+      }
+
+      .run-button:not(:disabled) {
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #ffffff;
+      }
+
+      .resize-handle {
+        position: fixed;
+        right: 10px;
+        bottom: 10px;
+        z-index: 10;
+        width: 22px;
+        min-width: 22px;
+        height: 22px;
+        min-height: 22px;
+        border: 0;
+        border-radius: 20px;
+        background: rgba(15, 23, 42, 0.92);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+        cursor: nwse-resize;
+        opacity: 0.8;
+      }
+
+      .resize-handle::before,
+      .resize-handle::after {
+        content: "";
+        position: absolute;
+        right: 6px;
+        bottom: 7px;
+        width: 8px;
+        height: 2px;
+        border-radius: 20px;
+        background: #94a3b8;
+        transform: rotate(-45deg);
+        transform-origin: right center;
+      }
+
+      .resize-handle::after {
+        right: 6px;
+        bottom: 10px;
+        width: 5px;
+      }
+
+      .resize-handle:hover {
+        opacity: 1;
+      }
+
+      body.resizing {
+        cursor: nwse-resize;
+        user-select: none;
+      }
+
+      @media (max-width: 520px) {
+        .agent-console {
+          padding: 8px;
+        }
+
+        .control-strip {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          gap: 6px;
+        }
+
+        #agent-select {
+          grid-column: 1 / -1;
+        }
+
+        .composer-card {
+          min-height: 180px;
+          padding-top: 18px;
+          padding-bottom: 18px;
+        }
+
+        .composer-footer {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+          padding: 0 8px;
+        }
+
+        .run-button {
+          grid-column: 1 / -1;
+        }
+      }
+
+      /* Minimal premium light theme for the Figma plugin surface. */
+      :root {
+        color: #171a21;
+        background: #f7f7f5;
+      }
+
+      body {
+        background: #f7f7f5;
+      }
+
+      .app {
+        background: linear-gradient(180deg, #fbfbfa 0%, #f7f7f5 100%);
+      }
+
+      button,
+      select {
+        border-color: #deded9;
+        background: #ffffff;
+        color: #20242d;
+        box-shadow: none;
+      }
+
+      button:hover:not(:disabled),
+      select:hover {
+        border-color: #c8c8c1;
+        background: #fafafa;
+      }
+
+      button:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        outline: none;
+      }
+
+      .chat {
+        padding: 18px 16px 10px;
+      }
+
+      .message {
+        border-color: #e1e1dc;
+        background: #ffffff;
+        color: #20242d;
+        box-shadow: 0 8px 24px rgba(23, 26, 33, 0.06);
+      }
+
+      .message.user {
+        border-color: #171a21;
+        background: #171a21;
+        color: #ffffff;
+        box-shadow: 0 10px 28px rgba(23, 26, 33, 0.16);
+      }
+
+      .message.system {
+        border-color: #e7e7e2;
+        background: #fdfdfc;
+        color: #777b84;
+      }
+
+      .message-attachment,
+      .thumb {
+        border-color: #e1e1dc;
+        background: #f7f7f5;
+        box-shadow: 0 6px 18px rgba(23, 26, 33, 0.08);
+      }
+
+      .reuse-message-button {
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      .reuse-message-button:hover {
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .reuse-message-button::after {
+        background: #171a21;
+      }
+
+      .history-panel,
+      .scenario-panel,
+      .multi-select-panel {
+        border-color: #deded9;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 18px 44px rgba(23, 26, 33, 0.12);
+      }
+
+      .history-item {
+        border-bottom-color: #eeeeea;
+        color: #20242d;
+      }
+
+      .history-item:hover,
+      .scenario-option:hover,
+      .scenario-option.active,
+      .material-option:hover {
+        background: #f5f5f2;
+      }
+
+      .result-card,
+      .debug-panel,
+      .composer-card {
+        border-color: #e1e1dc;
+        background: #ffffff;
+        box-shadow: 0 12px 36px rgba(23, 26, 33, 0.08);
+      }
+
+      .debug-panel {
+        color: #4e535c;
+      }
+
+      .debug-panel summary {
+        color: #20242d;
+      }
+
+      .debug-copy-button,
+      .add-selection-button,
+      .pill-select,
+      .multi-select-button,
+      .icon-button,
+      .control-select {
+        border-color: #deded9;
+        background: #ffffff;
+        color: #20242d;
+      }
+
+      .debug-copy-button:hover,
+      .add-selection-button:hover,
+      .pill-select:hover,
+      .multi-select-button:hover,
+      .icon-button:hover,
+      .control-select:hover {
+        background: #f8f8f6;
+        border-color: #c8c8c1;
+      }
+
+      .debug-section {
+        border-top-color: #eeeeea;
+      }
+
+      .debug-section strong {
+        color: #4b3ad8;
+      }
+
+      .debug-section pre {
+        color: #20242d;
+      }
+
+      .agent-console {
+        border-top-color: #e1e1dc;
+        background: rgba(247, 247, 245, 0.96);
+        box-shadow: 0 -10px 30px rgba(23, 26, 33, 0.06);
+      }
+
+      .composer-card {
+        border-radius: 22px;
+      }
+
+      .selection-status,
+      .quantity-label,
+      .scenario-option span {
+        color: #81858d;
+      }
+
+      textarea {
+        color: #20242d;
+      }
+
+      textarea::placeholder {
+        color: #a0a2a8;
+      }
+
+      .scenario-option,
+      .material-option {
+        color: #20242d;
+      }
+
+      .multi-select-clear-button {
+        border-color: #deded9;
+        background: #fafafa;
+        color: #636872;
+      }
+
+      .run-button {
+        background: #ececea;
+        color: #92949a;
+      }
+
+      .run-button:not(:disabled) {
+        background: #171a21;
+        color: #ffffff;
+        box-shadow: 0 10px 24px rgba(23, 26, 33, 0.18);
+      }
+
+      .run-button:not(:disabled):hover {
+        background: #2a2e38;
+      }
+
+      .resize-handle {
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 10px 28px rgba(23, 26, 33, 0.14);
+      }
+
+      .resize-handle::before,
+      .resize-handle::after {
+        background: #92949a;
+      }
+
+      select,
+      .control-select,
+      .pill-select,
+      .multi-select-button,
+      .icon-button {
+        border: 1px solid #deded9;
+        background: #ffffff;
+        box-shadow: none;
+      }
+
+      select:hover,
+      .control-select:hover,
+      .pill-select:hover,
+      .multi-select-button:hover,
+      .icon-button:hover {
+        border-color: #c8c8c1;
+        background: #ffffff;
+        box-shadow: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section id="chat" class="chat"></section>
+
+      <div id="selection-bar" class="selection-bar">正在读取当前选区...</div>
+      <div id="history-panel" class="history-panel"></div>
+
+      <section class="agent-console">
+        <div class="control-strip">
+          <div class="multi-select-wrap">
+            <button id="material-select-button" class="multi-select-button" type="button" title="多选材质球">材质</button>
+            <div id="material-panel" class="multi-select-panel"></div>
+          </div>
+          <select id="color-palette-select" class="control-select" title="配色方案"></select>
+          <select id="shape-architecture-select" class="control-select" title="形体架构"></select>
+          <select id="agent-select" class="control-select" title="选择风格 Skill"></select>
+        </div>
+
+        <section class="composer-card">
+          <div class="selection-tools">
+            <button id="add-selection-button" class="add-selection-button" type="button">添加选中图</button>
+            <span id="selection-status" class="selection-status">打开插件不会自动读取选区。</span>
+          </div>
+          <div id="attachment-row" class="attachment-row"></div>
+          <textarea id="message-input" placeholder="画得比甲方变心还快"></textarea>
+          <div id="scenario-panel" class="scenario-panel"></div>
+          <div class="composer-footer">
+            <select id="aspect-ratio-select" class="pill-select" title="生成比例">
+              <option value="auto" selected>自动</option>
+              <option value="1:1">1:1</option>
+              <option value="1:2">1:2</option>
+              <option value="2:1">2:1</option>
+              <option value="2:3">2:3</option>
+              <option value="3:2">3:2</option>
+              <option value="3:4">3:4</option>
+              <option value="4:3">4:3</option>
+              <option value="16:9">16:9</option>
+              <option value="9:16">9:16</option>
+            </select>
+            <select id="resolution-select" class="pill-select" title="清晰度">
+              <option value="1k">1K</option>
+              <option value="2k" selected>2K</option>
+              <option value="4k">4K</option>
+            </select>
+            <select id="model-select" class="pill-select" title="选择模型"></select>
+            <button id="history-button" class="icon-button" type="button" title="历史对话">历史</button>
+            <button id="new-chat-button" class="icon-button" type="button" title="新建对话">新建</button>
+            <button id="send-button" class="run-button" type="button" disabled>没活</button>
+          </div>
+        </section>
+      </section>
+      <button id="resize-handle" class="resize-handle" type="button" title="拖拽调整窗口大小" aria-label="拖拽调整窗口大小"></button>
+    </main>
+
+    <script>
+      const apiBase = "https://tracker-create-huge-attach.trycloudflare.com";
+      const modelSelect = document.querySelector("#model-select");
+      const agentSelect = document.querySelector("#agent-select");
+      const aspectRatioSelect = document.querySelector("#aspect-ratio-select");
+      const resolutionSelect = document.querySelector("#resolution-select");
+      const materialSelectButton = document.querySelector("#material-select-button");
+      const materialPanel = document.querySelector("#material-panel");
+      const colorPaletteSelect = document.querySelector("#color-palette-select");
+      const shapeArchitectureSelect = document.querySelector("#shape-architecture-select");
+      const selectionBar = document.querySelector("#selection-bar");
+      const addSelectionButton = document.querySelector("#add-selection-button");
+      const selectionStatus = document.querySelector("#selection-status");
+      const attachmentRow = document.querySelector("#attachment-row");
+      const historyPanel = document.querySelector("#history-panel");
+      const chat = document.querySelector("#chat");
+      const messageInput = document.querySelector("#message-input");
+      const sendButton = document.querySelector("#send-button");
+      const resizeHandle = document.querySelector("#resize-handle");
+      const scenarioPanel = document.querySelector("#scenario-panel");
+      let selectedAssets = [];
+      let batchSize = 1;
+      let aspectRatio = "auto";
+      let resolution = "2k";
+      let materials = [];
+      let materialPresetIds = [];
+      let operationScenarios = [];
+      let activeScenarioSuggestions = [];
+      let colorPaletteId = "";
+      let shapeArchitectureId = "";
+      let isSending = false;
+      let isLoadingConfig = false;
+      let activeConversationId = null;
+      let conversations = [];
+
+      function addMessage(role, content, attachments = []) {
+        const node = document.createElement("article");
+        const contentNode = document.createElement("div");
+
+        node.className = `message ${role}`;
+
+        if (attachments.length) {
+          const attachmentNode = document.createElement("div");
+          attachmentNode.className = "message-attachments";
+
+          for (const [index, asset] of attachments.entries()) {
+            const item = document.createElement("section");
+            const image = document.createElement("img");
+            const label = document.createElement("span");
+
+            item.className = "message-attachment";
+            image.src = asset.assetDataUrl;
+            image.alt = `${asset.referenceLabel || `图${index + 1}`}：${asset.name || asset.filename || "参考图"}`;
+            label.className = "message-attachment-label";
+            label.textContent = asset.referenceLabel || `图${index + 1}`;
+            item.append(image, label);
+            attachmentNode.appendChild(item);
+          }
+
+          node.appendChild(attachmentNode);
+        }
+
+        contentNode.className = "message-content";
+        contentNode.textContent = content;
+        node.appendChild(contentNode);
+
+        if (role === "user" && content) {
+          const reuseButton = document.createElement("button");
+          reuseButton.className = "reuse-message-button";
+          reuseButton.type = "button";
+          reuseButton.title = "复制到输入框";
+          reuseButton.setAttribute("aria-label", "复制到输入框");
+          reuseButton.addEventListener("click", () => {
+            messageInput.value = content;
+            messageInput.focus();
+            updateRunState();
+            renderScenarioSuggestions();
+          });
+          node.appendChild(reuseButton);
+        }
+
+        chat.appendChild(node);
+        chat.scrollTop = chat.scrollHeight;
+        return node;
+      }
+
+      function getReadableError(error) {
+        if (error instanceof TypeError && error.message === "Failed to fetch") {
+          return "本地服务未启动或连接失败，请先启动后端服务后重试。";
+        }
+
+        return error?.message || "发生未知错误，请稍后重试。";
+      }
+
+      function getGreatestCommonDivisor(left, right) {
+        let a = Math.abs(left);
+        let b = Math.abs(right);
+
+        while (b) {
+          const remainder = a % b;
+          a = b;
+          b = remainder;
+        }
+
+        return a || 1;
+      }
+
+      function resolveAspectRatio() {
+        if (aspectRatio !== "auto") {
+          return aspectRatio;
+        }
+
+        const primaryAsset = selectedAssets.find((asset) => Number(asset.width) > 0 && Number(asset.height) > 0);
+        const width = Math.round(Number(primaryAsset?.width));
+        const height = Math.round(Number(primaryAsset?.height));
+
+        if (!width || !height) {
+          return "1:1";
+        }
+
+        const divisor = getGreatestCommonDivisor(width, height);
+        return `${width / divisor}:${height / divisor}`;
+      }
+
+      function updateAspectRatioAutoLabel() {
+        const autoOption = aspectRatioSelect.querySelector('option[value="auto"]');
+        if (!autoOption) {
+          return;
+        }
+
+        const primaryAsset = selectedAssets.find((asset) => Number(asset.width) > 0 && Number(asset.height) > 0);
+        if (!primaryAsset) {
+          autoOption.textContent = "自动";
+          return;
+        }
+
+        const width = Math.round(Number(primaryAsset.width));
+        const height = Math.round(Number(primaryAsset.height));
+        const divisor = getGreatestCommonDivisor(width, height);
+        autoOption.textContent = `自动（${width / divisor}:${height / divisor}）`;
+      }
+
+      function getLabeledSelectedAssets() {
+        return selectedAssets.map((asset, index) => ({
+          ...asset,
+          referenceLabel: `图${index + 1}`,
+        }));
+      }
+
+      function getAssetIdentity(asset) {
+        return String(asset.id || `${asset.filename}-${asset.sizeBytes}`).replace(/-\d+$/, "");
+      }
+
+      function mergeSelectedAssets(incomingAssets) {
+        const merged = [...selectedAssets];
+
+        for (const asset of incomingAssets) {
+          const identity = getAssetIdentity(asset);
+          const existingIndex = merged.findIndex((item) => getAssetIdentity(item) === identity);
+
+          if (existingIndex >= 0) {
+            merged[existingIndex] = {
+              ...merged[existingIndex],
+              ...asset,
+            };
+            continue;
+          }
+
+          merged.push(asset);
+        }
+
+        return merged;
+      }
+
+      function renderAttachments() {
+        attachmentRow.innerHTML = "";
+
+        for (const [index, asset] of selectedAssets.entries()) {
+          const thumb = document.createElement("section");
+          const image = document.createElement("img");
+          const label = document.createElement("span");
+          const removeButton = document.createElement("button");
+
+          thumb.className = "thumb";
+          thumb.title = `图${index + 1}：${asset.name || asset.filename}`;
+          image.src = asset.assetDataUrl;
+          image.alt = `图${index + 1}：${asset.name || asset.filename}`;
+          label.className = "thumb-label";
+          label.textContent = `图${index + 1}`;
+          removeButton.type = "button";
+          removeButton.setAttribute("aria-label", "删除图片");
+          removeButton.textContent = "×";
+          removeButton.addEventListener("click", () => {
+            selectedAssets = selectedAssets.filter((item) => getAssetIdentity(item) !== getAssetIdentity(asset));
+            updateAspectRatioAutoLabel();
+            renderAttachments();
+            selectionBar.textContent = selectedAssets.length
+              ? `已添加 ${selectedAssets.length} 张参考图`
+              : "当前没有参考图。点击画布对象会自动添加缩略图。";
+            updateRunState();
+          });
+          thumb.append(image, label, removeButton);
+          attachmentRow.appendChild(thumb);
+        }
+
+        updateRunState();
+      }
+
+      function updateRunState() {
+        const canRun = !isSending && (messageInput.value.trim() || selectedAssets.length);
+        sendButton.disabled = !canRun;
+        sendButton.textContent = canRun ? "整活" : "没活";
+      }
+
+      function updateMaterialButton() {
+        if (!materialPresetIds.length) {
+          materialSelectButton.textContent = "材质";
+          return;
+        }
+
+        materialSelectButton.textContent = materialPresetIds.length === 1
+          ? materials.find((item) => item.id === materialPresetIds[0])?.name || "材质 1"
+          : `材质 ${materialPresetIds.length}`;
+      }
+
+      function renderMaterialPanel() {
+        materialPanel.innerHTML = "";
+        const header = document.createElement("div");
+        header.className = "multi-select-panel-header";
+        const clearButton = document.createElement("button");
+        clearButton.className = "multi-select-clear-button";
+        clearButton.type = "button";
+        clearButton.textContent = "取消全部勾选";
+        clearButton.disabled = !materialPresetIds.length;
+        clearButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          materialPresetIds = [];
+          renderMaterialPanel();
+        });
+        header.appendChild(clearButton);
+        materialPanel.appendChild(header);
+
+        for (const material of materials) {
+          const label = document.createElement("label");
+          label.className = "material-option";
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = material.id;
+          checkbox.checked = materialPresetIds.includes(material.id);
+          checkbox.addEventListener("change", () => {
+            materialPresetIds = checkbox.checked
+              ? [...materialPresetIds, material.id]
+              : materialPresetIds.filter((id) => id !== material.id);
+            updateMaterialButton();
+          });
+          const text = document.createElement("span");
+          text.textContent = material.name;
+          label.append(checkbox, text);
+          materialPanel.appendChild(label);
+        }
+
+        updateMaterialButton();
+      }
+
+      function getMentionContext() {
+        const cursor = messageInput.selectionStart || 0;
+        const beforeCursor = messageInput.value.slice(0, cursor);
+        const match = beforeCursor.match(/(^|\s)@([^\s@]*)$/);
+
+        if (!match) {
+          return undefined;
+        }
+
+        const query = match[2];
+        return {
+          query,
+          start: cursor - query.length - 1,
+          end: cursor,
+        };
+      }
+
+      function hideScenarioPanel() {
+        scenarioPanel.classList.remove("open");
+        scenarioPanel.innerHTML = "";
+        activeScenarioSuggestions = [];
+      }
+
+      function buildScenarioText(scenario) {
+        return scenario.variablePrompt || scenario.content || "";
+      }
+
+      function insertScenarioContent(scenario) {
+        const context = getMentionContext();
+        const value = messageInput.value;
+        const insertText = buildScenarioText(scenario);
+
+        if (!context) {
+          messageInput.value = value ? `${value}\n${insertText}` : insertText;
+          messageInput.focus();
+          messageInput.selectionStart = messageInput.selectionEnd = messageInput.value.length;
+          hideScenarioPanel();
+          updateRunState();
+          return;
+        }
+
+        const prefix = value.slice(0, context.start);
+        const suffix = value.slice(context.end);
+        const needsSpace = suffix && !/^\s/.test(suffix) ? " " : "";
+        messageInput.value = `${prefix}${insertText}${needsSpace}${suffix}`;
+        const cursor = prefix.length + insertText.length + needsSpace.length;
+        messageInput.focus();
+        messageInput.selectionStart = messageInput.selectionEnd = cursor;
+        hideScenarioPanel();
+        updateRunState();
+      }
+
+      function renderScenarioSuggestions() {
+        const context = getMentionContext();
+
+        if (!context) {
+          hideScenarioPanel();
+          return;
+        }
+
+        const query = context.query.trim().toLowerCase();
+        activeScenarioSuggestions = operationScenarios
+          .filter((scenario) => !query || scenario.name.toLowerCase().includes(query))
+          .slice(0, 8);
+
+        scenarioPanel.innerHTML = "";
+
+        if (!activeScenarioSuggestions.length) {
+          hideScenarioPanel();
+          return;
+        }
+
+        for (const [index, scenario] of activeScenarioSuggestions.entries()) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `scenario-option${index === 0 ? " active" : ""}`;
+          button.innerHTML = `<strong></strong><span></span>`;
+          button.querySelector("strong").textContent = `@${scenario.name}`;
+          button.querySelector("span").textContent = scenario.description || buildScenarioText(scenario).slice(0, 36);
+          button.addEventListener("click", () => insertScenarioContent(scenario));
+          scenarioPanel.appendChild(button);
+        }
+
+        scenarioPanel.classList.add("open");
+      }
+
+      function appendDebugSection(parent, title, content) {
+        const section = document.createElement("section");
+        const heading = document.createElement("strong");
+        const body = document.createElement("pre");
+
+        section.className = "debug-section";
+        heading.textContent = title;
+        body.textContent = content || "无";
+        section.append(heading, body);
+        parent.appendChild(section);
+      }
+
+      function buildReferenceDebugText(task) {
+        const references = task.referenceAssets?.length ? task.referenceAssets : task.inputAsset ? [task.inputAsset] : [];
+
+        if (!references.length) {
+          return "无参考图";
+        }
+
+        return references.map((asset, index) => {
+          const label = asset.referenceLabel || `图${index + 1}`;
+          const size = asset.width && asset.height ? ` · ${asset.width}x${asset.height}` : "";
+          return `${label}：${asset.filename || asset.name || asset.id}${size}`;
+        }).join("\n");
+      }
+
+      function getHighestReferencedImageIndex(content) {
+        const matches = [...content.matchAll(/图\s*(\d+)/g)];
+
+        return matches.reduce((max, match) => Math.max(max, Number(match[1]) || 0), 0);
+      }
+
+      function createPromptDebugPanel(task) {
+        const panel = document.createElement("details");
+        const copyButton = document.createElement("button");
+        const debugText = [
+          `参考图编号：\n${buildReferenceDebugText(task)}`,
+          `语言模型最终正向 Prompt：\n${task.prompt?.positive || "无"}`,
+          `语言模型最终负向 Prompt：\n${task.prompt?.negative || "无"}`,
+          `输出设置：\n比例：${task.constraints?.aspectRatio || "未知"}\n分辨率：${task.constraints?.resolution || "未知"}`,
+        ].join("\n\n");
+
+        panel.className = "debug-panel";
+        panel.innerHTML = "<summary>调试信息：查看最终 Prompt 和图1/图2对应关系</summary>";
+        copyButton.className = "debug-copy-button";
+        copyButton.type = "button";
+        copyButton.textContent = "复制调试信息";
+        copyButton.addEventListener("click", () => {
+          messageInput.value = debugText;
+          messageInput.focus();
+          updateRunState();
+        });
+        panel.appendChild(copyButton);
+        appendDebugSection(panel, "参考图编号", buildReferenceDebugText(task));
+        appendDebugSection(panel, "语言模型最终正向 Prompt", task.prompt?.positive);
+        appendDebugSection(panel, "语言模型最终负向 Prompt", task.prompt?.negative);
+        appendDebugSection(panel, "输出设置", [
+          `比例：${task.constraints?.aspectRatio || "未知"}`,
+          `分辨率：${task.constraints?.resolution || "未知"}`,
+        ].join("\n"));
+
+        return panel;
+      }
+
+      function renderResults(task) {
+        const wrapper = document.createElement("article");
+        wrapper.className = "message assistant";
+        const title = document.createElement("strong");
+        title.textContent = `生成完成：${task.results.length} 张图片`;
+        const grid = document.createElement("div");
+        grid.className = "results";
+
+        for (const result of task.results) {
+          const card = document.createElement("section");
+          card.className = "result-card";
+          const sizeLabel = result.width && result.height ? `${result.width} × ${result.height}` : "按原始尺寸";
+          card.innerHTML = `
+            <img src="${result.imageUrl}" alt="候选 ${result.rank}" />
+            <div>
+              <strong>图片 ${result.rank}</strong>
+              <span>${sizeLabel}</span>
+              <button type="button">插入 Figma</button>
+            </div>
+          `;
+          card.querySelector("button").addEventListener("click", () => {
+            parent.postMessage({
+              pluginMessage: {
+                type: "insert-result",
+                imageUrl: result.imageUrl,
+                width: result.width,
+                height: result.height,
+              },
+            }, "*");
+          });
+          grid.appendChild(card);
+        }
+
+        wrapper.append(title, grid, createPromptDebugPanel(task));
+        chat.appendChild(wrapper);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      async function loadConfig() {
+        if (isLoadingConfig) {
+          return;
+        }
+
+        isLoadingConfig = true;
+        const selectedModelId = modelSelect.value;
+        const selectedAgentId = agentSelect.value;
+        const selectedMaterialIds = [...materialPresetIds];
+        const selectedColorPaletteId = colorPaletteSelect.value;
+        const selectedShapeArchitectureId = shapeArchitectureSelect.value;
+
+        try {
+          const [modelsResponse, agentsResponse, materialsResponse, colorPalettesResponse, shapeArchitecturesResponse, scenariosResponse] = await Promise.all([
+            fetch(`${apiBase}/api/config/models`),
+            fetch(`${apiBase}/api/config/style-skills`),
+            fetch(`${apiBase}/api/config/materials`),
+            fetch(`${apiBase}/api/config/color-palettes`),
+            fetch(`${apiBase}/api/config/shape-architectures`),
+            fetch(`${apiBase}/api/config/operation-scenarios`),
+          ]);
+          const modelsData = await modelsResponse.json();
+          const agentsData = await agentsResponse.json();
+          const materialsData = await materialsResponse.json();
+          const colorPalettesData = await colorPalettesResponse.json();
+          const shapeArchitecturesData = await shapeArchitecturesResponse.json();
+          const scenariosData = await scenariosResponse.json();
+
+          modelSelect.innerHTML = "";
+          agentSelect.innerHTML = "";
+          colorPaletteSelect.innerHTML = "";
+          shapeArchitectureSelect.innerHTML = "";
+
+          for (const model of modelsData.models.filter((item) => item.enabled && (item.purpose || "image") === "image")) {
+            const option = document.createElement("option");
+            option.value = model.id;
+            option.textContent = model.name;
+            modelSelect.appendChild(option);
+          }
+
+          const emptyAgentOption = document.createElement("option");
+          emptyAgentOption.value = "";
+          emptyAgentOption.textContent = "风格skills";
+          agentSelect.appendChild(emptyAgentOption);
+
+          for (const agent of (agentsData.styleSkills || agentsData.agents || []).filter((item) => item.enabled)) {
+            const option = document.createElement("option");
+            option.value = agent.id;
+            option.textContent = agent.name;
+            agentSelect.appendChild(option);
+          }
+
+          materials = (materialsData.materials || []).filter((item) => item.enabled);
+          operationScenarios = (scenariosData.operationScenarios || []).filter((item) => item.enabled);
+
+          const emptyPaletteOption = document.createElement("option");
+          emptyPaletteOption.value = "";
+          emptyPaletteOption.textContent = "配色";
+          colorPaletteSelect.appendChild(emptyPaletteOption);
+
+          for (const palette of (colorPalettesData.colorPalettes || []).filter((item) => item.enabled)) {
+            const option = document.createElement("option");
+            option.value = palette.id;
+            option.textContent = palette.name;
+            colorPaletteSelect.appendChild(option);
+          }
+
+          const emptyShapeArchitectureOption = document.createElement("option");
+          emptyShapeArchitectureOption.value = "";
+          emptyShapeArchitectureOption.textContent = "形体架构";
+          shapeArchitectureSelect.appendChild(emptyShapeArchitectureOption);
+
+          for (const architecture of (shapeArchitecturesData.shapeArchitectures || []).filter((item) => item.enabled)) {
+            const option = document.createElement("option");
+            option.value = architecture.id;
+            option.textContent = architecture.name;
+            shapeArchitectureSelect.appendChild(option);
+          }
+
+          if (selectedModelId && [...modelSelect.options].some((option) => option.value === selectedModelId)) {
+            modelSelect.value = selectedModelId;
+          }
+
+          if (selectedAgentId && [...agentSelect.options].some((option) => option.value === selectedAgentId)) {
+            agentSelect.value = selectedAgentId;
+          }
+
+          materialPresetIds = selectedMaterialIds.filter((id) => materials.some((material) => material.id === id));
+
+          if (selectedColorPaletteId && [...colorPaletteSelect.options].some((option) => option.value === selectedColorPaletteId)) {
+            colorPaletteSelect.value = selectedColorPaletteId;
+          }
+
+          if (selectedShapeArchitectureId && [...shapeArchitectureSelect.options].some((option) => option.value === selectedShapeArchitectureId)) {
+            shapeArchitectureSelect.value = selectedShapeArchitectureId;
+          }
+
+          colorPaletteId = colorPaletteSelect.value;
+          shapeArchitectureId = shapeArchitectureSelect.value;
+          renderMaterialPanel();
+          updateRunState();
+        } finally {
+          isLoadingConfig = false;
+        }
+      }
+
+      async function loadHistory() {
+        const response = await fetch(`${apiBase}/api/conversations`);
+        const data = await response.json();
+        conversations = data.conversations;
+        historyPanel.innerHTML = "";
+
+        if (!conversations.length) {
+          historyPanel.textContent = "暂无历史对话";
+          return;
+        }
+
+        for (const conversation of conversations) {
+          const button = document.createElement("button");
+          button.className = "history-item";
+          button.type = "button";
+          button.textContent = conversation.title;
+          button.addEventListener("click", () => openConversation(conversation));
+          historyPanel.appendChild(button);
+        }
+      }
+
+      function openConversation(conversation) {
+        activeConversationId = conversation.id;
+        if ([...modelSelect.options].some((option) => option.value === conversation.modelId)) {
+          modelSelect.value = conversation.modelId;
+        }
+        if ([...agentSelect.options].some((option) => option.value === conversation.agentId)) {
+          agentSelect.value = conversation.agentId;
+        }
+        chat.innerHTML = "";
+
+        for (const message of conversation.messages) {
+          addMessage(message.role === "user" ? "user" : "assistant", message.content);
+        }
+
+        historyPanel.classList.remove("open");
+      }
+
+      function positionHistoryPanel() {
+        const buttonRect = document.querySelector("#history-button").getBoundingClientRect();
+        const panelWidth = Math.min(360, window.innerWidth - 24);
+        const left = Math.min(
+          Math.max(12, buttonRect.left + buttonRect.width / 2 - panelWidth / 2),
+          window.innerWidth - panelWidth - 12,
+        );
+        const bottom = Math.max(12, window.innerHeight - buttonRect.top + 8);
+
+        historyPanel.style.width = `${panelWidth}px`;
+        historyPanel.style.left = `${left}px`;
+        historyPanel.style.right = "auto";
+        historyPanel.style.bottom = `${bottom}px`;
+      }
+
+      async function ensureConversation() {
+        if (activeConversationId) {
+          return activeConversationId;
+        }
+
+        const response = await fetch(`${apiBase}/api/conversations`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            modelId: modelSelect.value,
+            agentId: agentSelect.value,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.conversation) {
+          throw new Error(data.error || "创建对话失败");
+        }
+        activeConversationId = data.conversation.id;
+        return activeConversationId;
+      }
+
+      async function sendMessage() {
+        const content = messageInput.value.trim();
+
+        if (!content && !selectedAssets.length) {
+          return;
+        }
+
+        const highestReferencedImageIndex = getHighestReferencedImageIndex(content);
+        if (highestReferencedImageIndex > selectedAssets.length) {
+          addMessage("system", `你提到了图${highestReferencedImageIndex}，但当前只添加了 ${selectedAssets.length} 张参考图。请先点击“添加选中图”把图${highestReferencedImageIndex}加进来。`);
+          return;
+        }
+
+        const loadingText = "正在渲染一种‘甲方闭嘴’的高级感...";
+        let renderTimer;
+        const messageAttachments = getLabeledSelectedAssets();
+        isSending = true;
+        updateRunState();
+        if (content || messageAttachments.length) {
+          addMessage("user", content, messageAttachments);
+        }
+        messageInput.value = "";
+        const pending = addMessage("system", `${loadingText} 已用 0 秒`);
+        const startedAt = Date.now();
+
+        renderTimer = window.setInterval(() => {
+          const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+          pending.textContent = `${loadingText} 已用 ${elapsedSeconds} 秒`;
+        }, 1000);
+
+        try {
+          const conversationId = await ensureConversation();
+          const response = await fetch(`${apiBase}/api/conversations/${conversationId}/messages`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              content,
+              modelId: modelSelect.value,
+              agentId: agentSelect.value,
+              inputType: "auto",
+              selectionAssets: getLabeledSelectedAssets(),
+              batchSize,
+              aspectRatio: resolveAspectRatio(),
+              resolution,
+              materialPresetIds,
+              colorPaletteId,
+              shapeArchitectureId,
+              usePromptOrchestrator: true,
+            }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "生成失败");
+          }
+
+          pending.textContent = data.conversation.messages.at(-1).content;
+          activeConversationId = data.conversation.id;
+          renderResults(data.task);
+          await loadHistory();
+        } catch (error) {
+          pending.textContent = error.message;
+        } finally {
+          window.clearInterval(renderTimer);
+          isSending = false;
+          updateRunState();
+        }
+      }
+
+      function syncCurrentSelection() {
+        addSelectionButton.disabled = true;
+        selectionStatus.textContent = "正在添加当前选中图...";
+        parent.postMessage({ pluginMessage: { type: "sync-selection" } }, "*");
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function setupResizeHandle() {
+        let isResizing = false;
+        let startX = 0;
+        let startY = 0;
+        let startWidth = 0;
+        let startHeight = 0;
+
+        function postResize(width, height) {
+          parent.postMessage({
+            pluginMessage: {
+              type: "resize-ui",
+              width,
+              height,
+            },
+          }, "*");
+        }
+
+        function handleMove(event) {
+          if (!isResizing) {
+            return;
+          }
+
+          const width = clamp(startWidth + event.clientX - startX, 360, 1200);
+          const height = clamp(startHeight + event.clientY - startY, 520, 1100);
+          postResize(width, height);
+        }
+
+        function stopResize() {
+          isResizing = false;
+          document.body.classList.remove("resizing");
+          document.removeEventListener("mousemove", handleMove);
+          document.removeEventListener("mouseup", stopResize);
+        }
+
+        resizeHandle.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          isResizing = true;
+          document.body.classList.add("resizing");
+          startX = event.clientX;
+          startY = event.clientY;
+          startWidth = window.innerWidth;
+          startHeight = window.innerHeight;
+          document.addEventListener("mousemove", handleMove);
+          document.addEventListener("mouseup", stopResize);
+        });
+
+        resizeHandle.addEventListener("dblclick", () => {
+          const shouldExpand = window.innerWidth < 760;
+          postResize(shouldExpand ? 860 : 560, shouldExpand ? 860 : 780);
+        });
+      }
+
+      document.querySelector("#history-button").addEventListener("click", async () => {
+        await loadConfig();
+        await loadHistory();
+        positionHistoryPanel();
+        historyPanel.classList.toggle("open");
+      });
+
+      document.querySelector("#new-chat-button").addEventListener("click", async () => {
+        await loadConfig();
+        activeConversationId = null;
+        agentSelect.value = "";
+        aspectRatioSelect.value = "auto";
+        resolutionSelect.value = "2k";
+        colorPaletteSelect.value = "";
+        shapeArchitectureSelect.value = "";
+        aspectRatio = "auto";
+        resolution = "2k";
+        materialPresetIds = [];
+        colorPaletteId = "";
+        shapeArchitectureId = "";
+        updateAspectRatioAutoLabel();
+        renderMaterialPanel();
+        chat.innerHTML = "";
+        addMessage("system", "已新建对话。请选择画布对象并描述本轮需求。");
+        updateRunState();
+      });
+
+      modelSelect.addEventListener("focus", loadConfig);
+      agentSelect.addEventListener("focus", loadConfig);
+      agentSelect.addEventListener("change", updateRunState);
+      materialSelectButton.addEventListener("click", async () => {
+        await loadConfig();
+        materialPanel.classList.toggle("open");
+      });
+      colorPaletteSelect.addEventListener("focus", loadConfig);
+      aspectRatioSelect.addEventListener("change", () => {
+        aspectRatio = aspectRatioSelect.value;
+      });
+      resolutionSelect.addEventListener("change", () => {
+        resolution = resolutionSelect.value;
+      });
+      colorPaletteSelect.addEventListener("change", () => {
+        colorPaletteId = colorPaletteSelect.value;
+      });
+      shapeArchitectureSelect.addEventListener("focus", loadConfig);
+      shapeArchitectureSelect.addEventListener("change", () => {
+        shapeArchitectureId = shapeArchitectureSelect.value;
+      });
+      document.addEventListener("click", (event) => {
+        if (!materialPanel.contains(event.target) && event.target !== materialSelectButton) {
+          materialPanel.classList.remove("open");
+        }
+
+        if (!historyPanel.contains(event.target) && event.target !== document.querySelector("#history-button")) {
+          historyPanel.classList.remove("open");
+        }
+
+        if (!scenarioPanel.contains(event.target) && event.target !== messageInput) {
+          hideScenarioPanel();
+        }
+      });
+      addSelectionButton.addEventListener("click", syncCurrentSelection);
+      sendButton.addEventListener("click", sendMessage);
+      messageInput.addEventListener("input", () => {
+        updateRunState();
+        renderScenarioSuggestions();
+      });
+      messageInput.addEventListener("keydown", (event) => {
+        if ((event.key === "Enter" || event.key === "Tab") && scenarioPanel.classList.contains("open") && activeScenarioSuggestions[0]) {
+          event.preventDefault();
+          insertScenarioContent(activeScenarioSuggestions[0]);
+          return;
+        }
+
+        if (event.key === "Escape" && scenarioPanel.classList.contains("open")) {
+          event.preventDefault();
+          hideScenarioPanel();
+          return;
+        }
+
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+          sendMessage();
+        }
+      });
+      messageInput.addEventListener("click", renderScenarioSuggestions);
+      setupResizeHandle();
+
+      window.onmessage = (event) => {
+        const message = event.data.pluginMessage;
+
+        if (!message) {
+          return;
+        }
+
+        if (message.type === "selection-synced") {
+          const incomingAssets = message.payload.assets || [];
+          selectedAssets = mergeSelectedAssets(message.payload.assets || []);
+          updateAspectRatioAutoLabel();
+          renderAttachments();
+          selectionBar.textContent = selectedAssets.length
+            ? `已添加 ${selectedAssets.length} 张参考图，按选择顺序标为图1、图2。可点击缩略图右上角删除。`
+            : message.payload.message;
+          selectionStatus.textContent = incomingAssets.length
+            ? `已添加 ${selectedAssets.length} 张参考图，按选择顺序标为图1、图2。`
+            : message.payload.message;
+          addSelectionButton.disabled = false;
+          updateRunState();
+        }
+
+        if (message.type === "selection-error") {
+          selectionBar.textContent = message.message;
+          selectionStatus.textContent = message.message;
+          addSelectionButton.disabled = false;
+        }
+      };
+
+      loadConfig()
+        .then(loadHistory)
+        .then(() => {
+          if (!activeConversationId && conversations[0]) {
+            openConversation(conversations[0]);
+          }
+          updateRunState();
+        })
+        .catch((error) => {
+          addMessage("system", getReadableError(error));
+        });
+    </script>
+  </body>
+</html>

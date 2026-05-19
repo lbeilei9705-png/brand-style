@@ -34,6 +34,12 @@ const imageProvider = appConfig.imageProvider === "fintopia" && appConfig.fintop
 const taskService = new TaskService(store, imageProvider);
 const conversationService = new ConversationService(conversationStore, configStore, store, appConfig.fintopia);
 
+function stripModelSecret<T extends { apiKey?: string }>(model: T): Omit<T, "apiKey"> {
+  const { apiKey: _apiKey, ...safeModel } = model;
+
+  return safeModel;
+}
+
 function parseBoolean(value: string | undefined, fallback: boolean): boolean {
   if (value === undefined) {
     return fallback;
@@ -182,7 +188,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && pathname === "/api/config/models") {
-      sendJson(res, 200, { models: configStore.listModels() });
+      sendJson(res, 200, { models: configStore.listModels().map(stripModelSecret) });
       return;
     }
 

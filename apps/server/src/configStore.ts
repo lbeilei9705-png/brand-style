@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import type { AgentConfig, ColorPaletteConfig, MaterialPresetConfig, ModelConfig, OperationScenarioConfig, ShapeArchitectureConfig, StyleSkillConfig } from "../../../packages/shared/src/index.ts";
 
 interface StoredConfig {
@@ -45,7 +46,66 @@ function sortByLeadingNameNumber<T extends { name: string }>(items: T[]): T[] {
     .map(({ item }) => item);
 }
 
+const seedConfigPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "defaultConfig.seed.json");
+
+const modelApiKeyEnvNames: Record<string, string[]> = {
+  "fintopia-gpt-image-2": ["FINTOPIA_API_KEY"],
+  "fintopia-gpt-5-5": ["FINTOPIA_API_KEY"],
+  "model_1778388177536": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
+  "nano-banana-pro": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
+};
+
+function readSeedConfig(): StoredConfig | undefined {
+  if (!fs.existsSync(seedConfigPath)) {
+    return undefined;
+  }
+
+  return JSON.parse(fs.readFileSync(seedConfigPath, "utf8")) as StoredConfig;
+}
+
+function getModelApiKey(model: ModelConfig): string | undefined {
+  if (model.apiKey || model.provider === "mock") {
+    return model.apiKey;
+  }
+
+  const normalizedId = model.id.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
+  const envNames = [
+    `MODEL_API_KEY_${normalizedId}`,
+    ...(modelApiKeyEnvNames[model.id] || []),
+  ];
+
+  for (const envName of envNames) {
+    const value = process.env[envName];
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function hydrateConfig(config: StoredConfig): StoredConfig {
+  return {
+    models: config.models.map((model) => ({
+      ...model,
+      apiKey: getModelApiKey(model),
+    })),
+    agents: config.agents.map((agent) => ({ ...agent })),
+    materials: config.materials.map((material) => ({ ...material })),
+    colorPalettes: config.colorPalettes.map((palette) => ({ ...palette })),
+    shapeArchitectures: config.shapeArchitectures.map((architecture) => ({ ...architecture })),
+    operationScenarios: config.operationScenarios.map((scenario) => ({ ...scenario })),
+  };
+}
+
 function defaultConfig(): StoredConfig {
+  const seedConfig = readSeedConfig();
+
+  if (seedConfig) {
+    return hydrateConfig(seedConfig);
+  }
+
   const timestamp = now();
 
   return {
@@ -315,7 +375,7 @@ export class ConfigStore {
 
     const config = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as Partial<StoredConfig>;
     const defaults = defaultConfig();
-    return {
+    return hydrateConfig({
       models: (config.models || defaults.models).map((model) => ({
         apiStyle: "azure",
         ...model,
@@ -346,7 +406,7 @@ export class ConfigStore {
         variablePrompt: scenario.variablePrompt || "",
         enabled: scenario.enabled ?? true,
       })),
-    };
+    });
   }
 
   write(config: StoredConfig): void {

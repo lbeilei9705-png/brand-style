@@ -207,7 +207,12 @@ async function handleGenerate(req, res) {
 }
 
 function serveStatic(pathname, res) {
-  const safePath = pathname === "/" ? "/index.html" : pathname;
+  if (pathname === "/") {
+    send(res, 404, "Not found", "text/plain; charset=utf-8");
+    return;
+  }
+
+  const safePath = pathname;
   const filePath = path.join(publicDir, safePath);
 
   if (!filePath.startsWith(publicDir)) {

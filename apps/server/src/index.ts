@@ -124,7 +124,12 @@ async function handleCreateTask(req: http.IncomingMessage, res: http.ServerRespo
 }
 
 function serveStatic(pathname: string, res: http.ServerResponse): void {
-  const safePath = pathname === "/" ? "/index.html" : pathname;
+  if (pathname === "/") {
+    send(res, 404, "Not found", "text/plain; charset=utf-8");
+    return;
+  }
+
+  const safePath = pathname;
   const filePath = path.resolve(webDir, `.${safePath}`);
 
   if (!filePath.startsWith(webDir)) {

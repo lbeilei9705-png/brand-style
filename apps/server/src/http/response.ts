@@ -4,7 +4,7 @@ export function send(res: ServerResponse, statusCode: number, body: string | Buf
   res.writeHead(statusCode, {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-brand-style-token",
     "Content-Type": contentType,
   });
   res.end(body);

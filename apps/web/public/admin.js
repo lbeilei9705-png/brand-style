@@ -7,15 +7,49 @@ const state = {
   operationScenarios: [],
 };
 
+const accessTokenStorageKey = "brand-style-admin-token";
+
 function qs(selector) {
   return document.querySelector(selector);
 }
 
-async function requestJson(url, options) {
-  const response = await fetch(url, options);
+function getAccessToken() {
+  const savedToken = localStorage.getItem(accessTokenStorageKey);
+
+  if (savedToken) {
+    return savedToken;
+  }
+
+  const token = prompt("请输入后台访问 token");
+
+  if (token) {
+    localStorage.setItem(accessTokenStorageKey, token);
+  }
+
+  return token;
+}
+
+async function requestJson(url, options = {}) {
+  const accessToken = getAccessToken();
+
+  if (!accessToken) {
+    throw new Error("需要后台访问 token 才能读取配置。");
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      "x-brand-style-token": accessToken,
+    },
+  });
   const data = await response.json();
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem(accessTokenStorageKey);
+    }
+
     throw new Error(data.error || "请求失败");
   }
 

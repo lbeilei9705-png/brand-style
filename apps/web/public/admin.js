@@ -29,7 +29,7 @@ function getAccessToken() {
   return token;
 }
 
-async function requestJson(url, options = {}) {
+async function requestJson(url, options = {}, hasRetried = false) {
   const accessToken = getAccessToken();
 
   if (!accessToken) {
@@ -48,6 +48,10 @@ async function requestJson(url, options = {}) {
   if (!response.ok) {
     if (response.status === 401) {
       localStorage.removeItem(accessTokenStorageKey);
+
+      if (!hasRetried) {
+        return requestJson(url, options, true);
+      }
     }
 
     throw new Error(data.error || "请求失败");

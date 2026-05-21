@@ -319,14 +319,24 @@ function dataUrlToInlineData(dataUrl: string): { mimeType: string; data: string 
   };
 }
 
-function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig, kind: EndpointKind): Record<string, unknown> {
+function buildVariantInstruction(variantIndex: number, variantCount: number): string {
+  if (variantCount <= 1) {
+    return "";
+  }
+
+  return `这是第 ${variantIndex + 1}/${variantCount} 张候选图。必须保持同一主体结构和风格，但使用与其他候选明显不同的配色方案；不要只做轻微明暗变化。`;
+}
+
+function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig, kind: EndpointKind, variantIndex = 0, variantCount = 1): Record<string, unknown> {
   const outputSize = buildOutputSize(request);
+  const variantInstruction = buildVariantInstruction(variantIndex, variantCount);
 
   if (kind === "gemini-generate-content") {
     const parts: Array<Record<string, unknown>> = [
       {
         text: [
           buildPrompt(request),
+          variantInstruction,
           `输出比例：${request.constraints.aspectRatio}，实际 imageConfig.aspectRatio：${normalizeGeminiAspectRatio(request.constraints.aspectRatio)}。`,
           `输出清晰度：${request.constraints.resolution}，实际 imageConfig.imageSize：${request.constraints.resolution.toUpperCase()}。`,
           "必须输出高清锐利图像，边缘清楚，局部细节可辨认，不要柔焦、虚化、糊边或低分辨率放大感。",
@@ -370,6 +380,7 @@ function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig
   if (kind === "chat-completions") {
     const text = [
       buildPrompt(request),
+      variantInstruction,
       `输出比例：${request.constraints.aspectRatio}。`,
       `输出清晰度：${request.constraints.resolution}，目标像素尺寸：${outputSize.size}。`,
       "必须输出高清锐利图像，边缘清楚，局部细节可辨认，不要柔焦、虚化、糊边或低分辨率放大感。",
@@ -423,7 +434,7 @@ function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig
 
   if (config.model === "gpt-image-2") {
     const payload: Record<string, unknown> = {
-      prompt: buildPrompt(request),
+      prompt: [buildPrompt(request), variantInstruction].filter(Boolean).join("\n\n"),
       n: request.constraints.batchSize,
     };
 
@@ -441,7 +452,7 @@ function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig
   }
 
   const payload: Record<string, unknown> = {
-    prompt: buildPrompt(request),
+    prompt: [buildPrompt(request), variantInstruction].filter(Boolean).join("\n\n"),
     n: request.constraints.batchSize,
     size: outputSize.size,
     quality: request.constraints.resolution === "4k" ? "high" : "auto",
@@ -595,64 +606,71 @@ export class FintopiaImageProvider implements ImageProvider {
     }
 
     const attempts = buildEndpointAttempts(this.config);
-    let response: Response | undefined;
-    const failures: string[] = [];
+    const variantCount = attempts.some((attempt) => attempt.kind === "gemini-generate-content")
+      ? Math.min(Math.max(request.constraints.batchSize, 1), 4)
+      : 1;
+    const imageUrls: string[] = [];
 
-    for (const attempt of attempts) {
-      const endpoint = attempt.kind === "gemini-generate-content"
-        ? `${attempt.endpoint}${attempt.endpoint.includes("?") ? "&" : "?"}key=${encodeURIComponent(this.config.apiKey)}`
-        : attempt.endpoint;
-      const endpointLabel = getEndpointLabel(endpoint);
+    for (let variantIndex = 0; variantIndex < variantCount; variantIndex += 1) {
+      let response: Response | undefined;
+      const failures: string[] = [];
 
-      try {
-        response = await fetch(endpoint, {
-          method: "POST",
-          headers: buildHeaders(this.config.apiKey, attempt.kind),
-          body: JSON.stringify(buildImagePayload(request, this.config, attempt.kind)),
-          signal: AbortSignal.timeout(attempt.timeoutMs),
-        });
+      for (const attempt of attempts) {
+        const endpoint = attempt.kind === "gemini-generate-content"
+          ? `${attempt.endpoint}${attempt.endpoint.includes("?") ? "&" : "?"}key=${encodeURIComponent(this.config.apiKey)}`
+          : attempt.endpoint;
+        const endpointLabel = getEndpointLabel(endpoint);
 
-        if (!response.ok && attempts.indexOf(attempt) < attempts.length - 1) {
-          let errorMessage = `HTTP ${response.status}`;
+        try {
+          response = await fetch(endpoint, {
+            method: "POST",
+            headers: buildHeaders(this.config.apiKey, attempt.kind),
+            body: JSON.stringify(buildImagePayload(request, this.config, attempt.kind, variantIndex, variantCount)),
+            signal: AbortSignal.timeout(attempt.timeoutMs),
+          });
 
-          try {
-            const failedPayload = await response.clone().json() as FintopiaImageResponse;
-            errorMessage = getErrorMessage(failedPayload) || errorMessage;
-          } catch {
-            // Some gateways return empty/non-JSON errors; keep the HTTP status.
+          if (!response.ok && attempts.indexOf(attempt) < attempts.length - 1) {
+            let errorMessage = `HTTP ${response.status}`;
+
+            try {
+              const failedPayload = await response.clone().json() as FintopiaImageResponse;
+              errorMessage = getErrorMessage(failedPayload) || errorMessage;
+            } catch {
+              // Some gateways return empty/non-JSON errors; keep the HTTP status.
+            }
+
+            failures.push(`${endpointLabel}：${errorMessage}`);
+            response = undefined;
+            continue;
           }
 
-          failures.push(`${endpointLabel}：${errorMessage}`);
-          response = undefined;
-          continue;
+          break;
+        } catch (error) {
+          const cause = error instanceof Error && "cause" in error
+            ? (error.cause as { code?: string; message?: string } | undefined)
+            : undefined;
+          const rawDetail = cause?.code || cause?.message || (error instanceof Error ? error.message : "unknown network error");
+          const detail = rawDetail.includes("aborted") || rawDetail.includes("timeout")
+            ? `请求超过 ${Math.round(attempt.timeoutMs / 1000)} 秒仍未返回，已自动中断`
+            : rawDetail;
+
+          failures.push(`${endpointLabel}：${detail}`);
         }
-
-        break;
-      } catch (error) {
-        const cause = error instanceof Error && "cause" in error
-          ? (error.cause as { code?: string; message?: string } | undefined)
-          : undefined;
-        const rawDetail = cause?.code || cause?.message || (error instanceof Error ? error.message : "unknown network error");
-        const detail = rawDetail.includes("aborted") || rawDetail.includes("timeout")
-          ? `请求超过 ${Math.round(attempt.timeoutMs / 1000)} 秒仍未返回，已自动中断`
-          : rawDetail;
-
-        failures.push(`${endpointLabel}：${detail}`);
       }
+
+      if (!response) {
+        throw new Error(`无法连接当前模型接口：${failures.join("；")}。请确认中转站地址、模型名、网络/VPN/代理或服务白名单后重试。`);
+      }
+
+      const payload = await response.json() as FintopiaImageResponse;
+
+      if (!response.ok) {
+        const endpointLabel = getEndpointLabel(response.url);
+        throw new Error(`${endpointLabel} 请求失败：${getErrorMessage(payload) || `HTTP 状态码 ${response.status}`}。`);
+      }
+
+      imageUrls.push(...collectImageUrls(payload));
     }
-
-    if (!response) {
-      throw new Error(`无法连接当前模型接口：${failures.join("；")}。请确认中转站地址、模型名、网络/VPN/代理或服务白名单后重试。`);
-    }
-
-    const payload = await response.json() as FintopiaImageResponse;
-
-    if (!response.ok) {
-      const endpointLabel = getEndpointLabel(response.url);
-      throw new Error(`${endpointLabel} 请求失败：${getErrorMessage(payload) || `HTTP 状态码 ${response.status}`}。`);
-    }
-
-    const imageUrls = collectImageUrls(payload);
 
     if (!imageUrls.length) {
       throw new Error("当前模型接口响应中没有解析到图片。如果你使用的是 /v1/chat/completions 中转站，请确认该模型会在 message.content 或 message.images 中返回图片 URL/base64。");

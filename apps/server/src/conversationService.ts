@@ -33,6 +33,25 @@ function getHighestReferencedImageIndex(content: string): number {
   return matches.reduce((max, match) => Math.max(max, Number(match[1]) || 0), 0);
 }
 
+function parseRequestedImageCount(content: string): number | undefined {
+  const numericMatch = content.match(/(?:生成|生|出|做|给我)?\s*([1-4])\s*(?:张|个|版|种|套)/);
+
+  if (numericMatch) {
+    return Number(numericMatch[1]);
+  }
+
+  const chineseNumbers: Record<string, number> = {
+    一: 1,
+    二: 2,
+    两: 2,
+    三: 3,
+    四: 4,
+  };
+  const chineseMatch = content.match(/(?:生成|生|出|做|给我)?\s*([一二两三四])\s*(?:张|个|版|种|套)/);
+
+  return chineseMatch ? chineseNumbers[chineseMatch[1]] : undefined;
+}
+
 export class ConversationService {
   private readonly conversationStore: ConversationStore;
   private readonly configStore: ConfigStore;
@@ -103,7 +122,7 @@ export class ConversationService {
       sizeBytes: new TextEncoder().encode(request.content).length,
     };
 
-    const requestedBatchSize = Number(request.batchSize) || 4;
+    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 4;
     const batchSize = Math.min(4, Math.max(1, requestedBatchSize));
     const materialPresetIds = request.materialPresetIds?.length
       ? request.materialPresetIds

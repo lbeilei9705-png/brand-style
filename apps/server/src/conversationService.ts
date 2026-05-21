@@ -34,7 +34,7 @@ function getHighestReferencedImageIndex(content: string): number {
 }
 
 function parseRequestedImageCount(content: string): number | undefined {
-  const numericMatch = content.match(/(?:生成|生|出|做|给我)?\s*([1-4])\s*(?:张|个|版|种|套)/);
+  const numericMatch = content.match(/(?:生成|生|出|做|给我)?\s*([1-4])\s*张(?:图|图片)?/);
 
   if (numericMatch) {
     return Number(numericMatch[1]);
@@ -47,7 +47,7 @@ function parseRequestedImageCount(content: string): number | undefined {
     三: 3,
     四: 4,
   };
-  const chineseMatch = content.match(/(?:生成|生|出|做|给我)?\s*([一二两三四])\s*(?:张|个|版|种|套)/);
+  const chineseMatch = content.match(/(?:生成|生|出|做|给我)?\s*([一二两三四])\s*张(?:图|图片)?/);
 
   return chineseMatch ? chineseNumbers[chineseMatch[1]] : undefined;
 }

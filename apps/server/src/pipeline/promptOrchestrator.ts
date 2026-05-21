@@ -79,6 +79,37 @@ function extractJsonObject(content: string): { positive?: string; negative?: str
   }
 }
 
+function normalizeNegativeRule(rule: string): string {
+  return rule
+    .replace(/^负面(提示词|词)?[:：]?/, "")
+    .replace(/[。.!！；;，,\s]+$/g, "")
+    .trim();
+}
+
+function dedupeNegativePrompt(prompt: string): string {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const part of prompt.split(/[；;、，,\n]+/)) {
+    const normalized = normalizeNegativeRule(part);
+
+    if (!normalized) {
+      continue;
+    }
+
+    const key = normalized.replace(/\s+/g, "");
+
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    result.push(normalized);
+  }
+
+  return result.join("；");
+}
+
 function hasReferenceMaterialTransferIntent(message?: string): boolean {
   const text = message || "";
 
@@ -135,8 +166,8 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
   const colorInstruction = context.colorPalette
     ? "用户已经选择配色方案，最终提示词必须优先按该配色方案统一色彩；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
     : options.allowMaterialTransferColorShift
-      ? "用户未选择配色方案，但当前是跨图材质/质感迁移；不得套用默认色板，允许来源图材质带来的必要表面颜色、明暗、高光和阴影变化。"
-    : "用户未选择配色方案，最终提示词必须要求保留参考图原始颜色、色相、主色关系和局部颜色对应关系，不得套用任何默认色板或品牌色。";
+      ? "用户未选择配色方案，但当前是跨图材质/质感迁移；允许来源图材质带来的必要表面颜色、明暗、高光和阴影变化。"
+    : "用户未选择配色方案，按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
 
   return [
     `选中图片信息：\n${selectedImageText}`,
@@ -155,18 +186,20 @@ function buildUserContent(request: OptimizePromptRequest): string | Array<Record
     ? "如果用户要求保持目标图颜色，同时把另一张图的材质/质感用到目标图上，必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只迁移来源图的物理材质属性，如透明度、厚度、折射、粗糙度、金属/塑料/玻璃质感、高光和阴影。不要迁移来源图的绿色、品牌色或整体配色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
     ? "如果用户要求把某张参考图的材质/质感用到另一张参考图上，材质来源图的表面质感、光泽、透明度、厚度、高光、阴影和必要色彩倾向优先于默认保留原色规则。"
-    : "如果未选择配色方案，不得主动改变参考图颜色，不得套用后台默认色板、品牌色板或风格模板色板。";
+    : "如果未选择配色方案，按参考图色彩关系与当前材质光影自然转译。";
   const text = [
     "请基于下面所有信息，组合一份最终生图提示词。",
     "你需要先理解选中图片的主体轮廓、构图、颜色和语义，再结合用户本轮输入、后台风格 Skill、形状配置、材质配置和配色配置。",
     "如果有多张参考图，必须严格按“图1、图2、图3...”识别和引用，用户本轮输入中提到“图1/图2”时，必须对应到同编号参考图，不要混淆。",
     "跨图材质迁移必须拆分职责：目标图只提供结构、轮廓、布局、视觉语义和用户要求保留的颜色；来源图只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影，不要把来源图的物体形状、视觉内容或配色复制过去。",
-    "如果用户要求“图形不变”“结构不变”“色彩不变”，必须在最终提示词中明确要求保持选中图片的主体轮廓、相对位置、识别特征和原始主色关系，只改变用户要求的风格、材质、光影和质感。",
-    "颜色优先级必须严格执行：用户本轮输入里明确写出的颜色、色值、Hex 或品牌色要求最高；用户选择的配色配置第二；风格 Skill 中的颜色描述最低。冲突时以前者覆盖后者。",
+    "如果用户要求“图形不变”“结构不变”“色彩不变”，最终提示词应以选中图片的识别特征和关系为基础，只改变用户要求的风格、材质、光影和质感。",
+    "优先级必须严格执行：用户输入 > 自由搭配（形状 / 配色 / 材质）> 风格套装 > 默认高清规则。风格套装提供整体视觉方向，但不得覆盖用户本轮要求和已选择的自由搭配配置。",
+    "颜色优先级必须严格执行：用户本轮输入里明确写出的颜色、色值、Hex 或品牌色要求最高；用户选择的配色配置第二；风格套装中的颜色描述最低。冲突时以前者覆盖后者。",
     colorFallbackRule,
-    "最终提示词必须强化清晰度：边缘锐利、局部细节可辨认、无柔焦、无景深虚化、无运动模糊、无低分辨率放大感。",
+    "最终正向提示词必须强化清晰度，但不要堆叠重复的负面词；“不要模糊、不要糊边、不要柔焦”等禁止项集中合并到 negative。",
     "如果参考图包含多个小元素、贴纸或图标，最终提示词必须要求每个独立元素都清晰可辨，不要生成缩略图感或模糊拼贴。",
-    "风格 Skill 是最高优先级；材质和配色选择次之；没有明确选择的模板不得参与改写，也不得泛化成未选择的通用风格。",
+    "没有明确选择的模板不得参与改写，也不得泛化成未选择的通用风格。",
+    "negative 必须去重：同义或完全相同的禁止项只保留一次。",
     "不要输出思考过程，只输出 JSON。",
     "",
     `编排上下文：\n${formatContext(request.context, { allowMaterialTransferColorShift: shouldTransferReferenceMaterial && !shouldPreserveExplicitColors })}`,
@@ -228,7 +261,7 @@ export class PromptOrchestrator {
         messages: [
           {
             role: "system",
-            content: "你是一个多模态视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、后台风格 Skill、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；颜色优先级为：用户输入的颜色/色值最高，配色配置第二，风格 Skill 颜色最低。未选择配色方案时，按照原图色彩执行；必须强化高清锐利输出，避免柔焦、虚化和低分辨率感。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
+            content: "你是一个多模态视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、风格套装、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；优先级为：用户输入 > 自由搭配（形状/配色/材质）> 风格套装 > 默认高清规则。颜色优先级为：用户输入的颜色/色值最高，配色配置第二，风格套装颜色最低。未选择配色方案时，按照原图色彩执行；必须强化高清锐利输出，但不要在 positive 堆叠重复负面词，禁止项合并到 negative 且去重。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
           },
           {
             role: "user",
@@ -256,7 +289,7 @@ export class PromptOrchestrator {
     return {
       ...request.prompt,
       positive: parsed.positive,
-      negative: parsed.negative || request.prompt.negative,
+      negative: dedupeNegativePrompt(parsed.negative || request.prompt.negative),
     };
   }
 }

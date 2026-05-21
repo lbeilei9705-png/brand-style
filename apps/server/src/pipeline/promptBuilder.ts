@@ -20,6 +20,39 @@ function hasExplicitColorPreservation(message?: string): boolean {
   return /(色彩不变|颜色不变|保留.{0,12}(颜色|色彩)|保持.{0,12}(颜色|色彩)|不要改色|不改色)/.test(message || "");
 }
 
+function normalizeNegativeRule(rule: string): string {
+  return rule
+    .replace(/^负面(提示词|词)?[:：]?/, "")
+    .replace(/[。.!！；;，,\s]+$/g, "")
+    .trim();
+}
+
+function splitNegativeRules(rules: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const rule of rules) {
+    for (const part of rule.split(/[；;、，,\n]+/)) {
+      const normalized = normalizeNegativeRule(part);
+
+      if (!normalized) {
+        continue;
+      }
+
+      const key = normalized.replace(/\s+/g, "");
+
+      if (seen.has(key)) {
+        continue;
+      }
+
+      seen.add(key);
+      result.push(normalized);
+    }
+  }
+
+  return result;
+}
+
 export function buildPromptBundle(
   inputAsset: InputAsset,
   preprocess: PreprocessResult,
@@ -38,7 +71,7 @@ export function buildPromptBundle(
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(context.userMessage);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(context.userMessage);
   const preservationRule = constraints.preserveStructure
-    ? "必须保持原始图形的主轮廓、主体结构和核心识别特征，不要擅自改变图形语义。"
+    ? "以参考图的主体识别特征为基础进行风格转译，允许根据材质、体积和光影做必要重塑。"
     : "允许在不改变主体识别度的前提下，对细节进行适度简化和归一。";
   const styleLockRule = constraints.styleLock
     ? "开启本轮要求锁定：必须优先保持用户指定的结构、颜色、材质、风格来源和参考图对应关系。"
@@ -49,17 +82,43 @@ export function buildPromptBundle(
       ? "正在执行跨图材质/质感迁移，并且用户明确要求保持目标图颜色：必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只从来源图提取材质的物理属性，例如玻璃/塑料/金属/亚克力质感、透明度、厚度、粗糙度、折射、高光、阴影和边缘亮线。不要迁移来源图的绿色、品牌色或整体配色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移：目标图负责结构、轮廓、元素位置和识别特征；来源图负责材质、表面质感、光泽、厚度、透明度、高光阴影和必要的色彩倾向。允许为了匹配来源图材质而调整表面明暗、高光、阴影和材质色彩，不要被默认保留原色规则限制。"
-    : "未选择配色方案：不要套用默认色板，必须优先保留参考图的原始色相、主色关系、色彩数量和局部颜色对应关系，只允许因材质、光照和阴影产生自然明暗变化。";
+    : "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
   const colorPriorityRule = "颜色优先级：用户本轮输入中明确写出的颜色、色值、Hex 或品牌色要求最高；其次是用户选择的配色配置；最后才参考风格 Skill 中的颜色描述。若三者冲突，必须以前者覆盖后者。";
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
   const outputRule = `输出规格：画面比例为 ${constraints.aspectRatio}，清晰度为 ${constraints.resolution}。`;
-  const clarityRule = "清晰度规则：必须边缘锐利、轮廓清楚、局部小图形和表情符号可辨认，材质微细节清晰；禁止柔焦、景深虚化、运动模糊、低分辨率放大感、糊边和过度降噪。";
+  const clarityRule = "清晰度规则：必须边缘锐利、轮廓清楚、局部小图形和表情符号可辨认，材质微细节清晰。";
   const sheetClarityRule = "如果参考图包含多个小元素、贴纸或图标，必须让每个独立元素都保持清晰、边缘锐利和局部元素可辨认；不要生成缩略图感、不要把整组内容压缩成模糊拼贴。";
   const skillPriorityRule = context.agentSystemPrompt
-    ? "风格智能体规则为最高优先级；不得用未选择的模板或通用风格覆盖风格智能体中指定的材质、光影、质感和视觉方向。"
+    ? "优先级规则：用户输入 > 自由搭配（形状 / 配色 / 材质）> 风格套装 > 默认高清规则；风格套装提供整体视觉方向，但不得覆盖用户本轮要求和已选择的自由搭配配置。"
     : "";
+  const negativeRules = splitNegativeRules([
+    ...(context.extraNegativeRules || []),
+    "不要扭曲原始轮廓",
+    "不要添加输入图之外的额外元素",
+    ...(context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
+      "不要迁移材质来源图的颜色",
+      "不要把图1改成图2的绿色或品牌色",
+      "不要复制材质来源图的物体形状",
+      "不要忽略材质来源图的表面质感",
+      "不要保持扁平贴纸质感",
+    ] : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors ? [
+      "不要复制材质来源图的物体形状",
+      "不要忽略材质来源图的表面质感",
+      "不要只保留目标图的扁平原色而不迁移材质",
+    ] : []),
+    "不要模糊",
+    "不要糊边",
+    "不要柔焦",
+    "不要景深虚化",
+    "不要运动模糊",
+    "不要低分辨率",
+    "不要过度平滑",
+    "不要缩略图感",
+    "不要模糊拼贴",
+    "不要让单个小图标细节不可辨认",
+  ]);
 
   return {
     positive: [
@@ -78,41 +137,10 @@ export function buildPromptBundle(
       outputRule,
       clarityRule,
       sheetClarityRule,
-      skillPriorityRule ? "最终生成必须优先呈现风格智能体规则中的核心视觉特征，不得泛化为未选择的通用风格。" : "",
-      context.colorPrompt || shouldTransferReferenceMaterial ? "" : "如果用户要求图形不变或色彩不变，必须逐图形保持原始颜色映射，不要把参考图统一改成蓝绿、蓝白、品牌紫绿或其他默认色系。",
+      skillPriorityRule ? "最终生成必须优先满足用户本轮要求和自由搭配配置，再吸收风格套装中的核心视觉特征，不得泛化为未选择的通用风格。" : "",
       "输出需要高清、精致、统一、可复用，适合继续在设计工作流中使用。",
     ].filter(Boolean).join(" "),
-    negative: [
-      ...(context.extraNegativeRules || []),
-      "不要扭曲原始轮廓",
-      "不要添加输入图之外的额外元素",
-      ...(context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
-        "不要迁移材质来源图的颜色",
-        "不要把图1改成图2的绿色或品牌色",
-        "不要复制材质来源图的物体形状",
-        "不要忽略材质来源图的表面质感",
-        "不要保持扁平贴纸质感",
-      ] : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors ? [
-        "不要复制材质来源图的物体形状",
-        "不要忽略材质来源图的表面质感",
-        "不要只保留目标图的扁平原色而不迁移材质",
-      ] : [
-        "不要改变参考图原始色相",
-        "不要套用默认品牌色板",
-        "不要把多彩图形统一改成蓝绿色系",
-        "不要丢失局部颜色对应关系",
-      ]),
-      "不要模糊",
-      "不要糊边",
-      "不要柔焦",
-      "不要景深虚化",
-      "不要运动模糊",
-      "不要低分辨率",
-      "不要过度平滑",
-      "不要缩略图感",
-      "不要模糊拼贴",
-      "不要让单个小图标细节不可辨认",
-    ].join("；"),
+    negative: negativeRules.join("；"),
     template: preprocess.mode,
     referencePack: {
       inputAssetId: inputAsset.id,

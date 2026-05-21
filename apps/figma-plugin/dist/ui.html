@@ -226,6 +226,12 @@
         padding: 8px;
       }
 
+      .result-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+      }
+
       .debug-panel {
         border: 1px solid #283244;
         border-radius: 16px;
@@ -1038,6 +1044,61 @@
         });
       }
 
+      function getImageExtension(imageUrl) {
+        const dataUrlMatch = imageUrl.match(/^data:image\/([^;]+)/);
+
+        if (dataUrlMatch) {
+          return dataUrlMatch[1].replace("jpeg", "jpg").replace("svg+xml", "svg");
+        }
+
+        try {
+          const extension = new URL(imageUrl).pathname.split(".").pop();
+
+          if (extension && extension.length <= 5) {
+            return extension.toLowerCase();
+          }
+        } catch {
+          // Ignore malformed URLs and fall back to PNG.
+        }
+
+        return "png";
+      }
+
+      function downloadBlobUrl(blobUrl, filename) {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+
+      async function downloadOriginalImage(result) {
+        const extension = getImageExtension(result.imageUrl);
+        const sizePart = result.width && result.height ? `-${result.width}x${result.height}` : "";
+        const filename = `brand-style-${resolution}-image-${result.rank}${sizePart}.${extension}`;
+
+        if (result.imageUrl.startsWith("data:")) {
+          downloadBlobUrl(result.imageUrl, filename);
+          return;
+        }
+
+        try {
+          const response = await fetch(result.imageUrl);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          downloadBlobUrl(blobUrl, filename);
+          window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        } catch {
+          window.open(result.imageUrl, "_blank");
+        }
+      }
+
       function addMessage(role, content, attachments = []) {
         const node = document.createElement("article");
         const contentNode = document.createElement("div");
@@ -1434,10 +1495,13 @@
             <div>
               <strong>图片 ${result.rank}</strong>
               <span>${sizeLabel}</span>
-              <button type="button">插入 Figma</button>
+              <section class="result-actions">
+                <button class="insert-result-button" type="button">插入 Figma</button>
+                <button class="download-result-button" type="button">下载原图</button>
+              </section>
             </div>
           `;
-          card.querySelector("button").addEventListener("click", () => {
+          card.querySelector(".insert-result-button").addEventListener("click", () => {
             parent.postMessage({
               pluginMessage: {
                 type: "insert-result",
@@ -1446,6 +1510,9 @@
                 height: result.height,
               },
             }, "*");
+          });
+          card.querySelector(".download-result-button").addEventListener("click", async () => {
+            await downloadOriginalImage(result);
           });
           grid.appendChild(card);
         }
@@ -1637,6 +1704,42 @@
         return activeConversationId;
       }
 
+      async function submitConversationMessage(content, messageAttachments, hasRetried = false) {
+        const conversationId = await ensureConversation();
+        const response = await apiFetch(`/api/conversations/${conversationId}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content,
+            modelId: modelSelect.value,
+            agentId: agentSelect.value,
+            inputType: "auto",
+            selectionAssets: messageAttachments,
+            batchSize,
+            aspectRatio: resolveAspectRatio(),
+            resolution,
+            materialPresetIds,
+            colorPaletteId,
+            shapeArchitectureId,
+            usePromptOrchestrator: true,
+          }),
+        });
+        const data = await response.json();
+
+        if (response.status === 404 && !hasRetried) {
+          activeConversationId = null;
+          return submitConversationMessage(content, messageAttachments, true);
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || "生成失败");
+        }
+
+        return data;
+      }
+
       async function sendMessage() {
         const content = messageInput.value.trim();
 
@@ -1668,33 +1771,7 @@
         }, 1000);
 
         try {
-          const conversationId = await ensureConversation();
-          const response = await apiFetch(`/api/conversations/${conversationId}/messages`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              content,
-              modelId: modelSelect.value,
-              agentId: agentSelect.value,
-              inputType: "auto",
-              selectionAssets: getLabeledSelectedAssets(),
-              batchSize,
-              aspectRatio: resolveAspectRatio(),
-              resolution,
-              materialPresetIds,
-              colorPaletteId,
-              shapeArchitectureId,
-              usePromptOrchestrator: true,
-            }),
-          });
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "生成失败");
-          }
-
+          const data = await submitConversationMessage(content, messageAttachments);
           pending.textContent = data.conversation.messages.at(-1).content;
           activeConversationId = data.conversation.id;
           renderResults(data.task);

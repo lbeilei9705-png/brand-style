@@ -295,7 +295,86 @@
         width: 100%;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         overflow: visible;
-        gap: 8px;
+        gap: 5px 8px;
+      }
+
+      .control-section-label {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: flex-start;
+        min-width: 0;
+        padding: 0 4px;
+        color: #94a3b8;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .tooltip-trigger {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 14px;
+        height: 14px;
+        border: 1px solid #334155;
+        border-radius: 999px;
+        color: #94a3b8;
+        font-size: 9px;
+        font-weight: 700;
+        cursor: help;
+      }
+
+      .tooltip-trigger::before,
+      .tooltip-trigger::after {
+        position: absolute;
+        z-index: 40;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.12s ease, transform 0.12s ease;
+      }
+
+      .tooltip-trigger::before {
+        left: 10px;
+        bottom: calc(100% - 2px);
+        width: 18px;
+        height: 14px;
+        background-image: url("data:image/svg+xml,%3Csvg width='18' height='14' viewBox='0 0 18 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0H18L3.4 13.4C2.1 14.6 0 13.7 0 11.9V0Z' fill='%23111827'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-size: 18px 14px;
+        content: "";
+        transform: translateY(3px);
+      }
+
+      .tooltip-trigger::after {
+        left: 0;
+        bottom: calc(100% + 7px);
+        width: min(218px, calc(100vw - 28px));
+        border: 1px solid #1f2937;
+        border-radius: 12px;
+        padding: 8px 10px;
+        background: #111827;
+        color: #f8fafc;
+        content: attr(data-tooltip);
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.5;
+        transform: translateY(3px);
+        white-space: normal;
+      }
+
+      .tooltip-trigger:hover::before,
+      .tooltip-trigger:focus-visible::before {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .tooltip-trigger:hover::after,
+      .tooltip-trigger:focus-visible::after {
+        opacity: 1;
+        transform: translateY(0);
       }
 
       .control-select,
@@ -730,6 +809,10 @@
           gap: 5px;
         }
 
+        .control-section-label {
+          font-size: 8.5px;
+        }
+
         .control-select,
         .multi-select-button {
           min-height: 28px;
@@ -937,6 +1020,7 @@
 
       .selection-status,
       .quantity-label,
+      .control-section-label,
       .scenario-option span {
         color: #81858d;
       }
@@ -1014,13 +1098,21 @@
 
       <section class="agent-console">
         <div class="control-strip">
-          <select id="shape-architecture-select" class="control-select" title="形状"></select>
-          <select id="color-palette-select" class="control-select" title="配色方案"></select>
+          <div class="control-section-label">
+            <span>自由搭配</span>
+            <span class="tooltip-trigger" tabindex="0" data-tooltip="形状、配色、材质可以单独选择，像积木一样自由组合。">?</span>
+          </div>
+          <select id="shape-architecture-select" class="control-select" title="自由搭配：形状"></select>
+          <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
           <div class="multi-select-wrap">
-            <button id="material-select-button" class="multi-select-button" type="button" title="多选材质球">材质</button>
+            <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">材质</button>
             <div id="material-panel" class="multi-select-panel"></div>
           </div>
-          <select id="agent-select" class="control-select" title="选择风格 Skill"></select>
+          <div class="control-section-label">
+            <span>风格套装</span>
+            <span class="tooltip-trigger" tabindex="0" data-tooltip="风格套装是已经搭好的整体视觉方案，可直接套用，也可以再用上方选项微调。">?</span>
+          </div>
+          <select id="agent-select" class="control-select" title="选择风格套装"></select>
         </div>
 
         <section class="composer-card">
@@ -1626,7 +1718,7 @@
 
           const emptyAgentOption = document.createElement("option");
           emptyAgentOption.value = "";
-          emptyAgentOption.textContent = "风格skills";
+          emptyAgentOption.textContent = "选择风格套装";
           agentSelect.appendChild(emptyAgentOption);
 
           for (const agent of (agentsData.styleSkills || agentsData.agents || []).filter((item) => item.enabled)) {

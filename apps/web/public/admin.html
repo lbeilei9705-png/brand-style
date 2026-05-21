@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Icon Style Skill Admin</title>
+    <title>Brand Style Admin</title>
     <link rel="stylesheet" href="/styles.css" />
     <style>
       body {
@@ -272,13 +272,13 @@
     <main class="admin-shell">
       <aside class="admin-sidebar">
         <div class="admin-brand">
-          <h1>Style Skill Admin</h1>
-          <p>管理模型、品牌风格和 Markdown 导入规则。</p>
+          <h1>Brand Style Admin</h1>
+          <p>管理模型、风格套装和自由搭配配置。</p>
         </div>
         <nav class="admin-nav">
           <button class="nav-button active" data-page="models-page" type="button">模型管理</button>
-          <button class="nav-button" data-page="agents-page" type="button">品牌风格管理</button>
-          <button class="nav-button" data-page="materials-page" type="button">材质球管理</button>
+          <button class="nav-button" data-page="agents-page" type="button">风格套装管理</button>
+          <button class="nav-button" data-page="materials-page" type="button">材质管理</button>
           <button class="nav-button" data-page="palettes-page" type="button">配色管理</button>
           <button class="nav-button" data-page="shape-architectures-page" type="button">形状管理</button>
           <button class="nav-button" data-page="scenarios-page" type="button">运营场景管理</button>
@@ -290,7 +290,7 @@
           <header class="page-header">
             <div>
               <h2>模型管理</h2>
-              <p class="muted">配置插件和品牌风格可选择的模型，包含 provider、版本、quality 和 API key。</p>
+              <p class="muted">配置插件和风格套装可选择的模型，包含 provider、版本、quality 和 API key。</p>
             </div>
             <button id="new-model-button" class="primary-button" type="button">新建模型</button>
           </header>
@@ -313,21 +313,21 @@
         <section id="agents-page" class="resource-page">
           <header class="page-header">
             <div>
-              <h2>品牌风格管理</h2>
-              <p class="muted">通过编辑或上传 Markdown 创建品牌风格，并指定驱动模型。</p>
+              <h2>风格套装管理</h2>
+              <p class="muted">通过编辑或上传 Markdown 创建搭配好的整体视觉方案，并指定驱动模型。</p>
             </div>
             <div class="toolbar">
               <input id="agent-md-file" type="file" accept=".md,text/markdown,text/plain" hidden />
               <select id="import-driver-model" title="Markdown 解析驱动模型"></select>
-              <button id="import-agent-button" class="secondary-button" type="button">从 Markdown 导入 Skill</button>
-              <button id="new-agent-button" class="primary-button" type="button">新建品牌风格</button>
+              <button id="import-agent-button" class="secondary-button" type="button">从 Markdown 导入套装</button>
+              <button id="new-agent-button" class="primary-button" type="button">新建风格套装</button>
             </div>
           </header>
           <div class="admin-card">
             <table>
               <thead>
                 <tr>
-                  <th>品牌风格</th>
+                  <th>风格套装</th>
                   <th>驱动模型</th>
                   <th>状态</th>
                   <th>操作</th>
@@ -341,16 +341,16 @@
         <section id="materials-page" class="resource-page">
           <header class="page-header">
             <div>
-              <h2>材质球管理</h2>
-              <p class="muted">配置插件前台可选择的材质球提示词。</p>
+              <h2>材质管理</h2>
+              <p class="muted">配置插件前台可自由搭配的材质提示词。</p>
             </div>
-            <button id="new-material-button" class="primary-button" type="button">新建材质球</button>
+            <button id="new-material-button" class="primary-button" type="button">新建材质</button>
           </header>
           <div class="admin-card">
             <table>
               <thead>
                 <tr>
-                  <th>材质球</th>
+                  <th>材质</th>
                   <th>提示词</th>
                   <th>状态</th>
                   <th>操作</th>
@@ -515,13 +515,13 @@
     <div id="agent-modal" class="modal-backdrop">
       <form id="agent-form" class="modal">
         <header class="modal-header">
-          <h2 id="agent-modal-title">新建品牌风格</h2>
+          <h2 id="agent-modal-title">新建风格套装</h2>
           <button class="secondary-button" data-close-modal type="button">关闭</button>
         </header>
         <section class="modal-body admin-form-grid">
           <input id="agent-id" type="hidden" />
           <label class="admin-field">
-            <span>品牌风格名称</span>
+            <span>风格套装名称</span>
             <input id="agent-name" type="text" required />
           </label>
           <label class="admin-field">
@@ -553,7 +553,7 @@
         </section>
         <footer class="modal-footer">
           <button class="secondary-button" data-close-modal type="button">取消</button>
-          <button class="primary-button" type="submit">保存品牌风格</button>
+          <button class="primary-button" type="submit">保存风格套装</button>
         </footer>
       </form>
     </div>
@@ -561,13 +561,13 @@
     <div id="material-modal" class="modal-backdrop">
       <form id="material-form" class="modal">
         <header class="modal-header">
-          <h2 id="material-modal-title">新建材质球</h2>
+          <h2 id="material-modal-title">新建材质</h2>
           <button class="secondary-button" data-close-modal type="button">关闭</button>
         </header>
         <section class="modal-body admin-form-grid">
           <input id="material-id" type="hidden" />
           <label class="admin-field">
-            <span>材质球名称</span>
+            <span>材质名称</span>
             <input id="material-name" type="text" required />
           </label>
           <label class="admin-field">
@@ -592,7 +592,7 @@
         </section>
         <footer class="modal-footer">
           <button class="secondary-button" data-close-modal type="button">取消</button>
-          <button class="primary-button" type="submit">保存材质球</button>
+          <button class="primary-button" type="submit">保存材质</button>
         </footer>
       </form>
     </div>
@@ -710,6 +710,6 @@
       </form>
     </div>
 
-    <script src="/admin.js?v=20260519-token"></script>
+    <script src="/admin.js?v=20260521-naming"></script>
   </body>
 </html>

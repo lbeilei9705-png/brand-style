@@ -338,7 +338,7 @@ async function deleteModel(modelId) {
 }
 
 function resetAgentForm() {
-  qs("#agent-modal-title").textContent = "新建品牌风格";
+  qs("#agent-modal-title").textContent = "新建风格套装";
   qs("#agent-form").reset();
   qs("#agent-id").value = "";
   qs("#agent-style-preset").value = "";
@@ -347,7 +347,7 @@ function resetAgentForm() {
 }
 
 function fillAgentForm(agent) {
-  qs("#agent-modal-title").textContent = "编辑品牌风格";
+  qs("#agent-modal-title").textContent = "编辑风格套装";
   qs("#agent-id").value = agent.id;
   qs("#agent-name").value = agent.name;
   qs("#agent-description").value = agent.description;
@@ -383,7 +383,7 @@ async function saveAgent(event) {
 async function deleteAgent(agentId) {
   const agent = state.agents.find((item) => item.id === agentId);
 
-  if (!agent || !confirm(`确认删除品牌风格「${agent.name}」？`)) {
+  if (!agent || !confirm(`确认删除风格套装「${agent.name}」？`)) {
     return;
   }
 
@@ -411,19 +411,19 @@ async function importAgentFromMarkdown(file) {
   fillAgentForm(data.draft);
   qs("#agent-id").value = "";
   qs("#agent-driver-model").value = data.draft.driverModelId || driverModelId;
-  qs("#agent-modal-title").textContent = `导入品牌风格草稿（${data.draft.parseMode}）`;
+  qs("#agent-modal-title").textContent = `导入风格套装草稿（${data.draft.parseMode}）`;
   openModal("agent-modal");
 }
 
 function resetMaterialForm() {
-  qs("#material-modal-title").textContent = "新建材质球";
+  qs("#material-modal-title").textContent = "新建材质";
   qs("#material-form").reset();
   qs("#material-id").value = "";
   qs("#material-enabled").value = "true";
 }
 
 function fillMaterialForm(material) {
-  qs("#material-modal-title").textContent = "编辑材质球";
+  qs("#material-modal-title").textContent = "编辑材质";
   qs("#material-id").value = material.id;
   qs("#material-name").value = material.name;
   qs("#material-description").value = material.description;
@@ -455,7 +455,7 @@ async function saveMaterial(event) {
 async function deleteMaterial(materialId) {
   const material = state.materials.find((item) => item.id === materialId);
 
-  if (!material || !confirm(`确认删除材质球「${material.name}」？`)) {
+  if (!material || !confirm(`确认删除材质「${material.name}」？`)) {
     return;
   }
 

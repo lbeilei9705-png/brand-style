@@ -2,11 +2,13 @@ import type { GenerationConstraints, InputAsset, PreprocessResult, PromptBundle 
 import type { StyleParameterPack } from "./styleEngine.ts";
 
 const templateIntro = {
-  sketch_to_3d: "基于输入线稿和本轮要求生成目标视觉结果。",
+  sketch_to_3d: "基于输入线稿和本轮要求生成目标视觉结果；线条只作为结构蓝图，不作为最终视觉元素。",
   flat_to_3d: "基于输入扁平图形和本轮要求生成目标视觉结果。",
   other3d_to_brand3d: "基于输入参考图和本轮要求生成目标视觉结果。",
   illustration_to_icon: "基于输入插画和本轮要求生成目标视觉结果。",
 };
+
+const sketchTo3dRule = "线稿转 3D 规则：不要保留黑色描边、草图线、手绘轮廓线或线框感；必须把线稿暗示的平面轮廓重建为有厚度、有倒角、有体块层级、有真实材质和光影的 3D 结构。线条位置只用于判断物件边界、结构分区和元素关系，最终画面应是完整 3D 物件，不是描边插画。";
 
 function hasReferenceMaterialTransferIntent(message?: string): boolean {
   const text = message || "";
@@ -70,6 +72,7 @@ export function buildPromptBundle(
   const { stylePreset } = stylePack;
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(context.userMessage);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(context.userMessage);
+  const isSketchTo3d = preprocess.mode === "sketch_to_3d";
   const preservationRule = constraints.preserveStructure
     ? "以参考图的主体识别特征为基础进行风格转译，允许根据材质、体积和光影做必要重塑。"
     : "允许在不改变主体识别度的前提下，对细节进行适度简化和归一。";
@@ -118,6 +121,13 @@ export function buildPromptBundle(
     "不要缩略图感",
     "不要模糊拼贴",
     "不要让单个小图标细节不可辨认",
+    ...(isSketchTo3d ? [
+      "不要保留线稿描边",
+      "不要保留黑色轮廓线",
+      "不要生成线框图",
+      "不要只是给线稿上色",
+      "不要二维描边插画感",
+    ] : []),
   ]);
 
   return {
@@ -131,6 +141,7 @@ export function buildPromptBundle(
       referenceTransferRule,
       colorPriorityRule,
       templateIntro[preprocess.mode],
+      isSketchTo3d ? sketchTo3dRule : "",
       preservationRule,
       colorRule,
       styleLockRule,

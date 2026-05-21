@@ -182,6 +182,7 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
 function buildUserContent(request: OptimizePromptRequest): string | Array<Record<string, unknown>> {
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(request.prompt.positive);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(request.prompt.positive);
+  const isSketchTo3d = /输入线稿|线稿转\s*3D|line[_\s-]*sketch/i.test(request.prompt.positive);
   const colorFallbackRule = shouldTransferReferenceMaterial && shouldPreserveExplicitColors
     ? "如果用户要求保持目标图颜色，同时把另一张图的材质/质感用到目标图上，必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只迁移来源图的物理材质属性，如透明度、厚度、折射、粗糙度、金属/塑料/玻璃质感、高光和阴影。不要迁移来源图的绿色、品牌色或整体配色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
@@ -196,6 +197,7 @@ function buildUserContent(request: OptimizePromptRequest): string | Array<Record
     "优先级必须严格执行：用户输入 > 自由搭配（形状 / 配色 / 材质）> 风格套装 > 默认高清规则。风格套装提供整体视觉方向，但不得覆盖用户本轮要求和已选择的自由搭配配置。",
     "颜色优先级必须严格执行：用户本轮输入里明确写出的颜色、色值、Hex 或品牌色要求最高；用户选择的配色配置第二；风格套装中的颜色描述最低。冲突时以前者覆盖后者。",
     colorFallbackRule,
+    isSketchTo3d ? "当前是线稿转 3D：线条只作为结构蓝图，不得作为最终视觉元素；最终 positive 必须明确要求移除黑色描边、草图线、手绘轮廓线和线框感，并重建有厚度、倒角、体块层级、材质和光影的 3D 结构。" : "",
     "最终正向提示词必须强化清晰度，但不要堆叠重复的负面词；“不要模糊、不要糊边、不要柔焦”等禁止项集中合并到 negative。",
     "如果参考图包含多个小元素、贴纸或图标，最终提示词必须要求每个独立元素都清晰可辨，不要生成缩略图感或模糊拼贴。",
     "没有明确选择的模板不得参与改写，也不得泛化成未选择的通用风格。",
@@ -261,7 +263,7 @@ export class PromptOrchestrator {
         messages: [
           {
             role: "system",
-            content: "你是一个多模态视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、风格套装、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；优先级为：用户输入 > 自由搭配（形状/配色/材质）> 风格套装 > 默认高清规则。颜色优先级为：用户输入的颜色/色值最高，配色配置第二，风格套装颜色最低。未选择配色方案时，按照原图色彩执行；必须强化高清锐利输出，但不要在 positive 堆叠重复负面词，禁止项合并到 negative 且去重。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
+            content: "你是一个多模态视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、风格套装、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；优先级为：用户输入 > 自由搭配（形状/配色/材质）> 风格套装 > 默认高清规则。颜色优先级为：用户输入的颜色/色值最高，配色配置第二，风格套装颜色最低。未选择配色方案时，按照原图色彩执行；如果当前任务是线稿转 3D，线条只能作为结构蓝图，不得作为最终视觉元素，必须重建真实 3D 体块、厚度、倒角、材质和光影。必须强化高清锐利输出，但不要在 positive 堆叠重复负面词，禁止项合并到 negative 且去重。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
           },
           {
             role: "user",

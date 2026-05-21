@@ -1368,6 +1368,108 @@
         }));
       }
 
+      function hasLineSketchKeyword(value) {
+        return /(线稿|草图|描边|轮廓稿|手绘线|sketch|line|outline|wireframe)/i.test(value || "");
+      }
+
+      function loadImage(src) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error("图片识别失败"));
+          image.src = src;
+        });
+      }
+
+      async function looksLikeLineSketch(asset) {
+        if (!asset?.assetDataUrl || !asset.assetDataUrl.startsWith("data:image/")) {
+          return false;
+        }
+
+        const image = await loadImage(asset.assetDataUrl);
+        const maxSide = 96;
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+        const width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+        const height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (!context) {
+          return false;
+        }
+
+        context.drawImage(image, 0, 0, width, height);
+        const pixels = context.getImageData(0, 0, width, height).data;
+        let opaquePixels = 0;
+        let whitePixels = 0;
+        let inkPixels = 0;
+        let saturatedPixels = 0;
+
+        for (let index = 0; index < pixels.length; index += 4) {
+          const alpha = pixels[index + 3];
+
+          if (alpha < 24) {
+            continue;
+          }
+
+          const red = pixels[index];
+          const green = pixels[index + 1];
+          const blue = pixels[index + 2];
+          const max = Math.max(red, green, blue);
+          const min = Math.min(red, green, blue);
+          const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+          const saturation = max ? (max - min) / max : 0;
+          opaquePixels += 1;
+
+          if (luma > 244 && saturation < 0.1) {
+            whitePixels += 1;
+            continue;
+          }
+
+          if (luma < 210) {
+            inkPixels += 1;
+          }
+
+          if (saturation > 0.24 && luma < 245) {
+            saturatedPixels += 1;
+          }
+        }
+
+        if (!opaquePixels) {
+          return false;
+        }
+
+        const whiteRatio = whitePixels / opaquePixels;
+        const inkRatio = inkPixels / opaquePixels;
+        const saturatedRatio = saturatedPixels / opaquePixels;
+
+        return whiteRatio > 0.68 && inkRatio > 0.008 && inkRatio < 0.24 && saturatedRatio < 0.14;
+      }
+
+      async function inferInputType(assets, content) {
+        if (hasLineSketchKeyword(content)) {
+          return "line_sketch";
+        }
+
+        const primaryAsset = assets[0];
+
+        if (!primaryAsset) {
+          return "auto";
+        }
+
+        if (hasLineSketchKeyword(`${primaryAsset.name || ""} ${primaryAsset.filename || ""}`)) {
+          return "line_sketch";
+        }
+
+        try {
+          return await looksLikeLineSketch(primaryAsset) ? "line_sketch" : "auto";
+        } catch {
+          return "auto";
+        }
+      }
+
       function getAssetIdentity(asset) {
         return String(asset.id || `${asset.filename}-${asset.sizeBytes}`).replace(/-\d+$/, "");
       }
@@ -1809,7 +1911,7 @@
         return activeConversationId;
       }
 
-      async function submitConversationMessage(content, messageAttachments, hasRetried = false) {
+      async function submitConversationMessage(content, messageAttachments, inputType = "auto", hasRetried = false) {
         const conversationId = await ensureConversation();
         const response = await apiFetch(`/api/conversations/${conversationId}/messages`, {
           method: "POST",
@@ -1820,7 +1922,7 @@
             content,
             modelId: modelSelect.value,
             agentId: agentSelect.value,
-            inputType: "auto",
+            inputType,
             selectionAssets: messageAttachments,
             batchSize,
             aspectRatio: resolveAspectRatio(),
@@ -1835,7 +1937,7 @@
 
         if (response.status === 404 && !hasRetried) {
           activeConversationId = null;
-          return submitConversationMessage(content, messageAttachments, true);
+          return submitConversationMessage(content, messageAttachments, inputType, true);
         }
 
         if (!response.ok) {
@@ -1863,6 +1965,7 @@
         const messageAttachments = getLabeledSelectedAssets();
         isSending = true;
         updateRunState();
+        const inputType = await inferInputType(messageAttachments, content);
         if (content || messageAttachments.length) {
           addMessage("user", content, messageAttachments);
         }
@@ -1876,7 +1979,7 @@
         }, 1000);
 
         try {
-          const data = await submitConversationMessage(content, messageAttachments);
+          const data = await submitConversationMessage(content, messageAttachments, inputType);
           pending.textContent = data.conversation.messages.at(-1).content;
           activeConversationId = data.conversation.id;
           renderResults(data.task);

@@ -9,7 +9,7 @@ function detectType(inputType: InputType, filename: string, mimeType: string): I
 
   const normalizedName = filename.toLowerCase();
 
-  if (mimeType === "image/svg+xml" || normalizedName.includes("line") || normalizedName.includes("sketch")) {
+  if (mimeType === "image/svg+xml" || /(line|sketch|outline|wireframe|线稿|草图|描边|轮廓稿|手绘线)/i.test(normalizedName)) {
     return "line_sketch";
   }
 

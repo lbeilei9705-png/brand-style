@@ -154,7 +154,7 @@ export class ConversationService {
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
         : undefined,
       colorPrompt: colorPalette ? `配色方案「${colorPalette.name}」：${colorPalette.prompt} 色值：${colorPalette.colors.join("、")}` : undefined,
-      shapeArchitecturePrompt: shapeArchitecture ? `形体架构「${shapeArchitecture.name}」：${shapeArchitecture.prompt}` : undefined,
+      shapeArchitecturePrompt: shapeArchitecture ? `形状「${shapeArchitecture.name}」：${shapeArchitecture.prompt}` : undefined,
       extraNegativeRules: agent.defaultNegativeRules,
       usePromptOrchestrator: request.usePromptOrchestrator !== false,
       orchestrationContext: {

@@ -68,7 +68,7 @@ export function importAgentFromMarkdown(markdown: string, driverModel: ModelConf
       "不要添加输入图之外的物体",
       "不要复杂背景",
     ],
-    driverModelId: driverModel?.id || "mock-preview",
+    driverModelId: driverModel?.id,
     enabled: true,
     parseMode: driverModel?.provider === "mock" ? "rule_fallback" : "llm_placeholder",
   };

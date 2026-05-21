@@ -280,7 +280,7 @@
           <button class="nav-button" data-page="agents-page" type="button">品牌风格管理</button>
           <button class="nav-button" data-page="materials-page" type="button">材质球管理</button>
           <button class="nav-button" data-page="palettes-page" type="button">配色管理</button>
-          <button class="nav-button" data-page="shape-architectures-page" type="button">形体结构管理</button>
+          <button class="nav-button" data-page="shape-architectures-page" type="button">形状管理</button>
           <button class="nav-button" data-page="scenarios-page" type="button">运营场景管理</button>
         </nav>
       </aside>
@@ -388,16 +388,16 @@
         <section id="shape-architectures-page" class="resource-page">
           <header class="page-header">
             <div>
-              <h2>形体结构管理</h2>
-              <p class="muted">配置插件前台可选择的形体结构，用于控制原图保留、体块、层叠、软体等形体转译方式。</p>
+              <h2>形状管理</h2>
+              <p class="muted">配置插件前台可选择的形状，用于控制原图保留、体块、层叠、软体等形状转译方式。</p>
             </div>
-            <button id="new-shape-architecture-button" class="primary-button" type="button">新建形体结构</button>
+            <button id="new-shape-architecture-button" class="primary-button" type="button">新建形状</button>
           </header>
           <div class="admin-card">
             <table>
               <thead>
                 <tr>
-                  <th>形体结构</th>
+                  <th>形状</th>
                   <th>提示词</th>
                   <th>状态</th>
                   <th>操作</th>
@@ -639,13 +639,13 @@
     <div id="shape-architecture-modal" class="modal-backdrop">
       <form id="shape-architecture-form" class="modal">
         <header class="modal-header">
-          <h2 id="shape-architecture-modal-title">新建形体结构</h2>
+          <h2 id="shape-architecture-modal-title">新建形状</h2>
           <button class="secondary-button" data-close-modal type="button">关闭</button>
         </header>
         <section class="modal-body admin-form-grid">
           <input id="shape-architecture-id" type="hidden" />
           <label class="admin-field">
-            <span>形体结构名称</span>
+            <span>形状名称</span>
             <input id="shape-architecture-name" type="text" placeholder="例如 2-圆润体块" required />
           </label>
           <label class="admin-field">
@@ -660,13 +660,13 @@
             <input id="shape-architecture-description" type="text" required />
           </label>
           <label class="admin-field full">
-            <span>形体结构提示词</span>
-            <textarea id="shape-architecture-prompt" placeholder="描述如何保留或转译主体轮廓、层级、厚度、圆角、构图等形体关系" required></textarea>
+            <span>形状提示词</span>
+            <textarea id="shape-architecture-prompt" placeholder="描述如何保留或转译主体轮廓、层级、厚度、圆角、构图等形状关系" required></textarea>
           </label>
         </section>
         <footer class="modal-footer">
           <button class="secondary-button" data-close-modal type="button">取消</button>
-          <button class="primary-button" type="submit">保存形体结构</button>
+          <button class="primary-button" type="submit">保存形状</button>
         </footer>
       </form>
     </div>

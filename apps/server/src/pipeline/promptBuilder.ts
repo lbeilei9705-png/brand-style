@@ -66,7 +66,7 @@ export function buildPromptBundle(
       context.agentSystemPrompt ? `风格智能体规则：${context.agentSystemPrompt}` : "",
       skillPriorityRule,
       context.userMessage ? `用户本轮要求：${context.userMessage}` : "",
-      context.shapeArchitecturePrompt ? `用户选择的形体架构：${context.shapeArchitecturePrompt}` : "",
+      context.shapeArchitecturePrompt ? `用户选择的形状：${context.shapeArchitecturePrompt}` : "",
       context.materialPrompt ? `用户选择的材质球：${context.materialPrompt}` : "",
       context.colorPrompt ? `用户选择的配色方案：${context.colorPrompt}` : "",
       referenceTransferRule,

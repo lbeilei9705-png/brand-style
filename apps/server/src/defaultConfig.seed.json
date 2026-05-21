@@ -4,18 +4,6 @@
       "apiStyle": "azure",
       "quality": "auto",
       "enabled": true,
-      "id": "mock-preview",
-      "name": "Mock 预览模型",
-      "provider": "mock",
-      "model": "mock-image-provider",
-      "purpose": "image",
-      "createdAt": "2026-05-08T16:27:18.677Z",
-      "updatedAt": "2026-05-08T16:27:18.677Z"
-    },
-    {
-      "apiStyle": "azure",
-      "quality": "auto",
-      "enabled": true,
       "id": "fintopia-gpt-image-2",
       "name": "Fintopia GPT Image 2",
       "provider": "fintopia",
@@ -431,7 +419,7 @@
       "id": "preserve-original-form",
       "name": "1-原图结构",
       "description": "严格保留参考图主体轮廓、元素位置和视觉层级。",
-      "prompt": "形体架构以原图为准，严格保留主体轮廓、元素相对位置、图形数量、视觉层级和整体构图，只做材质、体积、光影或风格转译。",
+      "prompt": "形状以原图为准，严格保留主体轮廓、元素相对位置、图形数量、视觉层级和整体构图，只做材质、体积、光影或风格转译。",
       "enabled": true,
       "createdAt": "2026-05-13T10:54:00.000Z",
       "updatedAt": "2026-05-13T10:54:00.000Z"
@@ -440,7 +428,7 @@
       "id": "rounded-volume-blocks",
       "name": "2-圆润体块",
       "description": "将图形概括为圆润、厚实、可触摸的体块结构。",
-      "prompt": "形体架构采用圆润体块结构，把平面图形转译为厚实、饱满、边缘圆滑的 3D 块面，保持识别特征清楚，不增加无关元素。",
+      "prompt": "形状采用圆润体块结构，把平面图形转译为厚实、饱满、边缘圆滑的 3D 块面，保持识别特征清楚，不增加无关元素。",
       "enabled": true,
       "createdAt": "2026-05-13T10:54:00.000Z",
       "updatedAt": "2026-05-13T10:54:00.000Z"
@@ -449,7 +437,7 @@
       "id": "layered-patch",
       "name": "3-层叠贴片",
       "description": "以多层贴片、叠片和卡片化结构组织图形。",
-      "prompt": "形体架构采用层叠贴片结构，将元素拆分为清晰的多层贴片、叠片或卡片化部件，边缘有厚度，层级关系明确，整体仍保持原图语义。",
+      "prompt": "形状采用层叠贴片结构，将元素拆分为清晰的多层贴片、叠片或卡片化部件，边缘有厚度，层级关系明确，整体仍保持原图语义。",
       "enabled": true,
       "createdAt": "2026-05-13T10:54:00.000Z",
       "updatedAt": "2026-05-13T10:54:00.000Z"
@@ -458,7 +446,7 @@
       "id": "soft-inflated-form",
       "name": "4-软体鼓包",
       "description": "强调柔软鼓胀、轻微挤压和自然压痕的软体结构。",
-      "prompt": "形体架构采用软体鼓包结构，主体具有柔软膨胀感、自然圆角、轻微挤压、压痕和回弹体积，适合软包、充气、泡棉或织物材质。",
+      "prompt": "形状采用软体鼓包结构，主体具有柔软膨胀感、自然圆角、轻微挤压、压痕和回弹体积，适合软包、充气、泡棉或织物材质。",
       "enabled": true,
       "createdAt": "2026-05-13T10:54:00.000Z",
       "updatedAt": "2026-05-13T10:54:00.000Z"
@@ -467,7 +455,7 @@
       "id": "modular-geometric",
       "name": "5-模块几何",
       "description": "用清晰几何模块和秩序化部件重组图形。",
-      "prompt": "形体架构采用模块化几何结构，用清晰的几何部件、秩序化分块和稳定比例重组图形，轮廓干净，结构理性，不改变核心识别语义。",
+      "prompt": "形状采用模块化几何结构，用清晰的几何部件、秩序化分块和稳定比例重组图形，轮廓干净，结构理性，不改变核心识别语义。",
       "enabled": true,
       "createdAt": "2026-05-13T10:54:00.000Z",
       "updatedAt": "2026-05-13T10:54:00.000Z"

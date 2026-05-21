@@ -7,6 +7,7 @@
         color: #f4f7fb;
         background: #0b0f17;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --select-arrow: url("data:image/svg+xml,%3Csvg width='14' height='14' viewBox='0 0 14 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3.25 5.25L7 8.75L10.75 5.25' stroke='%236b7280' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       }
 
       * {
@@ -292,7 +293,7 @@
         z-index: 2;
         display: grid;
         width: 100%;
-        grid-template-columns: minmax(74px, 88px) minmax(82px, 96px) minmax(96px, 112px) minmax(120px, 1fr);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         overflow: visible;
         gap: 8px;
       }
@@ -307,13 +308,18 @@
       .control-select {
         width: 100%;
         min-width: 0;
-        padding: 0 14px;
-        appearance: auto;
-        -webkit-appearance: menulist;
+        padding: 0 32px 0 14px;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: var(--select-arrow);
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 14px 14px;
         pointer-events: auto;
       }
 
       #agent-select {
+        grid-column: 1 / -1;
         min-width: 120px;
       }
 
@@ -492,7 +498,7 @@
 
       .composer-footer {
         display: grid;
-        grid-template-columns: minmax(58px, 72px) minmax(74px, 92px) minmax(108px, 1fr) 52px 52px minmax(76px, 1fr);
+        grid-template-columns: minmax(56px, 72px) minmax(60px, 82px) minmax(104px, 1fr) 34px minmax(76px, 1fr);
         flex: 0 0 auto;
         align-items: center;
         overflow: visible;
@@ -511,16 +517,23 @@
       .pill-select {
         width: 100%;
         min-width: 0;
-        padding: 0 7px;
-        appearance: auto;
-        -webkit-appearance: menulist;
+        padding: 0 32px 0 12px;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: var(--select-arrow);
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 14px 14px;
         text-align: center;
       }
 
-      #material-select,
+      #new-chat-button {
+        font-size: 13px;
+      }
+
       #color-palette-select {
-        width: 92px;
-        min-width: 92px;
+        width: 100%;
+        min-width: 0;
       }
 
       #model-select {
@@ -538,20 +551,28 @@
         min-width: 0;
         min-height: 26px;
         border-radius: 20px;
+        padding: 0 32px 0 14px;
         background: #0b1220;
+        background-image: var(--select-arrow);
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 14px 14px;
         font-size: 9px;
+        text-align: left;
       }
 
       .multi-select-panel {
         position: absolute;
         top: calc(100% + 8px);
-        left: 0;
+        right: 0;
+        left: auto;
         z-index: 20;
         display: none;
-        width: max-content;
-        max-width: calc(100vw - 24px);
+        width: min(240px, calc(100vw - 20px));
+        max-width: calc(100vw - 20px);
         max-height: 220px;
-        overflow: auto;
+        overflow-x: hidden;
+        overflow-y: auto;
         border: 1px solid #334155;
         border-radius: 20px;
         padding: 8px;
@@ -589,14 +610,14 @@
 
       .material-option {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 8px;
         border-radius: 14px;
         padding: 7px 8px;
         color: #f8fafc;
         font-size: 12px;
         cursor: pointer;
-        white-space: nowrap;
+        white-space: normal;
       }
 
       .material-option:hover {
@@ -610,8 +631,11 @@
       }
 
       .material-option span {
-        overflow: hidden;
-        text-overflow: ellipsis;
+        min-width: 0;
+        overflow: visible;
+        line-height: 1.35;
+        text-overflow: clip;
+        white-space: normal;
       }
 
       .quantity-label {
@@ -683,17 +707,41 @@
       }
 
       @media (max-width: 520px) {
+        .chat {
+          gap: 10px;
+          padding: 12px 10px 10px;
+        }
+
+        .message {
+          max-width: 100%;
+          padding: 12px 13px;
+        }
+
         .agent-console {
           padding: 8px;
         }
 
+        .results {
+          grid-template-columns: 1fr;
+        }
+
         .control-strip {
-          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-          gap: 6px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 5px;
+        }
+
+        .control-select,
+        .multi-select-button {
+          min-height: 28px;
+          padding-right: 28px;
+          padding-left: 10px;
+          font-size: 8.5px;
         }
 
         #agent-select {
           grid-column: 1 / -1;
+          min-width: 0;
+          font-size: 10px;
         }
 
         .composer-card {
@@ -703,9 +751,27 @@
         }
 
         .composer-footer {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 6px;
+          grid-template-columns: minmax(54px, 0.72fr) minmax(54px, 0.72fr) minmax(92px, 1.45fr) 32px;
+          gap: 5px;
           padding: 0 8px;
+        }
+
+        .pill-select,
+        .icon-button,
+        .run-button {
+          min-height: 30px;
+          font-size: 9px;
+        }
+
+        #model-select {
+          font-size: 8.5px;
+        }
+
+        #new-chat-button {
+          width: 32px;
+          min-width: 32px;
+          padding: 0;
+          font-size: 13px;
         }
 
         .run-button {
@@ -730,7 +796,7 @@
       button,
       select {
         border-color: #deded9;
-        background: #ffffff;
+        background-color: #ffffff;
         color: #20242d;
         box-shadow: none;
       }
@@ -738,7 +804,7 @@
       button:hover:not(:disabled),
       select:hover {
         border-color: #c8c8c1;
-        background: #fafafa;
+        background-color: #fafafa;
       }
 
       button:focus-visible,
@@ -833,7 +899,7 @@
       .icon-button,
       .control-select {
         border-color: #deded9;
-        background: #ffffff;
+        background-color: #ffffff;
         color: #20242d;
       }
 
@@ -843,7 +909,7 @@
       .multi-select-button:hover,
       .icon-button:hover,
       .control-select:hover {
-        background: #f8f8f6;
+        background-color: #f8f8f6;
         border-color: #c8c8c1;
       }
 
@@ -925,7 +991,7 @@
       .multi-select-button,
       .icon-button {
         border: 1px solid #deded9;
-        background: #ffffff;
+        background-color: #ffffff;
         box-shadow: none;
       }
 
@@ -935,7 +1001,7 @@
       .multi-select-button:hover,
       .icon-button:hover {
         border-color: #c8c8c1;
-        background: #ffffff;
+        background-color: #ffffff;
         box-shadow: none;
       }
     </style>
@@ -945,16 +1011,15 @@
       <section id="chat" class="chat"></section>
 
       <div id="selection-bar" class="selection-bar">正在读取当前选区...</div>
-      <div id="history-panel" class="history-panel"></div>
 
       <section class="agent-console">
         <div class="control-strip">
+          <select id="shape-architecture-select" class="control-select" title="形状"></select>
+          <select id="color-palette-select" class="control-select" title="配色方案"></select>
           <div class="multi-select-wrap">
             <button id="material-select-button" class="multi-select-button" type="button" title="多选材质球">材质</button>
             <div id="material-panel" class="multi-select-panel"></div>
           </div>
-          <select id="color-palette-select" class="control-select" title="配色方案"></select>
-          <select id="shape-architecture-select" class="control-select" title="形体架构"></select>
           <select id="agent-select" class="control-select" title="选择风格 Skill"></select>
         </div>
 
@@ -985,8 +1050,7 @@
               <option value="4k">4K</option>
             </select>
             <select id="model-select" class="pill-select" title="选择模型"></select>
-            <button id="history-button" class="icon-button" type="button" title="历史对话">历史</button>
-            <button id="new-chat-button" class="icon-button" type="button" title="新建对话">新建</button>
+            <button id="new-chat-button" class="icon-button" type="button" title="清空当前面板" aria-label="清空当前面板">↺</button>
             <button id="send-button" class="run-button" type="button" disabled>没活</button>
           </div>
         </section>
@@ -1009,7 +1073,6 @@
       const addSelectionButton = document.querySelector("#add-selection-button");
       const selectionStatus = document.querySelector("#selection-status");
       const attachmentRow = document.querySelector("#attachment-row");
-      const historyPanel = document.querySelector("#history-panel");
       const chat = document.querySelector("#chat");
       const messageInput = document.querySelector("#message-input");
       const sendButton = document.querySelector("#send-button");
@@ -1028,7 +1091,6 @@
       let isSending = false;
       let isLoadingConfig = false;
       let activeConversationId = null;
-      let conversations = [];
 
       function authHeaders(extraHeaders = {}) {
         return {
@@ -1555,7 +1617,7 @@
           colorPaletteSelect.innerHTML = "";
           shapeArchitectureSelect.innerHTML = "";
 
-          for (const model of modelsData.models.filter((item) => item.enabled && (item.purpose || "image") === "image")) {
+          for (const model of modelsData.models.filter((item) => item.enabled && item.provider !== "mock" && (item.purpose || "image") === "image")) {
             const option = document.createElement("option");
             option.value = model.id;
             option.textContent = model.name;
@@ -1591,7 +1653,7 @@
 
           const emptyShapeArchitectureOption = document.createElement("option");
           emptyShapeArchitectureOption.value = "";
-          emptyShapeArchitectureOption.textContent = "形体架构";
+          emptyShapeArchitectureOption.textContent = "形状";
           shapeArchitectureSelect.appendChild(emptyShapeArchitectureOption);
 
           for (const architecture of (shapeArchitecturesData.shapeArchitectures || []).filter((item) => item.enabled)) {
@@ -1626,59 +1688,6 @@
         } finally {
           isLoadingConfig = false;
         }
-      }
-
-      async function loadHistory() {
-        const response = await apiFetch("/api/conversations");
-        const data = await response.json();
-        conversations = data.conversations;
-        historyPanel.innerHTML = "";
-
-        if (!conversations.length) {
-          historyPanel.textContent = "暂无历史对话";
-          return;
-        }
-
-        for (const conversation of conversations) {
-          const button = document.createElement("button");
-          button.className = "history-item";
-          button.type = "button";
-          button.textContent = conversation.title;
-          button.addEventListener("click", () => openConversation(conversation));
-          historyPanel.appendChild(button);
-        }
-      }
-
-      function openConversation(conversation) {
-        activeConversationId = conversation.id;
-        if ([...modelSelect.options].some((option) => option.value === conversation.modelId)) {
-          modelSelect.value = conversation.modelId;
-        }
-        if ([...agentSelect.options].some((option) => option.value === conversation.agentId)) {
-          agentSelect.value = conversation.agentId;
-        }
-        chat.innerHTML = "";
-
-        for (const message of conversation.messages) {
-          addMessage(message.role === "user" ? "user" : "assistant", message.content);
-        }
-
-        historyPanel.classList.remove("open");
-      }
-
-      function positionHistoryPanel() {
-        const buttonRect = document.querySelector("#history-button").getBoundingClientRect();
-        const panelWidth = Math.min(360, window.innerWidth - 24);
-        const left = Math.min(
-          Math.max(12, buttonRect.left + buttonRect.width / 2 - panelWidth / 2),
-          window.innerWidth - panelWidth - 12,
-        );
-        const bottom = Math.max(12, window.innerHeight - buttonRect.top + 8);
-
-        historyPanel.style.width = `${panelWidth}px`;
-        historyPanel.style.left = `${left}px`;
-        historyPanel.style.right = "auto";
-        historyPanel.style.bottom = `${bottom}px`;
       }
 
       async function ensureConversation() {
@@ -1775,7 +1784,6 @@
           pending.textContent = data.conversation.messages.at(-1).content;
           activeConversationId = data.conversation.id;
           renderResults(data.task);
-          await loadHistory();
         } catch (error) {
           pending.textContent = error.message;
         } finally {
@@ -1817,7 +1825,7 @@
             return;
           }
 
-          const width = clamp(startWidth + event.clientX - startX, 360, 1200);
+          const width = clamp(startWidth + event.clientX - startX, 320, 1200);
           const height = clamp(startHeight + event.clientY - startY, 520, 1100);
           postResize(width, height);
         }
@@ -1842,17 +1850,10 @@
         });
 
         resizeHandle.addEventListener("dblclick", () => {
-          const shouldExpand = window.innerWidth < 760;
-          postResize(shouldExpand ? 860 : 560, shouldExpand ? 860 : 780);
+          const shouldExpand = window.innerWidth < 680;
+          postResize(shouldExpand ? 760 : 320, shouldExpand ? 860 : 780);
         });
       }
-
-      document.querySelector("#history-button").addEventListener("click", async () => {
-        await loadConfig();
-        await loadHistory();
-        positionHistoryPanel();
-        historyPanel.classList.toggle("open");
-      });
 
       document.querySelector("#new-chat-button").addEventListener("click", async () => {
         await loadConfig();
@@ -1864,13 +1865,18 @@
         shapeArchitectureSelect.value = "";
         aspectRatio = "auto";
         resolution = "2k";
+        selectedAssets = [];
         materialPresetIds = [];
         colorPaletteId = "";
         shapeArchitectureId = "";
+        messageInput.value = "";
+        selectionBar.textContent = "正在读取当前选区...";
+        selectionStatus.textContent = "打开插件不会自动读取选区。";
         updateAspectRatioAutoLabel();
         renderMaterialPanel();
+        renderAttachments();
         chat.innerHTML = "";
-        addMessage("system", "已新建对话。请选择画布对象并描述本轮需求。");
+        addMessage("system", "已清空当前面板。请选择画布对象并描述本轮需求。");
         updateRunState();
       });
 
@@ -1898,10 +1904,6 @@
       document.addEventListener("click", (event) => {
         if (!materialPanel.contains(event.target) && event.target !== materialSelectButton) {
           materialPanel.classList.remove("open");
-        }
-
-        if (!historyPanel.contains(event.target) && event.target !== document.querySelector("#history-button")) {
-          historyPanel.classList.remove("open");
         }
 
         if (!scenarioPanel.contains(event.target) && event.target !== messageInput) {
@@ -1964,13 +1966,7 @@
       };
 
       loadConfig()
-        .then(loadHistory)
-        .then(() => {
-          if (!activeConversationId && conversations[0]) {
-            openConversation(conversations[0]);
-          }
-          updateRunState();
-        })
+        .then(updateRunState)
         .catch((error) => {
           addMessage("system", getReadableError(error));
         });

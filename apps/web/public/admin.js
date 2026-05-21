@@ -395,7 +395,7 @@ async function deleteAgent(agentId) {
 
 async function importAgentFromMarkdown(file) {
   const markdown = await file.text();
-  const driverModelId = qs("#import-driver-model").value || state.models[0]?.id || "mock-preview";
+  const driverModelId = qs("#import-driver-model").value || state.models[0]?.id || "";
   const data = await requestJson("/api/config/style-skills/import-md", {
     method: "POST",
     headers: {
@@ -520,14 +520,14 @@ async function deletePalette(paletteId) {
 }
 
 function resetShapeArchitectureForm() {
-  qs("#shape-architecture-modal-title").textContent = "新建形体结构";
+  qs("#shape-architecture-modal-title").textContent = "新建形状";
   qs("#shape-architecture-form").reset();
   qs("#shape-architecture-id").value = "";
   qs("#shape-architecture-enabled").value = "true";
 }
 
 function fillShapeArchitectureForm(architecture) {
-  qs("#shape-architecture-modal-title").textContent = "编辑形体结构";
+  qs("#shape-architecture-modal-title").textContent = "编辑形状";
   qs("#shape-architecture-id").value = architecture.id;
   qs("#shape-architecture-name").value = architecture.name;
   qs("#shape-architecture-description").value = architecture.description;
@@ -557,7 +557,7 @@ async function saveShapeArchitecture(event) {
 async function deleteShapeArchitecture(architectureId) {
   const architecture = state.shapeArchitectures.find((item) => item.id === architectureId);
 
-  if (!architecture || !confirm(`确认删除形体结构「${architecture.name}」？`)) {
+  if (!architecture || !confirm(`确认删除形状「${architecture.name}」？`)) {
     return;
   }
 

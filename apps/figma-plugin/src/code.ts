@@ -1,7 +1,7 @@
 declare const __html__: string;
 
 figma.showUI(__html__, {
-  width: 560,
+  width: 320,
   height: 780,
   themeColors: true,
 });

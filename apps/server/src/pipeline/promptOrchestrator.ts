@@ -131,7 +131,7 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
     : "未选择配色";
   const shapeArchitecture = context.shapeArchitecture
     ? `${context.shapeArchitecture.name}：${context.shapeArchitecture.description}；${context.shapeArchitecture.prompt}`
-    : "未选择形体架构";
+    : "未选择形状";
   const colorInstruction = context.colorPalette
     ? "用户已经选择配色方案，最终提示词必须优先按该配色方案统一色彩；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
     : options.allowMaterialTransferColorShift
@@ -141,7 +141,7 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
   return [
     `选中图片信息：\n${selectedImageText}`,
     `风格 Skill：\n${styleSkill}`,
-    `形体架构配置：${shapeArchitecture}`,
+    `形状配置：${shapeArchitecture}`,
     `材质配置：\n${materials}`,
     `配色配置：${colorPalette}`,
     `配色执行规则：${colorInstruction}`,
@@ -158,7 +158,7 @@ function buildUserContent(request: OptimizePromptRequest): string | Array<Record
     : "如果未选择配色方案，不得主动改变参考图颜色，不得套用后台默认色板、品牌色板或风格模板色板。";
   const text = [
     "请基于下面所有信息，组合一份最终生图提示词。",
-    "你需要先理解选中图片的主体轮廓、构图、颜色和语义，再结合用户本轮输入、后台风格 Skill、形体架构配置、材质配置和配色配置。",
+    "你需要先理解选中图片的主体轮廓、构图、颜色和语义，再结合用户本轮输入、后台风格 Skill、形状配置、材质配置和配色配置。",
     "如果有多张参考图，必须严格按“图1、图2、图3...”识别和引用，用户本轮输入中提到“图1/图2”时，必须对应到同编号参考图，不要混淆。",
     "跨图材质迁移必须拆分职责：目标图只提供结构、轮廓、布局、视觉语义和用户要求保留的颜色；来源图只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影，不要把来源图的物体形状、视觉内容或配色复制过去。",
     "如果用户要求“图形不变”“结构不变”“色彩不变”，必须在最终提示词中明确要求保持选中图片的主体轮廓、相对位置、识别特征和原始主色关系，只改变用户要求的风格、材质、光影和质感。",
@@ -228,7 +228,7 @@ export class PromptOrchestrator {
         messages: [
           {
             role: "system",
-            content: "你是一个多模态视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、后台风格 Skill、材质、形体架构和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；颜色优先级为：用户输入的颜色/色值最高，配色配置第二，风格 Skill 颜色最低。未选择配色方案时，按照原图色彩执行；必须强化高清锐利输出，避免柔焦、虚化和低分辨率感。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
+            content: "你是一个多模态视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、后台风格 Skill、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；颜色优先级为：用户输入的颜色/色值最高，配色配置第二，风格 Skill 颜色最低。未选择配色方案时，按照原图色彩执行；必须强化高清锐利输出，避免柔焦、虚化和低分辨率感。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
           },
           {
             role: "user",

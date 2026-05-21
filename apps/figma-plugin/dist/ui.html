@@ -1153,6 +1153,7 @@
     <script>
       const apiBase = "https://brand-style-api.onrender.com";
       const accessToken = "brand-style-internal-test-2026";
+      const defaultModelId = "nano-banana-pro";
       const modelSelect = document.querySelector("#model-select");
       const agentSelect = document.querySelector("#agent-select");
       const aspectRatioSelect = document.querySelector("#aspect-ratio-select");
@@ -1755,8 +1756,11 @@
             shapeArchitectureSelect.appendChild(option);
           }
 
-          if (selectedModelId && [...modelSelect.options].some((option) => option.value === selectedModelId)) {
+          const modelOptions = [...modelSelect.options];
+          if (selectedModelId && modelOptions.some((option) => option.value === selectedModelId)) {
             modelSelect.value = selectedModelId;
+          } else if (modelOptions.some((option) => option.value === defaultModelId)) {
+            modelSelect.value = defaultModelId;
           }
 
           if (selectedAgentId && [...agentSelect.options].some((option) => option.value === selectedAgentId)) {

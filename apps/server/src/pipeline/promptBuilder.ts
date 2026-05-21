@@ -73,10 +73,14 @@ export function buildPromptBundle(
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(context.userMessage);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(context.userMessage);
   const isSketchTo3d = preprocess.mode === "sketch_to_3d";
-  const preservationRule = constraints.preserveStructure
+  const preservationRule = isSketchTo3d
+    ? "以参考图的大致语义、元素关系和构图节奏为基础，允许重建、概括、加厚、简化或合并线条细节。"
+    : constraints.preserveStructure
     ? "以参考图的主体识别特征为基础进行风格转译，允许根据材质、体积和光影做必要重塑。"
     : "允许在不改变主体识别度的前提下，对细节进行适度简化和归一。";
-  const styleLockRule = constraints.styleLock
+  const styleLockRule = isSketchTo3d
+    ? ""
+    : constraints.styleLock
     ? "开启本轮要求锁定：必须优先保持用户指定的结构、颜色、材质、风格来源和参考图对应关系。"
     : "允许产生受控变化，但整体仍需保持在同一视觉家族内。";
   const colorRule = context.colorPrompt
@@ -91,15 +95,21 @@ export function buildPromptBundle(
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
   const outputRule = `输出规格：画面比例为 ${constraints.aspectRatio}，清晰度为 ${constraints.resolution}。`;
-  const clarityRule = "清晰度规则：必须边缘锐利、轮廓清楚、局部小图形和表情符号可辨认，材质微细节清晰。";
-  const sheetClarityRule = "如果参考图包含多个小元素、贴纸或图标，必须让每个独立元素都保持清晰、边缘锐利和局部元素可辨认；不要生成缩略图感、不要把整组内容压缩成模糊拼贴。";
+  const clarityRule = isSketchTo3d
+    ? "清晰度规则：最终 3D 物件需要边缘锐利、材质微细节清晰、体块关系明确。"
+    : "清晰度规则：必须边缘锐利、轮廓清楚、局部小图形和表情符号可辨认，材质微细节清晰。";
+  const sheetClarityRule = isSketchTo3d
+    ? "如果参考图包含多个小元素、贴纸或图标，允许把线条细节概括为独立 3D 物件、厚实体块或清晰的材质部件。"
+    : "如果参考图包含多个小元素、贴纸或图标，必须让每个独立元素都保持清晰、边缘锐利和局部元素可辨认；不要生成缩略图感、不要把整组内容压缩成模糊拼贴。";
   const skillPriorityRule = context.agentSystemPrompt
     ? "优先级规则：用户输入 > 自由搭配（形状 / 配色 / 材质）> 风格套装 > 默认高清规则；风格套装提供整体视觉方向，但不得覆盖用户本轮要求和已选择的自由搭配配置。"
     : "";
   const negativeRules = splitNegativeRules([
     ...(context.extraNegativeRules || []),
-    "不要扭曲原始轮廓",
-    "不要添加输入图之外的额外元素",
+    ...(isSketchTo3d ? [] : [
+      "不要扭曲原始轮廓",
+      "不要添加输入图之外的额外元素",
+    ]),
     ...(context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
       "不要迁移材质来源图的颜色",
       "不要把图1改成图2的绿色或品牌色",
@@ -120,7 +130,9 @@ export function buildPromptBundle(
     "不要过度平滑",
     "不要缩略图感",
     "不要模糊拼贴",
-    "不要让单个小图标细节不可辨认",
+    ...(isSketchTo3d ? [] : [
+      "不要让单个小图标细节不可辨认",
+    ]),
     ...(isSketchTo3d ? [
       "不要保留线稿描边",
       "不要保留黑色轮廓线",

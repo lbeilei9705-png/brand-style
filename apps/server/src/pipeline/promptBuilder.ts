@@ -84,13 +84,13 @@ export function buildPromptBundle(
     ? "开启本轮要求锁定：必须优先保持用户指定的结构、颜色、材质、风格来源和参考图对应关系。"
     : "允许产生受控变化，但整体仍需保持在同一视觉家族内。";
   const colorRule = context.colorPrompt
-    ? "必须优先遵循用户选择的配色方案，不要套用任何默认色板。"
+    ? "必须优先遵循当前启用的配色方案；若用户本轮输入另有明确颜色或色值，以用户输入优先。"
     : shouldTransferReferenceMaterial && shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移，并且用户明确要求保持目标图颜色：必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只从来源图提取材质的物理属性，例如玻璃/塑料/金属/亚克力质感、透明度、厚度、粗糙度、折射、高光、阴影和边缘亮线。不要迁移来源图的绿色、品牌色或整体配色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移：目标图负责结构、轮廓、元素位置和识别特征；来源图负责材质、表面质感、光泽、厚度、透明度、高光阴影和必要的色彩倾向。允许为了匹配来源图材质而调整表面明暗、高光、阴影和材质色彩，不要被默认保留原色规则限制。"
     : "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
-  const colorPriorityRule = "颜色优先级：用户本轮输入中明确写出的颜色、色值、Hex 或品牌色要求最高；其次是用户选择的配色配置；最后才参考风格 Skill 中的颜色描述。若三者冲突，必须以前者覆盖后者。";
+  const colorPriorityRule = "颜色优先级：用户本轮输入中明确写出的颜色、色值、Hex 或品牌色要求最高；其次是当前启用的配色配置（用户手动选择优先，未选择时使用风格套装默认配色）；最后才参考风格套装中未作为默认配色启用的颜色描述。若三者冲突，必须以前者覆盖后者。";
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
@@ -149,7 +149,7 @@ export function buildPromptBundle(
       context.userMessage ? `用户本轮要求：${context.userMessage}` : "",
       context.shapeArchitecturePrompt ? `用户选择的形状：${context.shapeArchitecturePrompt}` : "",
       context.materialPrompt ? `用户选择的材质球：${context.materialPrompt}` : "",
-      context.colorPrompt ? `用户选择的配色方案：${context.colorPrompt}` : "",
+      context.colorPrompt ? `当前启用的配色方案：${context.colorPrompt}` : "",
       referenceTransferRule,
       colorPriorityRule,
       templateIntro[preprocess.mode],

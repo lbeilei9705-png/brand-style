@@ -1935,7 +1935,7 @@
         });
         const data = await response.json();
 
-        if (response.status === 404 && !hasRetried) {
+        if ((response.status === 404 || data.error === "Conversation not found.") && !hasRetried) {
           activeConversationId = null;
           return submitConversationMessage(content, messageAttachments, inputType, true);
         }

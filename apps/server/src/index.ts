@@ -369,10 +369,22 @@ const server = http.createServer(async (req, res) => {
     const conversationMessageMatch = pathname.match(/^\/api\/conversations\/([^/]+)\/messages$/);
 
     if (req.method === "POST" && conversationMessageMatch) {
-      const response = await conversationService.addMessage(
-        conversationMessageMatch[1],
-        await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1],
-      );
+      let response: Awaited<ReturnType<ConversationService["addMessage"]>>;
+
+      try {
+        response = await conversationService.addMessage(
+          conversationMessageMatch[1],
+          await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1],
+        );
+      } catch (error) {
+        if (error instanceof Error && error.message === "Conversation not found.") {
+          sendJson(res, 404, { error: error.message });
+          return;
+        }
+
+        throw error;
+      }
+
       sendJson(res, 201, response);
       return;
     }

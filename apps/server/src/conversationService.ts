@@ -78,67 +78,6 @@ function extractStyleDefaultColorPrompt(systemPrompt: string): { prompt: string;
   return undefined;
 }
 
-function isPromptSectionHeading(line: string, headings: string[]): boolean {
-  const normalized = line.trim().replace(/\s+/g, "");
-
-  return headings.some((heading) => {
-    const normalizedHeading = heading.replace(/\s+/g, "");
-
-    return normalized === normalizedHeading
-      || normalized.startsWith(`${normalizedHeading}:`)
-      || normalized.startsWith(`${normalizedHeading}：`);
-  });
-}
-
-function removePromptSections(systemPrompt: string, targetHeadings: string[]): string {
-  if (!targetHeadings.length) {
-    return systemPrompt;
-  }
-
-  const sectionHeadings = [
-    "渲染",
-    "渲染方式",
-    "材质",
-    "材质库",
-    "品牌色",
-    "默认配色",
-    "配色",
-    "形状",
-    "造型",
-    "负面词",
-    "负面提示词",
-  ];
-  const lines = systemPrompt.split("\n");
-  const result: string[] = [];
-  let isRemoving = false;
-
-  for (const line of lines) {
-    if (isPromptSectionHeading(line, targetHeadings)) {
-      isRemoving = true;
-      continue;
-    }
-
-    if (isRemoving) {
-      if (line.trim() && isPromptSectionHeading(line, sectionHeadings)) {
-        isRemoving = false;
-      } else {
-        continue;
-      }
-    }
-
-    result.push(line);
-  }
-
-  return result.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-}
-
-function cleanAgentSystemPrompt(systemPrompt: string, options: { hasManualPalette: boolean; hasManualMaterials: boolean }): string {
-  return removePromptSections(systemPrompt, [
-    ...(options.hasManualPalette ? ["品牌色", "默认配色", "配色"] : []),
-    ...(options.hasManualMaterials ? ["材质", "材质库"] : []),
-  ]);
-}
-
 export class ConversationService {
   private readonly conversationStore: ConversationStore;
   private readonly configStore: ConfigStore;
@@ -227,10 +166,6 @@ export class ConversationService {
       : styleDefaultColor
         ? `风格套装默认配色「${agent.name}」：${styleDefaultColor.prompt}${styleDefaultColor.colors.length ? ` 色值：${styleDefaultColor.colors.join("、")}` : ""}`
         : undefined;
-    const cleanedAgentSystemPrompt = cleanAgentSystemPrompt(agent.systemPrompt, {
-      hasManualPalette: Boolean(colorPalette),
-      hasManualMaterials: materials.length > 0,
-    });
     const shapeArchitecture = request.shapeArchitectureId
       ? this.configStore.listShapeArchitectures().find((item) => item.id === request.shapeArchitectureId && item.enabled)
       : undefined;
@@ -246,7 +181,7 @@ export class ConversationService {
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
       userMessage: request.content,
-      agentSystemPrompt: cleanedAgentSystemPrompt,
+      agentSystemPrompt: agent.systemPrompt,
       materialPrompt: materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
         : undefined,
@@ -274,7 +209,7 @@ export class ConversationService {
         styleSkill: {
           name: agent.name,
           description: agent.description,
-          systemPrompt: cleanedAgentSystemPrompt,
+          systemPrompt: agent.systemPrompt,
         },
         materials: materials.map((material) => ({
           name: material.name,

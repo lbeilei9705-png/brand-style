@@ -92,19 +92,30 @@ function formatMaterialRule(prompt?: string): string {
   return text ? `材质要求：${text}` : "";
 }
 
+function splitColorPrompt(prompt: string): { text: string; colors: string[] } {
+  const colorValueMatch = prompt.match(/\s*色值[:：]\s*([\s\S]*)$/u);
+  const text = stripConfigLabel(colorValueMatch ? prompt.slice(0, colorValueMatch.index) : prompt);
+  const colors = uniqueValues([
+    ...extractHexColors(colorValueMatch?.[1] || ""),
+    ...extractHexColors(prompt),
+  ]);
+
+  return { text, colors };
+}
+
 function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: boolean): string {
   if (!prompt) {
     return "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
   }
 
-  const colors = extractHexColors(prompt);
-  const colorText = colors.length ? colors.join("、") : stripConfigLabel(prompt);
+  const { text, colors } = splitColorPrompt(prompt);
+  const colorValues = colors.length ? ` 色值：${colors.join("、")}` : "";
 
   if (shouldRemapManualPalette) {
-    return `按 ${colorText} 整体重配色。参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。`;
+    return `配色要求：${text}${colorValues}。参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。`;
   }
 
-  return `按当前启用配色统一色彩：${colorText}。`;
+  return `配色要求：${text}${colorValues}。`;
 }
 
 export function buildPromptBundle(

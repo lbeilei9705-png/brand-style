@@ -197,7 +197,7 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
     && !context.colorPalette?.description.includes("来自风格套装");
   const colorInstruction = context.colorPalette
     ? shouldRemapManualPalette
-      ? "已选择配色方案时，最终画面必须按该配色整体重配色；参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。"
+      ? "已选择配色方案时，positive 必须保留后台录入的配色提示词和色值，并按该配色整体重配色；参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。"
       : "当前已有启用配色方案，最终提示词必须优先按该配色方案统一色彩；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
     : options.allowMaterialTransferColorShift
       ? "用户未选择配色方案，但当前是跨图材质/质感迁移；允许来源图材质带来的必要表面颜色、明暗、高光和阴影变化。"

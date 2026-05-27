@@ -79,7 +79,7 @@ export function buildPromptBundle(
   const styleLockRule = isSketchTo3d
     ? ""
     : constraints.styleLock
-    ? "开启本轮要求锁定：必须优先保持用户指定的结构、颜色、材质、风格来源和参考图对应关系。"
+    ? "按用户本轮指定的结构、颜色、材质和参考关系生成。"
     : "允许产生受控变化，但整体仍需保持在同一视觉家族内。";
   const shouldRemapManualPalette = context.colorPrompt?.includes("手动配色方案")
     && !context.colorPrompt.includes("原图色彩");
@@ -92,7 +92,6 @@ export function buildPromptBundle(
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移：目标图负责结构、轮廓、元素位置和识别特征；来源图负责材质、表面质感、光泽、厚度、透明度、高光阴影和必要的色彩倾向。允许为了匹配来源图材质而调整表面明暗、高光、阴影和材质色彩，不要被默认保留原色规则限制。"
     : "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
-  const colorPriorityRule = "颜色优先级：用户本轮输入中明确写出的颜色、色值、Hex 或品牌色要求最高；其次是当前启用的配色配置（用户手动选择优先，未选择时使用风格套装默认配色）；最后才参考风格套装中未作为默认配色启用的颜色描述。若三者冲突，必须以前者覆盖后者。";
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
@@ -103,8 +102,8 @@ export function buildPromptBundle(
   const sheetClarityRule = isSketchTo3d
     ? "如果参考图包含多个小元素、贴纸或图标，允许把线条细节概括为独立 3D 物件、厚实体块或清晰的材质部件。"
     : "如果参考图包含多个小元素、贴纸或图标，必须让每个独立元素都保持清晰、边缘锐利和局部元素可辨认；不要生成缩略图感、不要把整组内容压缩成模糊拼贴。";
-  const skillPriorityRule = context.agentSystemPrompt
-    ? "优先级规则：用户输入 > 自由搭配（形状 / 配色 / 材质）> 风格套装 > 默认高清规则；风格套装提供整体视觉方向，但不得覆盖用户本轮要求和已选择的自由搭配配置。"
+  const styleUseRule = context.agentSystemPrompt
+    ? "吸收风格套装的整体渲染方向，并按当前已选形状、配色和材质执行。"
     : "";
   const negativeRules = splitNegativeRules([
     ...(context.extraNegativeRules || []),
@@ -140,13 +139,12 @@ export function buildPromptBundle(
   return {
     positive: [
       context.agentSystemPrompt ? `风格智能体规则：${context.agentSystemPrompt}` : "",
-      skillPriorityRule,
+      styleUseRule,
       context.userMessage ? `用户本轮要求：${context.userMessage}` : "",
       context.shapeArchitecturePrompt ? `用户选择的形状：${context.shapeArchitecturePrompt}` : "",
       context.materialPrompt ? `用户选择的材质球：${context.materialPrompt}` : "",
       context.colorPrompt ? `当前启用的配色方案：${context.colorPrompt}` : "",
       referenceTransferRule,
-      colorPriorityRule,
       templateIntro[preprocess.mode],
       preservationRule,
       colorRule,
@@ -154,7 +152,6 @@ export function buildPromptBundle(
       outputRule,
       clarityRule,
       sheetClarityRule,
-      skillPriorityRule ? "最终生成必须优先满足用户本轮要求和自由搭配配置，再吸收风格套装中的核心视觉特征，不得泛化为未选择的通用风格。" : "",
       "输出需要高清、精致、统一、可复用，适合继续在设计工作流中使用。",
     ].filter(Boolean).join(" "),
     negative: negativeRules.join("；"),

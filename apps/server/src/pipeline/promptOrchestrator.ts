@@ -110,6 +110,27 @@ function dedupeNegativePrompt(prompt: string): string {
   return result.join("；");
 }
 
+function cleanPositivePrompt(prompt: string): string {
+  const internalRuleMarkers = [
+    "优先级规则",
+    "颜色优先级",
+    "若三者冲突",
+    "冲突时以前者覆盖后者",
+    "开启本轮要求锁定",
+    "最终生成必须优先满足",
+    "不得泛化为",
+    "风格套装提供整体视觉方向",
+  ];
+
+  return prompt
+    .split(/(?<=[。.!！])\s+|\n+/)
+    .map((part) => part.trim())
+    .filter((part) => part && !internalRuleMarkers.some((marker) => part.includes(marker)))
+    .join(" ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function hasReferenceMaterialTransferIntent(message?: string): boolean {
   const text = message || "";
 
@@ -201,6 +222,7 @@ function buildUserContent(request: OptimizePromptRequest): string | Array<Record
     "如果用户要求“图形不变”“结构不变”“色彩不变”，最终提示词应以选中图片的识别特征和关系为基础，只改变用户要求的风格、材质、光影和质感。",
     "优先级必须严格执行：用户输入 > 自由搭配（形状 / 配色 / 材质）> 风格套装 > 默认高清规则。风格套装提供整体视觉方向，但不得覆盖用户本轮要求和已选择的自由搭配配置。",
     "颜色优先级必须严格执行：用户本轮输入里明确写出的颜色、色值、Hex 或品牌色要求最高；当前启用的配色配置第二（用户手动选择优先，未选择时使用风格套装默认配色）；风格套装中未作为默认配色启用的颜色描述最低。冲突时以前者覆盖后者。",
+    "上面的优先级、颜色优先级和锁定规则只用于内部编排决策，不要原文复制到 positive；positive 里只保留短的执行结果描述。",
     colorFallbackRule,
     "最终正向提示词必须强化清晰度，但不要堆叠重复的负面词；“不要模糊、不要糊边、不要柔焦”等禁止项集中合并到 negative。",
     "如果参考图包含多个小元素、贴纸或图标，最终提示词必须要求每个独立元素都清晰可辨，不要生成缩略图感或模糊拼贴。",
@@ -294,7 +316,7 @@ export class PromptOrchestrator {
 
     return {
       ...request.prompt,
-      positive: parsed.positive,
+      positive: cleanPositivePrompt(parsed.positive),
       negative: dedupeNegativePrompt(parsed.negative || request.prompt.negative),
     };
   }

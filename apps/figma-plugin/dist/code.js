@@ -227,6 +227,7 @@ async function exportSelection() {
 }
 
 async function insertResult(imageUrl, width, height) {
+  figma.notify("正在插入生成图片...");
   const bytes = await imageUrlToBytes(imageUrl);
   const imageSize = getImageSize(bytes, width, height);
   const image = figma.createImage(bytes);
@@ -273,7 +274,24 @@ figma.ui.onmessage = async (message) => {
   }
 
   if (message.type === "insert-result") {
-    await insertResult(message.imageUrl, message.width, message.height);
+    try {
+      await insertResult(message.imageUrl, message.width, message.height);
+      figma.ui.postMessage({
+        type: "insert-result-finished",
+        requestId: message.requestId,
+        ok: true,
+        message: "已插入 Figma",
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "插入 Figma 失败。";
+      figma.notify(errorMessage, { error: true });
+      figma.ui.postMessage({
+        type: "insert-result-finished",
+        requestId: message.requestId,
+        ok: false,
+        message: errorMessage,
+      });
+    }
   }
 };
 

@@ -163,8 +163,14 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
   const shapeArchitecture = context.shapeArchitecture
     ? `${context.shapeArchitecture.name}：${context.shapeArchitecture.description}；${context.shapeArchitecture.prompt}`
     : "未选择形状";
+  const shouldRemapManualPalette = Boolean(context.colorPalette)
+    && !context.colorPalette?.name.includes("原图色彩")
+    && !context.colorPalette?.name.includes("默认配色")
+    && !context.colorPalette?.description.includes("来自风格套装");
   const colorInstruction = context.colorPalette
-    ? "当前已有启用配色方案，最终提示词必须优先按该配色方案统一色彩；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
+    ? shouldRemapManualPalette
+      ? "已选择配色方案时，最终画面必须按该配色整体重配色；参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。"
+      : "当前已有启用配色方案，最终提示词必须优先按该配色方案统一色彩；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
     : options.allowMaterialTransferColorShift
       ? "用户未选择配色方案，但当前是跨图材质/质感迁移；允许来源图材质带来的必要表面颜色、明暗、高光和阴影变化。"
     : "用户未选择配色方案，按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";

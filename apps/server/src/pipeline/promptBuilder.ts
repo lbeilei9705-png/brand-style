@@ -81,8 +81,12 @@ export function buildPromptBundle(
     : constraints.styleLock
     ? "开启本轮要求锁定：必须优先保持用户指定的结构、颜色、材质、风格来源和参考图对应关系。"
     : "允许产生受控变化，但整体仍需保持在同一视觉家族内。";
+  const shouldRemapManualPalette = context.colorPrompt?.includes("手动配色方案")
+    && !context.colorPrompt.includes("原图色彩");
   const colorRule = context.colorPrompt
-    ? "必须优先遵循当前启用的配色方案；若用户本轮输入另有明确颜色或色值，以用户输入优先。"
+    ? shouldRemapManualPalette
+      ? "已选择配色方案时，最终画面必须按该配色整体重配色；参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。"
+      : "必须优先遵循当前启用的配色方案；若用户本轮输入另有明确颜色或色值，以用户输入优先。"
     : shouldTransferReferenceMaterial && shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移，并且用户明确要求保持目标图颜色：必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只从来源图提取材质的物理属性，例如玻璃/塑料/金属/亚克力质感、透明度、厚度、粗糙度、折射、高光、阴影和边缘亮线。不要迁移来源图的绿色、品牌色或整体配色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors

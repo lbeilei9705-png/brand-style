@@ -53,6 +53,60 @@ function splitNegativeRules(rules: string[]): string[] {
   return result;
 }
 
+function uniqueValues(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function extractHexColors(value: string): string[] {
+  return uniqueValues(value.match(/#[0-9a-fA-F]{3,8}\b/g) || []);
+}
+
+function stripConfigLabel(value: string): string {
+  return value
+    .replace(/^(形状|材质球|手动配色方案|风格套装默认配色)「[^」]+」[:：]\s*/, "")
+    .replace(/\s*色值[:：][\s\S]*$/u, "")
+    .trim();
+}
+
+function formatShapeRule(prompt?: string): string {
+  if (!prompt) {
+    return "";
+  }
+
+  const text = stripConfigLabel(prompt);
+
+  return text ? `形状要求：${text}` : "";
+}
+
+function formatMaterialRule(prompt?: string): string {
+  if (!prompt) {
+    return "";
+  }
+
+  const text = prompt
+    .split(/[；;]/)
+    .map(stripConfigLabel)
+    .filter(Boolean)
+    .join("；");
+
+  return text ? `材质要求：${text}` : "";
+}
+
+function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: boolean): string {
+  if (!prompt) {
+    return "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
+  }
+
+  const colors = extractHexColors(prompt);
+  const colorText = colors.length ? colors.join("、") : stripConfigLabel(prompt);
+
+  if (shouldRemapManualPalette) {
+    return `按 ${colorText} 整体重配色。参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。`;
+  }
+
+  return `按当前启用配色统一色彩：${colorText}。`;
+}
+
 export function buildPromptBundle(
   inputAsset: InputAsset,
   preprocess: PreprocessResult,
@@ -84,18 +138,16 @@ export function buildPromptBundle(
   const shouldRemapManualPalette = context.colorPrompt?.includes("手动配色方案")
     && !context.colorPrompt.includes("原图色彩");
   const colorRule = context.colorPrompt
-    ? shouldRemapManualPalette
-      ? "已选择配色方案时，最终画面必须按该配色整体重配色；参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。"
-      : "必须优先遵循当前启用的配色方案；若用户本轮输入另有明确颜色或色值，以用户输入优先。"
+    ? formatColorRule(context.colorPrompt, Boolean(shouldRemapManualPalette))
     : shouldTransferReferenceMaterial && shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移，并且用户明确要求保持目标图颜色：必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只从来源图提取材质的物理属性，例如玻璃/塑料/金属/亚克力质感、透明度、厚度、粗糙度、折射、高光、阴影和边缘亮线。不要迁移来源图的绿色、品牌色或整体配色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移：目标图负责结构、轮廓、元素位置和识别特征；来源图负责材质、表面质感、光泽、厚度、透明度、高光阴影和必要的色彩倾向。允许为了匹配来源图材质而调整表面明暗、高光、阴影和材质色彩，不要被默认保留原色规则限制。"
-    : "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
+    : formatColorRule(undefined, false);
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
-  const outputRule = `输出规格：画面比例为 ${constraints.aspectRatio}，清晰度为 ${constraints.resolution}。`;
+  const outputRule = `输出 ${constraints.aspectRatio}、${constraints.resolution}，高清锐利，材质细节清晰。`;
   const clarityRule = isSketchTo3d
     ? "清晰度规则：最终 3D 物件需要边缘锐利、材质微细节清晰、体块关系明确。"
     : "清晰度规则：必须边缘锐利、轮廓清楚、局部小图形和表情符号可辨认，材质微细节清晰。";
@@ -138,12 +190,11 @@ export function buildPromptBundle(
 
   return {
     positive: [
-      context.agentSystemPrompt ? `风格智能体规则：${context.agentSystemPrompt}` : "",
+      context.agentSystemPrompt ? `风格渲染方向：${context.agentSystemPrompt}` : "",
       styleUseRule,
       context.userMessage ? `用户本轮要求：${context.userMessage}` : "",
-      context.shapeArchitecturePrompt ? `用户选择的形状：${context.shapeArchitecturePrompt}` : "",
-      context.materialPrompt ? `用户选择的材质球：${context.materialPrompt}` : "",
-      context.colorPrompt ? `当前启用的配色方案：${context.colorPrompt}` : "",
+      formatShapeRule(context.shapeArchitecturePrompt),
+      formatMaterialRule(context.materialPrompt),
       referenceTransferRule,
       templateIntro[preprocess.mode],
       preservationRule,

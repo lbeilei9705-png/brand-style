@@ -127,6 +127,10 @@ function cleanPositivePrompt(prompt: string): string {
     "形状配置",
     "配色配置",
     "材质配置",
+    "按用户本轮指定的结构、颜色、材质和参考关系生成",
+    "必须保持原始图形的主轮廓",
+    "清晰度规则",
+    "输出需要高清",
   ];
 
   return prompt

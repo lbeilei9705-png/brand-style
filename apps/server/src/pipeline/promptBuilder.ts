@@ -3,9 +3,9 @@ import type { StyleParameterPack } from "./styleEngine.ts";
 
 const templateIntro = {
   sketch_to_3d: "",
-  flat_to_3d: "基于输入扁平图形和本轮要求生成目标视觉结果。",
-  other3d_to_brand3d: "基于输入参考图和本轮要求生成目标视觉结果。",
-  illustration_to_icon: "基于输入插画和本轮要求生成目标视觉结果。",
+  flat_to_3d: "基于参考图生成目标视觉结果。",
+  other3d_to_brand3d: "基于参考图生成目标视觉结果。",
+  illustration_to_icon: "基于参考图生成目标视觉结果。",
 };
 
 function hasReferenceMaterialTransferIntent(message?: string): boolean {
@@ -68,14 +68,16 @@ function stripConfigLabel(value: string): string {
     .trim();
 }
 
-function formatShapeRule(prompt?: string): string {
-  if (!prompt) {
-    return "";
+function formatStructureRule(prompt: string | undefined, shouldPreserveStructure: boolean): string {
+  const shapeText = prompt ? stripConfigLabel(prompt) : "";
+
+  if (shapeText) {
+    return `结构要求：${shapeText}`;
   }
 
-  const text = stripConfigLabel(prompt);
-
-  return text ? `形状要求：${text}` : "";
+  return shouldPreserveStructure
+    ? "结构要求：保持原图主体轮廓、主体结构、核心识别特征和图形语义。"
+    : "结构要求：在不改变主体识别度的前提下，允许适度简化和归一。";
 }
 
 function formatMaterialRule(prompt?: string): string {
@@ -136,16 +138,9 @@ export function buildPromptBundle(
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(context.userMessage);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(context.userMessage);
   const isSketchTo3d = preprocess.mode === "sketch_to_3d";
-  const preservationRule = isSketchTo3d
+  const structureRule = isSketchTo3d
     ? ""
-    : constraints.preserveStructure
-    ? "必须保持原始图形的主轮廓、主体结构和核心识别特征，不要擅自改变图形语义。"
-    : "允许在不改变主体识别度的前提下，对细节进行适度简化和归一。";
-  const styleLockRule = isSketchTo3d
-    ? ""
-    : constraints.styleLock
-    ? "按用户本轮指定的结构、颜色、材质和参考关系生成。"
-    : "允许产生受控变化，但整体仍需保持在同一视觉家族内。";
+    : formatStructureRule(context.shapeArchitecturePrompt, constraints.preserveStructure);
   const shouldRemapManualPalette = context.colorPrompt?.includes("手动配色方案")
     && !context.colorPrompt.includes("原图色彩");
   const colorRule = context.colorPrompt
@@ -158,16 +153,9 @@ export function buildPromptBundle(
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
-  const outputRule = `输出 ${constraints.aspectRatio}、${constraints.resolution}，高清锐利，材质细节清晰。`;
-  const clarityRule = isSketchTo3d
-    ? "清晰度规则：最终 3D 物件需要边缘锐利、材质微细节清晰、体块关系明确。"
-    : "清晰度规则：必须边缘锐利、轮廓清楚、局部小图形和表情符号可辨认，材质微细节清晰。";
-  const sheetClarityRule = isSketchTo3d
-    ? "如果参考图包含多个小元素、贴纸或图标，允许把线条细节概括为独立 3D 物件、厚实体块或清晰的材质部件。"
-    : "如果参考图包含多个小元素、贴纸或图标，必须让每个独立元素都保持清晰、边缘锐利和局部元素可辨认；不要生成缩略图感、不要把整组内容压缩成模糊拼贴。";
-  const styleUseRule = context.agentSystemPrompt
-    ? "吸收风格套装的整体渲染方向，并按当前已选形状、配色和材质执行。"
-    : "";
+  const outputRule = isSketchTo3d
+    ? `输出 ${constraints.aspectRatio}、${constraints.resolution}，边缘锐利、材质细节清晰、体块关系明确。`
+    : `输出 ${constraints.aspectRatio}、${constraints.resolution}，边缘锐利、材质细节清晰，小元素独立可辨。`;
   const negativeRules = splitNegativeRules([
     ...(context.extraNegativeRules || []),
     ...(isSketchTo3d ? [] : [
@@ -202,19 +190,13 @@ export function buildPromptBundle(
   return {
     positive: [
       context.agentSystemPrompt ? `风格渲染方向：${context.agentSystemPrompt}` : "",
-      styleUseRule,
       context.userMessage ? `用户本轮要求：${context.userMessage}` : "",
-      formatShapeRule(context.shapeArchitecturePrompt),
+      structureRule,
       formatMaterialRule(context.materialPrompt),
       referenceTransferRule,
       templateIntro[preprocess.mode],
-      preservationRule,
       colorRule,
-      styleLockRule,
       outputRule,
-      clarityRule,
-      sheetClarityRule,
-      "输出需要高清、精致、统一、可复用，适合继续在设计工作流中使用。",
     ].filter(Boolean).join(" "),
     negative: negativeRules.join("；"),
     template: preprocess.mode,

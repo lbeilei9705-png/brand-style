@@ -1,4 +1,4 @@
-import type { GenerationConstraints, InputAsset, PreprocessResult, PromptBundle } from "../../../../packages/shared/src/index.ts";
+import type { GenerationConstraints, InputAsset, OperationScenarioPrompt, PreprocessResult, PromptBundle } from "../../../../packages/shared/src/index.ts";
 import type { StyleParameterPack } from "./styleEngine.ts";
 
 const templateIntro = {
@@ -167,8 +167,8 @@ export function buildPromptBundle(
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
   const outputRule = isSketchTo3d
-    ? `输出 ${constraints.aspectRatio}、${constraints.resolution}，边缘锐利、材质细节清晰、体块关系明确。`
-    : `输出 ${constraints.aspectRatio}、${constraints.resolution}，边缘锐利、材质细节清晰，小元素独立可辨。`;
+    ? `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和体块关系可辨。`
+    : `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和小元素可辨。`;
   const negativeRules = splitNegativeRules([
     ...(context.extraNegativeRules || []),
     ...(!hasReferenceImage || isSketchTo3d ? [] : [
@@ -188,19 +188,10 @@ export function buildPromptBundle(
     ] : []),
     "不要模糊",
     "不要糊边",
-    "不要柔焦",
-    "不要景深虚化",
-    "不要运动模糊",
     "不要低分辨率",
-    "不要过度平滑",
-    "不要缩略图感",
-    "不要模糊拼贴",
     ...(shouldRemapManualPalette ? [
       "不要保留未列入配色方案的原图色相",
     ] : []),
-    ...(isSketchTo3d ? [] : [
-      "不要让单个小图标细节不可辨认",
-    ]),
   ]);
 
   return {
@@ -215,6 +206,29 @@ export function buildPromptBundle(
       outputRule,
     ].filter(Boolean).join(" "),
     negative: negativeRules.join("；"),
+    template: preprocess.mode,
+    referencePack: {
+      inputAssetId: inputAsset.id,
+      stylePresetId: stylePreset?.id || "",
+      styleAnchors: [],
+    },
+  };
+}
+
+export function buildOperationScenarioPromptBundle(
+  inputAsset: InputAsset,
+  preprocess: PreprocessResult,
+  stylePack: StyleParameterPack,
+  scenarioPrompt: OperationScenarioPrompt,
+): PromptBundle {
+  const { stylePreset } = stylePack;
+
+  return {
+    positive: [
+      scenarioPrompt.fixedPrompt,
+      scenarioPrompt.variablePrompt,
+    ].map((part) => part.trim()).filter(Boolean).join("\n\n"),
+    negative: "",
     template: preprocess.mode,
     referencePack: {
       inputAssetId: inputAsset.id,

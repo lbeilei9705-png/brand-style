@@ -55,6 +55,26 @@ const modelApiKeyEnvNames: Record<string, string[]> = {
   "nano-banana-pro": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
 };
 
+const mockPreviewModel: ModelConfig = {
+  id: "mock-preview",
+  name: "Mock Preview",
+  provider: "mock",
+  model: "mock-preview",
+  purpose: "image",
+  quality: "auto",
+  enabled: true,
+  createdAt: "2026-05-08T16:27:18.677Z",
+  updatedAt: "2026-05-28T08:00:00.000Z",
+};
+
+function withBuiltInModels(models: ModelConfig[]): ModelConfig[] {
+  const hasMockPreview = models.some((model) => model.id === mockPreviewModel.id);
+
+  return hasMockPreview
+    ? models.map((model) => (model.id === mockPreviewModel.id ? { ...mockPreviewModel, ...model } : model))
+    : [...models, mockPreviewModel];
+}
+
 function readSeedConfig(): StoredConfig | undefined {
   if (!fs.existsSync(seedConfigPath)) {
     return undefined;
@@ -87,7 +107,7 @@ function getModelApiKey(model: ModelConfig): string | undefined {
 
 function hydrateConfig(config: StoredConfig): StoredConfig {
   return {
-    models: config.models.map((model) => ({
+    models: withBuiltInModels(config.models).map((model) => ({
       ...model,
       apiKey: getModelApiKey(model),
     })),

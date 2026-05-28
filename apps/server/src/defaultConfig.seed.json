@@ -57,6 +57,17 @@
       "enabled": true,
       "createdAt": "2026-05-12T05:18:00.000Z",
       "updatedAt": "2026-05-12T05:41:00.000Z"
+    },
+    {
+      "quality": "auto",
+      "enabled": true,
+      "id": "mock-preview",
+      "name": "Mock Preview",
+      "provider": "mock",
+      "model": "mock-preview",
+      "purpose": "image",
+      "createdAt": "2026-05-08T16:27:18.677Z",
+      "updatedAt": "2026-05-28T08:00:00.000Z"
     }
   ],
   "agents": [

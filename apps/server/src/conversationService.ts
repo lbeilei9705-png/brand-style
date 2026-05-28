@@ -234,6 +234,9 @@ export class ConversationService {
     const shapeArchitecture = request.shapeArchitectureId
       ? this.configStore.listShapeArchitectures().find((item) => item.id === request.shapeArchitectureId && item.enabled)
       : undefined;
+    const operationScenario = request.operationScenarioId
+      ? this.configStore.listOperationScenarios().find((item) => item.id === request.operationScenarioId && item.enabled)
+      : undefined;
     const agentSystemPromptForGeneration = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
       hasManualPalette: Boolean(colorPalette),
       hasManualMaterials: materials.length > 0,
@@ -251,14 +254,21 @@ export class ConversationService {
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
       userMessage: request.content,
-      agentSystemPrompt: agentSystemPromptForGeneration,
-      materialPrompt: materials.length
+      agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
+      materialPrompt: !operationScenario && materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
         : undefined,
-      colorPrompt: activeColorPrompt,
-      shapeArchitecturePrompt: shapeArchitecture ? `形状「${shapeArchitecture.name}」：${shapeArchitecture.prompt}` : undefined,
-      extraNegativeRules: agent.defaultNegativeRules,
-      usePromptOrchestrator: request.usePromptOrchestrator !== false,
+      colorPrompt: operationScenario ? undefined : activeColorPrompt,
+      shapeArchitecturePrompt: !operationScenario && shapeArchitecture ? `形状「${shapeArchitecture.name}」：${shapeArchitecture.prompt}` : undefined,
+      operationScenarioPrompt: operationScenario
+        ? {
+          name: operationScenario.name,
+          fixedPrompt: operationScenario.fixedPrompt || operationScenario.content || "",
+          variablePrompt: request.content.trim() || operationScenario.variablePrompt || operationScenario.content || "",
+        }
+        : undefined,
+      extraNegativeRules: operationScenario ? [] : agent.defaultNegativeRules,
+      usePromptOrchestrator: operationScenario ? false : request.usePromptOrchestrator !== false,
       orchestrationContext: {
         selectedImage: {
           referenceLabel: primaryAsset.referenceLabel,

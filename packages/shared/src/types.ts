@@ -177,6 +177,12 @@ export interface PromptBundle {
   };
 }
 
+export interface OperationScenarioPrompt {
+  name: string;
+  fixedPrompt: string;
+  variablePrompt: string;
+}
+
 export interface PromptOrchestrationContext {
   selectedImage?: {
     referenceLabel?: string;
@@ -295,6 +301,7 @@ export interface CreateTaskRequest {
   materialPrompt?: string;
   colorPrompt?: string;
   shapeArchitecturePrompt?: string;
+  operationScenarioPrompt?: OperationScenarioPrompt;
   extraNegativeRules?: string[];
   usePromptOrchestrator?: boolean;
   orchestrationContext?: PromptOrchestrationContext;
@@ -359,6 +366,7 @@ export interface AddConversationMessageRequest {
   materialPresetIds?: string[];
   colorPaletteId?: string;
   shapeArchitectureId?: string;
+  operationScenarioId?: string;
   usePromptOrchestrator?: boolean;
 }
 

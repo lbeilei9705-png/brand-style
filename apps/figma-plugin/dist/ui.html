@@ -1181,6 +1181,7 @@
       let materialPresetIds = [];
       let operationScenarios = [];
       let activeScenarioSuggestions = [];
+      let selectedOperationScenarioId = "";
       let colorPaletteId = "";
       let shapeArchitectureId = "";
       let isSending = false;
@@ -1388,6 +1389,7 @@
           reuseButton.setAttribute("aria-label", "复制到输入框");
           reuseButton.addEventListener("click", () => {
             messageInput.value = content;
+            selectedOperationScenarioId = "";
             messageInput.focus();
             resizeMessageInput();
             updateRunState();
@@ -1726,6 +1728,7 @@
         const context = getMentionContext();
         const value = messageInput.value;
         const insertText = buildScenarioText(scenario);
+        selectedOperationScenarioId = scenario.id || "";
 
         if (!context) {
           messageInput.value = value ? `${value}\n${insertText}` : insertText;
@@ -1832,6 +1835,7 @@
         copyButton.textContent = "复制调试信息";
         copyButton.addEventListener("click", () => {
           messageInput.value = debugText;
+          selectedOperationScenarioId = "";
           messageInput.focus();
           resizeMessageInput();
           updateRunState();
@@ -1918,7 +1922,7 @@
           colorPaletteSelect.innerHTML = "";
           shapeArchitectureSelect.innerHTML = "";
 
-          for (const model of modelsData.models.filter((item) => item.enabled && item.provider !== "mock" && (item.purpose || "image") === "image")) {
+          for (const model of modelsData.models.filter((item) => item.enabled && (item.purpose || "image") === "image")) {
             const option = document.createElement("option");
             option.value = model.id;
             option.textContent = model.name;
@@ -2037,6 +2041,7 @@
             materialPresetIds,
             colorPaletteId,
             shapeArchitectureId,
+            operationScenarioId: selectedOperationScenarioId || undefined,
             usePromptOrchestrator: true,
           }),
           signal,
@@ -2122,6 +2127,7 @@
             : error.message;
         } finally {
           window.clearInterval(renderTimer);
+          selectedOperationScenarioId = "";
           isSending = false;
           if (activeGenerationController === generationController) {
             activeGenerationController = null;
@@ -2206,6 +2212,7 @@
         materialPresetIds = [];
         colorPaletteId = "";
         shapeArchitectureId = "";
+        selectedOperationScenarioId = "";
         messageInput.value = "";
         resizeMessageInput();
         selectionBar.textContent = "正在读取当前选区...";

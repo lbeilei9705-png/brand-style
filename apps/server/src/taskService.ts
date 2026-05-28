@@ -1,7 +1,7 @@
 import type { AspectRatio, CreateTaskRequest, CreateTaskResponse, GeneratedImage, GenerationConstraints, GenerationResult, GenerationTask, GenerateImageRequest, OutputResolution } from "../../../packages/shared/src/index.ts";
 import { parseInputAsset, parseReferenceAssets } from "./pipeline/inputParser.ts";
 import { preprocessInput } from "./pipeline/preprocessor.ts";
-import { buildPromptBundle } from "./pipeline/promptBuilder.ts";
+import { buildOperationScenarioPromptBundle, buildPromptBundle } from "./pipeline/promptBuilder.ts";
 import type { PromptOrchestrator } from "./pipeline/promptOrchestrator.ts";
 import { buildStylePack } from "./pipeline/styleEngine.ts";
 import type { ImageProvider } from "./providers/imageProvider.ts";
@@ -84,16 +84,18 @@ export class TaskService {
     const primaryInputAsset = referenceAssets[0] || inputAsset;
     const preprocess = preprocessInput(primaryInputAsset, constraints);
     const stylePack = buildStylePack(request.stylePresetId);
-    let prompt = buildPromptBundle(primaryInputAsset, preprocess, stylePack, constraints, {
-      userMessage: request.userMessage,
-      agentSystemPrompt: request.agentSystemPrompt,
-      materialPrompt: request.materialPrompt,
-      colorPrompt: request.colorPrompt,
-      shapeArchitecturePrompt: request.shapeArchitecturePrompt,
-      extraNegativeRules: request.extraNegativeRules,
-    });
+    let prompt = request.operationScenarioPrompt
+      ? buildOperationScenarioPromptBundle(primaryInputAsset, preprocess, stylePack, request.operationScenarioPrompt)
+      : buildPromptBundle(primaryInputAsset, preprocess, stylePack, constraints, {
+        userMessage: request.userMessage,
+        agentSystemPrompt: request.agentSystemPrompt,
+        materialPrompt: request.materialPrompt,
+        colorPrompt: request.colorPrompt,
+        shapeArchitecturePrompt: request.shapeArchitecturePrompt,
+        extraNegativeRules: request.extraNegativeRules,
+      });
 
-    if (this.promptOrchestrator && request.usePromptOrchestrator !== false) {
+    if (!request.operationScenarioPrompt && this.promptOrchestrator && request.usePromptOrchestrator !== false) {
       try {
         prompt = await this.promptOrchestrator.optimize({
           prompt,

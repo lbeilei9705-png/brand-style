@@ -52,32 +52,6 @@ function parseRequestedImageCount(content: string): number | undefined {
   return chineseMatch ? chineseNumbers[chineseMatch[1]] : undefined;
 }
 
-function uniqueValues(values: string[]): string[] {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
-}
-
-function extractStyleDefaultColorPrompt(systemPrompt: string): { prompt: string; colors: string[] } | undefined {
-  const colorSection = systemPrompt.match(/(?:品牌色|默认配色|配色)[:：]?\s*([\s\S]*?)(?=\n\s*\n|$)/);
-  const colorText = colorSection?.[1]?.trim();
-  const hexColors = uniqueValues(systemPrompt.match(/#[0-9a-fA-F]{3,8}\b/g) || []);
-
-  if (colorText) {
-    return {
-      prompt: colorText.replace(/\s+/g, " "),
-      colors: uniqueValues(colorText.match(/#[0-9a-fA-F]{3,8}\b/g) || hexColors),
-    };
-  }
-
-  if (hexColors.length >= 2) {
-    return {
-      prompt: `使用风格套装中定义的品牌色：${hexColors.join("、")}`,
-      colors: hexColors,
-    };
-  }
-
-  return undefined;
-}
-
 function isPromptSectionHeading(line: string, headings: string[]): boolean {
   const normalized = line.trim().replace(/\s+/g, "");
 
@@ -225,12 +199,9 @@ export class ConversationService {
     const colorPalette = request.colorPaletteId
       ? this.configStore.listColorPalettes().find((item) => item.id === request.colorPaletteId && item.enabled)
       : undefined;
-    const styleDefaultColor = colorPalette ? undefined : extractStyleDefaultColorPrompt(agent.systemPrompt);
     const activeColorPrompt = colorPalette
       ? `手动配色方案「${colorPalette.name}」：${colorPalette.prompt} 色值：${colorPalette.colors.join("、")}`
-      : styleDefaultColor
-        ? `风格套装默认配色「${agent.name}」：${styleDefaultColor.prompt}${styleDefaultColor.colors.length ? ` 色值：${styleDefaultColor.colors.join("、")}` : ""}`
-        : undefined;
+      : undefined;
     const shapeArchitecture = request.shapeArchitectureId
       ? this.configStore.listShapeArchitectures().find((item) => item.id === request.shapeArchitectureId && item.enabled)
       : undefined;
@@ -303,14 +274,7 @@ export class ConversationService {
             colors: colorPalette.colors,
             prompt: colorPalette.prompt,
           }
-          : styleDefaultColor
-            ? {
-              name: `${agent.name} 默认配色`,
-              description: "来自风格套装的默认配色；仅在用户未手动选择配色时启用。",
-              colors: styleDefaultColor.colors,
-              prompt: styleDefaultColor.prompt,
-            }
-            : undefined,
+          : undefined,
         shapeArchitecture: shapeArchitecture
           ? {
             name: shapeArchitecture.name,

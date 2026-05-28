@@ -1631,12 +1631,36 @@
         if (isSending) {
           sendButton.disabled = false;
           sendButton.textContent = "暂停";
+          sendButton.title = "暂停本次生成";
           return;
         }
 
-        const canRun = messageInput.value.trim() || selectedAssets.length;
+        const hasText = Boolean(messageInput.value.trim());
+        const hasConfig = Boolean(
+          agentSelect.value
+          || colorPaletteId
+          || shapeArchitectureId
+          || materialPresetIds.length
+          || selectedOperationScenarioId
+        );
+        const hasOnlyImageWithoutDirection = selectedAssets.length > 0 && !hasText && !hasConfig;
+        const canRun = hasText || (selectedAssets.length > 0 && !hasOnlyImageWithoutDirection);
+        const directionHint = "请描述要怎么处理这张图，或选择一个风格/形状/配色/材质。";
         sendButton.disabled = !canRun;
         sendButton.textContent = canRun ? "整活" : "没活";
+        sendButton.title = hasOnlyImageWithoutDirection
+          ? directionHint
+          : canRun
+            ? "开始生成"
+            : "请输入需求，或添加参考图并选择生成方向。";
+
+        if (hasOnlyImageWithoutDirection) {
+          selectionStatus.textContent = directionHint;
+        } else if (selectionStatus.textContent === directionHint) {
+          selectionStatus.textContent = selectedAssets.length
+            ? `已添加 ${selectedAssets.length} 张参考图。`
+            : "打开插件不会自动读取选区。";
+        }
       }
 
       function resizeMessageInput() {
@@ -2079,6 +2103,21 @@
         const content = messageInput.value.trim();
 
         if (!content && !selectedAssets.length) {
+          return;
+        }
+
+        const hasConfig = Boolean(
+          agentSelect.value
+          || colorPaletteId
+          || shapeArchitectureId
+          || materialPresetIds.length
+          || selectedOperationScenarioId
+        );
+        if (!content && selectedAssets.length && !hasConfig) {
+          const hint = "请描述要怎么处理这张图，或选择一个风格/形状/配色/材质。";
+          selectionStatus.textContent = hint;
+          addMessage("system", hint);
+          updateRunState();
           return;
         }
 

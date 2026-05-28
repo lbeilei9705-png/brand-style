@@ -100,6 +100,7 @@ export class TaskService {
           constraints,
           inputAsset: primaryInputAsset,
           referenceAssets,
+          userMessage: request.userMessage,
           context: request.orchestrationContext,
         });
       } catch {

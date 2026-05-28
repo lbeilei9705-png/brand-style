@@ -17,7 +17,34 @@ interface OptimizePromptRequest {
   constraints: GenerationConstraints;
   inputAsset: InputAsset;
   referenceAssets?: InputAsset[];
+  userMessage?: string;
   context?: PromptOrchestrationContext;
+}
+
+interface ReferenceRolePlan {
+  taskType?: string;
+  targetImage?: string | null;
+  structureSource?: string | null;
+  colorSource?: string | null;
+  materialSource?: string | null;
+  styleSource?: string | null;
+  preserveStructure?: boolean;
+  transferColor?: boolean;
+  transferMaterial?: boolean;
+  transferStyle?: boolean;
+}
+
+interface ValidatedReferenceRolePlan {
+  taskType: string;
+  targetImage: string;
+  structureSource: string;
+  colorSource?: string;
+  materialSource?: string;
+  styleSource?: string;
+  preserveStructure: boolean;
+  transferColor: boolean;
+  transferMaterial: boolean;
+  transferStyle: boolean;
 }
 
 function trimTrailingSlash(value: string): string {
@@ -61,7 +88,7 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
   return headers;
 }
 
-function extractJsonObject(content: string): { positive?: string; negative?: string } | undefined {
+function extractJsonObject<T>(content: string): T | undefined {
   try {
     return JSON.parse(content);
   } catch {
@@ -154,6 +181,134 @@ function hasExplicitColorPreservation(message?: string): boolean {
   return /(色彩不变|颜色不变|保留.{0,12}(颜色|色彩)|保持.{0,12}(颜色|色彩)|不要改色|不改色)/.test(message || "");
 }
 
+function extractUserMessageFromPrompt(prompt: string): string {
+  const match = prompt.match(/用户本轮要求[:：]\s*([\s\S]*?)(?=\s+(结构要求|材质要求|跨图参考规则|基于参考图|配色要求|输出)\b|$)/u);
+
+  return match?.[1]?.trim() || "";
+}
+
+function getUserMessage(request: OptimizePromptRequest): string {
+  return (request.userMessage || extractUserMessageFromPrompt(request.prompt.positive)).trim();
+}
+
+function shouldAnalyzeReferenceRoles(request: OptimizePromptRequest): boolean {
+  const message = getUserMessage(request);
+
+  return (request.referenceAssets?.length || 0) > 1
+    && /图\s*\d/.test(message)
+    && /(参考|用到|应用到|套到|迁移|转移|借鉴|不变|保持|像|那种|配色|颜色|色彩|材质|质感|风格|结构)/.test(message);
+}
+
+function normalizeReferenceLabel(value: unknown, validLabels: Set<string>): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+
+  if (validLabels.has(trimmed)) {
+    return trimmed;
+  }
+
+  const match = trimmed.match(/图\s*(\d+)/);
+  const normalized = match ? `图${Number(match[1])}` : "";
+
+  return validLabels.has(normalized) ? normalized : undefined;
+}
+
+function validateReferenceRolePlan(plan: ReferenceRolePlan | undefined, referenceAssets: InputAsset[]): ValidatedReferenceRolePlan | undefined {
+  if (!plan) {
+    return undefined;
+  }
+
+  const labels = referenceAssets.map((asset, index) => asset.referenceLabel || `图${index + 1}`);
+  const validLabels = new Set(labels);
+  const targetImage = normalizeReferenceLabel(plan.targetImage, validLabels);
+
+  if (!targetImage) {
+    return undefined;
+  }
+
+  const structureSource = normalizeReferenceLabel(plan.structureSource, validLabels) || targetImage;
+  const colorSource = normalizeReferenceLabel(plan.colorSource, validLabels);
+  const materialSource = normalizeReferenceLabel(plan.materialSource, validLabels);
+  const styleSource = normalizeReferenceLabel(plan.styleSource, validLabels);
+
+  return {
+    taskType: typeof plan.taskType === "string" ? plan.taskType : "cross_reference_transfer",
+    targetImage,
+    structureSource,
+    colorSource,
+    materialSource,
+    styleSource,
+    preserveStructure: plan.preserveStructure !== false,
+    transferColor: Boolean(plan.transferColor || colorSource),
+    transferMaterial: Boolean(plan.transferMaterial || materialSource),
+    transferStyle: Boolean(plan.transferStyle || styleSource),
+  };
+}
+
+function formatReferenceRoleRule(plan: ValidatedReferenceRolePlan | undefined): string {
+  if (!plan) {
+    return "";
+  }
+
+  const roleRules = [
+    `多图职责规则：${plan.targetImage} 是目标图，${plan.structureSource} 是结构来源。`,
+    plan.preserveStructure
+      ? `必须保留 ${plan.structureSource} 的图标数量、相对位置、主体类别、构图关系和核心识别特征。`
+      : "",
+    plan.colorSource && plan.transferColor
+      ? `${plan.colorSource} 是配色来源，必须迁移它的主色、辅助色、明暗比例和局部颜色关系，并映射到 ${plan.targetImage}。`
+      : "",
+    plan.materialSource && plan.transferMaterial
+      ? `${plan.materialSource} 是材质来源，必须迁移它的材质、厚度、倒角、表面质感、光泽、高光和阴影。`
+      : "",
+    plan.styleSource && plan.transferStyle
+      ? `${plan.styleSource} 是风格来源，只迁移它的整体渲染方式、视觉气质、光影和质感语言。`
+      : "",
+    [plan.colorSource, plan.materialSource, plan.styleSource].some((source) => source && source !== plan.targetImage)
+      ? "来源图只提供指定维度，不要复制来源图的具体物体形状、图标内容、元素数量或构图。"
+      : "",
+  ].filter(Boolean);
+
+  return roleRules.join(" ");
+}
+
+function formatReferenceRoleNegativeRule(plan: ValidatedReferenceRolePlan | undefined): string {
+  if (!plan || ![plan.colorSource, plan.materialSource, plan.styleSource].some((source) => source && source !== plan.targetImage)) {
+    return "";
+  }
+
+  return "不要复制来源参考图的具体物体形状；不要复制来源参考图的图标内容；不要把来源参考图的构图替换目标图构图";
+}
+
+function buildReferenceRolePlanContent(request: OptimizePromptRequest): string {
+  const referenceAssets = request.referenceAssets || [];
+  const imageList = referenceAssets
+    .map((asset, index) => `${asset.referenceLabel || `图${index + 1}`}：${asset.filename}`)
+    .join("\n");
+
+  return [
+    "请只判断多张参考图在本次任务里的职责，不要生成生图提示词。",
+    "你必须根据用户自然语言判断：哪张图是目标图、哪张图提供结构、哪张图提供配色、哪张图提供材质、哪张图提供风格。",
+    "规则示例：",
+    "1. “图2参考图1”通常表示图2是目标图和结构来源，图1是参考来源。",
+    "2. “图1不变，参考图2”表示图1是目标图和结构来源，图2是参考来源。",
+    "3. “参考图2的配色”表示 colorSource 是图2，transferColor 为 true。",
+    "4. “参考图2的材质/质感”表示 materialSource 是图2，transferMaterial 为 true。",
+    "5. “参考图2的风格/感觉/渲染”表示 styleSource 是图2，transferStyle 为 true。",
+    "只能返回 JSON，不要输出 Markdown，不要解释。",
+    "",
+    `用户输入：${getUserMessage(request)}`,
+    "",
+    `可用参考图：\n${imageList}`,
+    "",
+    "JSON 字段：taskType、targetImage、structureSource、colorSource、materialSource、styleSource、preserveStructure、transferColor、transferMaterial、transferStyle。",
+    "图片字段必须使用“图1”“图2”这种格式；没有对应来源时填 null。",
+  ].join("\n");
+}
+
 function formatContext(context: PromptOrchestrationContext | undefined, options: { allowMaterialTransferColorShift?: boolean } = {}): string {
   if (!context) {
     return "无额外编排上下文。";
@@ -201,7 +356,7 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
     && !context.colorPalette?.description.includes("来自风格套装");
   const colorInstruction = context.colorPalette
     ? shouldRemapManualPalette
-      ? "已选择配色方案时，positive 必须保留后台录入的配色提示词和色值，并按该配色整体重配色；参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。"
+      ? "已选择配色方案时，positive 必须保留后台录入的配色提示词和色值，并将参考图中的所有彩色区域整体映射到该配色；参考图颜色只用于识别结构，材质光影可以有明暗变化，但色相必须来自当前配色，不保留未列入配色方案的大面积色相。"
       : "当前已有启用配色方案，最终提示词必须优先按该配色方案统一色彩；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
     : options.allowMaterialTransferColorShift
       ? "用户未选择配色方案，但当前是跨图材质/质感迁移；允许来源图材质带来的必要表面颜色、明暗、高光和阴影变化。"
@@ -291,7 +446,61 @@ export class PromptOrchestrator {
     this.fallbackConfig = fallbackConfig;
   }
 
+  private async analyzeReferenceRolePlan(request: OptimizePromptRequest): Promise<ValidatedReferenceRolePlan | undefined> {
+    if (!shouldAnalyzeReferenceRoles(request)) {
+      return undefined;
+    }
+
+    try {
+      const endpoint = buildEndpoint(this.model, this.fallbackConfig);
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: buildHeaders(this.model, this.fallbackConfig),
+        body: JSON.stringify({
+          model: (this.model.apiStyle || this.fallbackConfig?.apiStyle) === "azure" ? undefined : this.model.model,
+          messages: [
+            {
+              role: "system",
+              content: "你是设计任务 Agent 的意图拆解器。你只负责判断多张参考图的职责关系，并输出严格 JSON。不要生成生图提示词，不要输出解释。",
+            },
+            {
+              role: "user",
+              content: buildReferenceRolePlanContent(request),
+            },
+          ],
+          temperature: 0,
+        }),
+        signal: AbortSignal.timeout(12000),
+      });
+      const payload = await response.json() as ChatCompletionResponse;
+
+      if (!response.ok) {
+        return undefined;
+      }
+
+      const content = payload.choices?.[0]?.message?.content || "";
+      const parsed = extractJsonObject<ReferenceRolePlan>(content);
+
+      return validateReferenceRolePlan(parsed, request.referenceAssets || []);
+    } catch {
+      return undefined;
+    }
+  }
+
   async optimize(request: OptimizePromptRequest): Promise<PromptBundle> {
+    const referenceRolePlan = await this.analyzeReferenceRolePlan(request);
+    const referenceRoleRule = formatReferenceRoleRule(referenceRolePlan);
+    const referenceRoleNegativeRule = formatReferenceRoleNegativeRule(referenceRolePlan);
+    const requestForOptimization: OptimizePromptRequest = referenceRoleRule
+      ? {
+        ...request,
+        prompt: {
+          ...request.prompt,
+          positive: `${request.prompt.positive} ${referenceRoleRule}`,
+          negative: [request.prompt.negative, referenceRoleNegativeRule].filter(Boolean).join("；"),
+        },
+      }
+      : request;
     const endpoint = buildEndpoint(this.model, this.fallbackConfig);
     const response = await fetch(endpoint, {
       method: "POST",
@@ -301,11 +510,11 @@ export class PromptOrchestrator {
         messages: [
           {
             role: "system",
-            content: "你是一个多模态 3D 视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、风格套装、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；优先级为：用户输入 > 自由搭配（形状/配色/材质）> 风格套装 > 默认高清规则。颜色优先级为：用户输入的颜色/色值最高，当前启用配色第二，风格套装中未作为默认配色启用的颜色描述最低；用户未手动选择配色时，可启用风格套装默认配色。未选择任何配色方案时，按照原图色彩执行；必须强化高清锐利输出，但不要在 positive 堆叠重复负面词，禁止项合并到 negative 且去重。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
+            content: "你是一个多模态 3D 视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、风格套装、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；优先级为：用户输入 > 自由搭配（形状/配色/材质）> 风格套装 > 默认高清规则。颜色优先级为：用户输入的颜色/色值最高，当前启用配色第二，风格套装中未作为默认配色启用的颜色描述最低；用户手动选择配色时，必须把参考图彩色区域映射到当前配色；用户未手动选择配色时，可启用风格套装默认配色。未选择任何配色方案时，按照原图色彩执行；必须强化高清锐利输出，但不要在 positive 堆叠重复负面词，禁止项合并到 negative 且去重。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
           },
           {
             role: "user",
-            content: buildUserContent(request),
+            content: buildUserContent(requestForOptimization),
           },
         ],
         temperature: 0.2,
@@ -320,16 +529,20 @@ export class PromptOrchestrator {
     }
 
     const content = payload.choices?.[0]?.message?.content || "";
-    const parsed = extractJsonObject(content);
+    const parsed = extractJsonObject<{ positive?: string; negative?: string }>(content);
 
     if (!parsed?.positive) {
       throw new Error("语言模型未返回可用的 positive prompt。");
     }
 
+    const positive = cleanPositivePrompt(parsed.positive);
+
     return {
-      ...request.prompt,
-      positive: cleanPositivePrompt(parsed.positive),
-      negative: dedupeNegativePrompt(parsed.negative || request.prompt.negative),
+      ...requestForOptimization.prompt,
+      positive: referenceRoleRule && !positive.includes(referenceRoleRule)
+        ? `${positive} ${referenceRoleRule}`
+        : positive,
+      negative: dedupeNegativePrompt([parsed.negative || requestForOptimization.prompt.negative, referenceRoleNegativeRule].filter(Boolean).join("；")),
     };
   }
 }

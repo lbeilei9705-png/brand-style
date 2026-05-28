@@ -68,11 +68,19 @@ function stripConfigLabel(value: string): string {
     .trim();
 }
 
-function formatStructureRule(prompt: string | undefined, shouldPreserveStructure: boolean): string {
+function hasImageReference(inputAsset: InputAsset): boolean {
+  return inputAsset.mimeType.startsWith("image/") && Boolean(inputAsset.dataUrl);
+}
+
+function formatStructureRule(prompt: string | undefined, shouldPreserveStructure: boolean, hasReferenceImage: boolean): string {
   const shapeText = prompt ? stripConfigLabel(prompt) : "";
 
   if (shapeText) {
     return `结构要求：${shapeText}`;
+  }
+
+  if (!hasReferenceImage) {
+    return "";
   }
 
   return shouldPreserveStructure
@@ -105,16 +113,20 @@ function splitColorPrompt(prompt: string): { text: string; colors: string[] } {
   return { text, colors };
 }
 
-function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: boolean): string {
+function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: boolean, hasReferenceImage: boolean): string {
   if (!prompt) {
-    return "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。";
+    return hasReferenceImage
+      ? "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。"
+      : "未选择配色方案：按用户文字需求和当前风格套装自然配色。";
   }
 
   const { text, colors } = splitColorPrompt(prompt);
   const colorValues = colors.length ? ` 色值：${colors.join("、")}` : "";
 
   if (shouldRemapManualPalette) {
-    return `配色要求：${text}${colorValues}。参考图颜色只用于识别结构，不保留未列入配色方案的大面积色相。`;
+    return hasReferenceImage
+      ? `配色要求：必须将参考图中的所有彩色区域整体映射到当前配色。${text}${colorValues}。参考图颜色只用于识别结构；材质光影可以有明暗变化，但色相必须来自当前配色，不保留未列入配色方案的大面积色相。`
+      : `配色要求：${text}${colorValues}。所有彩色区域必须来自当前配色；材质光影可以有明暗变化，但不要引入未列入配色方案的大面积色相。`;
   }
 
   return `配色要求：${text}${colorValues}。`;
@@ -135,21 +147,22 @@ export function buildPromptBundle(
   } = {},
 ): PromptBundle {
   const { stylePreset } = stylePack;
+  const hasReferenceImage = hasImageReference(inputAsset);
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(context.userMessage);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(context.userMessage);
   const isSketchTo3d = preprocess.mode === "sketch_to_3d";
   const structureRule = isSketchTo3d
     ? ""
-    : formatStructureRule(context.shapeArchitecturePrompt, constraints.preserveStructure);
+    : formatStructureRule(context.shapeArchitecturePrompt, constraints.preserveStructure, hasReferenceImage);
   const shouldRemapManualPalette = context.colorPrompt?.includes("手动配色方案")
     && !context.colorPrompt.includes("原图色彩");
   const colorRule = context.colorPrompt
-    ? formatColorRule(context.colorPrompt, Boolean(shouldRemapManualPalette))
+    ? formatColorRule(context.colorPrompt, Boolean(shouldRemapManualPalette), hasReferenceImage)
     : shouldTransferReferenceMaterial && shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移，并且用户明确要求保持目标图颜色：必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只从来源图提取材质的物理属性，例如玻璃/塑料/金属/亚克力质感、透明度、厚度、粗糙度、折射、高光、阴影和边缘亮线。不要迁移来源图的绿色、品牌色或整体配色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
       ? "正在执行跨图材质/质感迁移：目标图负责结构、轮廓、元素位置和识别特征；来源图负责材质、表面质感、光泽、厚度、透明度、高光阴影和必要的色彩倾向。允许为了匹配来源图材质而调整表面明暗、高光、阴影和材质色彩，不要被默认保留原色规则限制。"
-    : formatColorRule(undefined, false);
+    : formatColorRule(undefined, false, hasReferenceImage);
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
     : "";
@@ -158,7 +171,7 @@ export function buildPromptBundle(
     : `输出 ${constraints.aspectRatio}、${constraints.resolution}，边缘锐利、材质细节清晰，小元素独立可辨。`;
   const negativeRules = splitNegativeRules([
     ...(context.extraNegativeRules || []),
-    ...(isSketchTo3d ? [] : [
+    ...(!hasReferenceImage || isSketchTo3d ? [] : [
       "不要扭曲原始轮廓",
       "不要添加输入图之外的额外元素",
     ]),
@@ -182,6 +195,9 @@ export function buildPromptBundle(
     "不要过度平滑",
     "不要缩略图感",
     "不要模糊拼贴",
+    ...(shouldRemapManualPalette ? [
+      "不要保留未列入配色方案的原图色相",
+    ] : []),
     ...(isSketchTo3d ? [] : [
       "不要让单个小图标细节不可辨认",
     ]),
@@ -194,7 +210,7 @@ export function buildPromptBundle(
       structureRule,
       formatMaterialRule(context.materialPrompt),
       referenceTransferRule,
-      templateIntro[preprocess.mode],
+      hasReferenceImage ? templateIntro[preprocess.mode] : "基于用户文字需求生成目标视觉结果。",
       colorRule,
       outputRule,
     ].filter(Boolean).join(" "),

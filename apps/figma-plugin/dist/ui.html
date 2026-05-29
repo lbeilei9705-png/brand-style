@@ -1107,7 +1107,7 @@
           <select id="shape-architecture-select" class="control-select" title="自由搭配：形状"></select>
           <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
           <div class="multi-select-wrap">
-            <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">材质</button>
+            <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">未选择材质</button>
             <div id="material-panel" class="multi-select-panel"></div>
           </div>
           <div class="control-section-label">
@@ -1673,7 +1673,7 @@
 
       function updateMaterialButton() {
         if (!materialPresetIds.length) {
-          materialSelectButton.textContent = "材质";
+          materialSelectButton.textContent = "未选择材质";
           return;
         }
 
@@ -1955,7 +1955,7 @@
 
           const emptyAgentOption = document.createElement("option");
           emptyAgentOption.value = "";
-          emptyAgentOption.textContent = "选择风格套装";
+          emptyAgentOption.textContent = "未选择风格套装";
           agentSelect.appendChild(emptyAgentOption);
 
           for (const agent of (agentsData.styleSkills || agentsData.agents || []).filter((item) => item.enabled)) {
@@ -1970,7 +1970,7 @@
 
           const emptyPaletteOption = document.createElement("option");
           emptyPaletteOption.value = "";
-          emptyPaletteOption.textContent = "配色";
+          emptyPaletteOption.textContent = "未选择配色";
           colorPaletteSelect.appendChild(emptyPaletteOption);
 
           for (const palette of (colorPalettesData.colorPalettes || []).filter((item) => item.enabled)) {
@@ -1982,7 +1982,7 @@
 
           const emptyShapeArchitectureOption = document.createElement("option");
           emptyShapeArchitectureOption.value = "";
-          emptyShapeArchitectureOption.textContent = "形状";
+          emptyShapeArchitectureOption.textContent = "未选择形状";
           shapeArchitectureSelect.appendChild(emptyShapeArchitectureOption);
 
           for (const architecture of (shapeArchitecturesData.shapeArchitectures || []).filter((item) => item.enabled)) {

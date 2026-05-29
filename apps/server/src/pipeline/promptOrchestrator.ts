@@ -350,12 +350,15 @@ function formatContext(context: PromptOrchestrationContext | undefined, options:
   const shapeArchitecture = context.shapeArchitecture
     ? `${context.shapeArchitecture.name}：${context.shapeArchitecture.description}；${context.shapeArchitecture.prompt}`
     : "未选择形状";
+  const isOriginalColorPalette = Boolean(context.colorPalette?.name.includes("原图色彩"));
   const shouldRemapManualPalette = Boolean(context.colorPalette)
-    && !context.colorPalette?.name.includes("原图色彩")
+    && !isOriginalColorPalette
     && !context.colorPalette?.name.includes("默认配色")
     && !context.colorPalette?.description.includes("来自风格套装");
   const colorInstruction = context.colorPalette
-    ? shouldRemapManualPalette
+    ? isOriginalColorPalette
+      ? "用户选择了原图色彩：最终提示词必须明确保持参考图原有色彩关系，不要使用风格套装中的颜色描述进行改色；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
+      : shouldRemapManualPalette
       ? "已选择配色方案时，positive 必须明确“当前选择的配色方案”为后台录入的配色提示词和色值；在不改变参考图结构、图标数量、元素位置和色块关系的前提下，参考该配色方案进行色彩转译，避免出现明显偏离配色方案的大面积色相。"
       : "当前已有启用配色方案，最终提示词必须优先按该配色方案统一色彩；如果用户本轮输入中另有明确颜色或色值，以用户输入优先。"
     : options.allowMaterialTransferColorShift

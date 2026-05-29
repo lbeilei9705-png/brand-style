@@ -199,8 +199,11 @@ export class ConversationService {
     const colorPalette = request.colorPaletteId
       ? this.configStore.listColorPalettes().find((item) => item.id === request.colorPaletteId && item.enabled)
       : undefined;
+    const isOriginalColorPalette = Boolean(colorPalette?.name.includes("原图色彩"));
     const activeColorPrompt = colorPalette
-      ? `手动配色方案「${colorPalette.name}」：${colorPalette.prompt} 色值：${colorPalette.colors.join("、")}`
+      ? isOriginalColorPalette
+        ? `手动配色方案「${colorPalette.name}」：${colorPalette.prompt || "保持参考图原有色彩关系，不按风格套装中的颜色描述改色。"}`
+        : `手动配色方案「${colorPalette.name}」：${colorPalette.prompt} 色值：${colorPalette.colors.join("、")}`
       : undefined;
     const shapeArchitecture = request.shapeArchitectureId
       ? this.configStore.listShapeArchitectures().find((item) => item.id === request.shapeArchitectureId && item.enabled)

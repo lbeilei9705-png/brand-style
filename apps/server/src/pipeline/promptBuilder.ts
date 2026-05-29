@@ -125,8 +125,8 @@ function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: b
 
   if (shouldRemapManualPalette) {
     return hasReferenceImage
-      ? `配色要求：必须将参考图中的所有彩色区域整体映射到当前配色。${text}${colorValues}。参考图颜色只用于识别结构；材质光影可以有明暗变化，但色相必须来自当前配色，不保留未列入配色方案的大面积色相。`
-      : `配色要求：${text}${colorValues}。所有彩色区域必须来自当前配色；材质光影可以有明暗变化，但不要引入未列入配色方案的大面积色相。`;
+      ? `配色要求：优先参考当前配色进行色彩转译。${text}${colorValues}。保持参考图原有结构、图标数量、元素位置和色块关系；材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`
+      : `配色要求：${text}${colorValues}。优先使用当前配色进行色彩设计；材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`;
   }
 
   return `配色要求：${text}${colorValues}。`;
@@ -189,9 +189,6 @@ export function buildPromptBundle(
     "不要模糊",
     "不要糊边",
     "不要低分辨率",
-    ...(shouldRemapManualPalette ? [
-      "不要保留未列入配色方案的原图色相",
-    ] : []),
   ]);
 
   return {

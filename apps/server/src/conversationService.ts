@@ -64,9 +64,38 @@ function isPromptSectionHeading(line: string, headings: string[]): boolean {
   });
 }
 
-function removePromptSections(systemPrompt: string, targetHeadings: string[]): string {
+type RemovedLowPrioritySegment = {
+  source: "styleSkill";
+  reason: "manualColorPalette" | "manualMaterials" | "manualShape";
+  heading: string;
+  content: string;
+};
+
+type PromptSectionTarget = {
+  heading: string;
+  reason: RemovedLowPrioritySegment["reason"];
+};
+
+function matchPromptSectionTarget(line: string, targets: PromptSectionTarget[]): PromptSectionTarget | undefined {
+  const normalized = line.trim().replace(/\s+/g, "");
+
+  return targets.find((target) => {
+    const normalizedHeading = target.heading.replace(/\s+/g, "");
+
+    return normalized === normalizedHeading
+      || normalized.startsWith(`${normalizedHeading}:`)
+      || normalized.startsWith(`${normalizedHeading}：`);
+  });
+}
+
+function removePromptSections(systemPrompt: string, targets: PromptSectionTarget[]): {
+  prompt: string;
+  removedLowPrioritySegments: RemovedLowPrioritySegment[];
+} {
+  const targetHeadings = targets.map((target) => target.heading);
+
   if (!targetHeadings.length) {
-    return systemPrompt;
+    return { prompt: systemPrompt, removedLowPrioritySegments: [] };
   }
 
   const sectionHeadings = [
@@ -84,18 +113,49 @@ function removePromptSections(systemPrompt: string, targetHeadings: string[]): s
   ];
   const lines = systemPrompt.split("\n");
   const result: string[] = [];
+  const removedLowPrioritySegments: RemovedLowPrioritySegment[] = [];
   let isRemoving = false;
+  let removingTarget: PromptSectionTarget | undefined;
+  let removedLines: string[] = [];
+
+  const flushRemovedSegment = () => {
+    if (!removingTarget || !removedLines.length) {
+      return;
+    }
+
+    removedLowPrioritySegments.push({
+      source: "styleSkill",
+      reason: removingTarget.reason,
+      heading: removingTarget.heading,
+      content: removedLines.join("\n").trim(),
+    });
+    removingTarget = undefined;
+    removedLines = [];
+  };
 
   for (const line of lines) {
-    if (isPromptSectionHeading(line, targetHeadings)) {
+    const nextTarget = matchPromptSectionTarget(line, targets);
+
+    if (!isRemoving && nextTarget) {
       isRemoving = true;
+      removingTarget = nextTarget;
+      removedLines = [line];
       continue;
     }
 
     if (isRemoving) {
       if (line.trim() && isPromptSectionHeading(line, sectionHeadings)) {
+        flushRemovedSegment();
+
+        if (nextTarget) {
+          removingTarget = nextTarget;
+          removedLines = [line];
+          continue;
+        }
+
         isRemoving = false;
       } else {
+        removedLines.push(line);
         continue;
       }
     }
@@ -103,17 +163,35 @@ function removePromptSections(systemPrompt: string, targetHeadings: string[]): s
     result.push(line);
   }
 
-  return result.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  flushRemovedSegment();
+
+  return {
+    prompt: result.join("\n").replace(/\n{3,}/g, "\n\n").trim(),
+    removedLowPrioritySegments,
+  };
 }
 
 function applyPriorityDedupeToStylePrompt(
   systemPrompt: string,
   options: { hasManualPalette: boolean; hasManualMaterials: boolean; hasManualShape: boolean },
-): string {
+): {
+  prompt: string;
+  removedLowPrioritySegments: RemovedLowPrioritySegment[];
+} {
   return removePromptSections(systemPrompt, [
-    ...(options.hasManualPalette ? ["品牌色", "默认配色", "配色"] : []),
-    ...(options.hasManualMaterials ? ["材质", "材质库"] : []),
-    ...(options.hasManualShape ? ["形状", "造型"] : []),
+    ...(options.hasManualPalette ? [
+      { heading: "品牌色", reason: "manualColorPalette" as const },
+      { heading: "默认配色", reason: "manualColorPalette" as const },
+      { heading: "配色", reason: "manualColorPalette" as const },
+    ] : []),
+    ...(options.hasManualMaterials ? [
+      { heading: "材质", reason: "manualMaterials" as const },
+      { heading: "材质库", reason: "manualMaterials" as const },
+    ] : []),
+    ...(options.hasManualShape ? [
+      { heading: "形状", reason: "manualShape" as const },
+      { heading: "造型", reason: "manualShape" as const },
+    ] : []),
   ]);
 }
 
@@ -211,11 +289,12 @@ export class ConversationService {
     const operationScenario = request.operationScenarioId
       ? this.configStore.listOperationScenarios().find((item) => item.id === request.operationScenarioId && item.enabled)
       : undefined;
-    const agentSystemPromptForGeneration = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
+    const dedupedStylePrompt = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
       hasManualPalette: Boolean(colorPalette),
       hasManualMaterials: materials.length > 0,
       hasManualShape: Boolean(shapeArchitecture),
     });
+    const agentSystemPromptForGeneration = dedupedStylePrompt.prompt;
     const primaryAssetWidth = "width" in primaryAsset ? primaryAsset.width : undefined;
     const primaryAssetHeight = "height" in primaryAsset ? primaryAsset.height : undefined;
     const taskRequest: CreateTaskRequest = {
@@ -356,6 +435,178 @@ export class ConversationService {
     return {
       conversation: updated,
       task: taskResponse.task,
+    };
+  }
+
+  async previewPrompt(request: AddConversationMessageRequest): Promise<{
+    resolvedConfig: Record<string, unknown>;
+    positivePrompt: string;
+    negativePrompt: string;
+    removedLowPrioritySegments: RemovedLowPrioritySegment[];
+    finalModelPayload: Record<string, unknown>;
+    promptOrchestratorError?: string;
+  }> {
+    const model = this.getModel(request.modelId);
+    const agent = this.getAgent(request.agentId);
+    const selectionAssets = (request.selectionAssets || []).map((asset, index) => ({
+      ...asset,
+      referenceLabel: asset.referenceLabel || `图${index + 1}`,
+    }));
+    const highestReferencedImageIndex = getHighestReferencedImageIndex(request.content);
+
+    if (highestReferencedImageIndex > selectionAssets.length) {
+      throw new Error(`你提到了图${highestReferencedImageIndex}，但当前只添加了 ${selectionAssets.length} 张参考图。`);
+    }
+
+    const primaryAsset = selectionAssets[0] || {
+      id: "text-only",
+      referenceLabel: "图1",
+      name: "纯文案输入",
+      filename: "text-prompt.txt",
+      mimeType: "text/plain",
+      sizeBytes: new TextEncoder().encode(request.content).length,
+    };
+    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 4;
+    const batchSize = Math.min(4, Math.max(1, requestedBatchSize));
+    const materialPresetIds = request.materialPresetIds?.length
+      ? request.materialPresetIds
+      : request.materialPresetId
+        ? [request.materialPresetId]
+        : [];
+    const materials = this.configStore.listMaterials()
+      .filter((item) => materialPresetIds.includes(item.id) && item.enabled);
+    const colorPalette = request.colorPaletteId
+      ? this.configStore.listColorPalettes().find((item) => item.id === request.colorPaletteId && item.enabled)
+      : undefined;
+    const isOriginalColorPalette = Boolean(colorPalette?.name.includes("原图色彩"));
+    const activeColorPrompt = colorPalette
+      ? isOriginalColorPalette
+        ? `手动配色方案「${colorPalette.name}」：${colorPalette.prompt || "保持参考图原有色彩关系，不按风格套装中的颜色描述改色。"}`
+        : `手动配色方案「${colorPalette.name}」：${colorPalette.prompt} 色值：${colorPalette.colors.join("、")}`
+      : undefined;
+    const shapeArchitecture = request.shapeArchitectureId
+      ? this.configStore.listShapeArchitectures().find((item) => item.id === request.shapeArchitectureId && item.enabled)
+      : undefined;
+    const operationScenario = request.operationScenarioId
+      ? this.configStore.listOperationScenarios().find((item) => item.id === request.operationScenarioId && item.enabled)
+      : undefined;
+    const dedupedStylePrompt = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
+      hasManualPalette: Boolean(colorPalette),
+      hasManualMaterials: materials.length > 0,
+      hasManualShape: Boolean(shapeArchitecture),
+    });
+    const agentSystemPromptForGeneration = dedupedStylePrompt.prompt;
+    const primaryAssetWidth = "width" in primaryAsset ? primaryAsset.width : undefined;
+    const primaryAssetHeight = "height" in primaryAsset ? primaryAsset.height : undefined;
+    const taskRequest: CreateTaskRequest = {
+      inputType: request.inputType,
+      stylePresetId: agent.defaultStylePresetId,
+      source: "figma_selection",
+      filename: primaryAsset.filename,
+      mimeType: primaryAsset.mimeType,
+      sizeBytes: primaryAsset.sizeBytes,
+      assetDataUrl: primaryAsset.assetDataUrl,
+      referenceAssets: selectionAssets,
+      userMessage: request.content,
+      agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
+      materialPrompt: !operationScenario && materials.length
+        ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
+        : undefined,
+      colorPrompt: operationScenario ? undefined : activeColorPrompt,
+      shapeArchitecturePrompt: !operationScenario && shapeArchitecture ? `形状「${shapeArchitecture.name}」：${shapeArchitecture.prompt}` : undefined,
+      operationScenarioPrompt: operationScenario
+        ? {
+          name: operationScenario.name,
+          fixedPrompt: operationScenario.fixedPrompt || operationScenario.content || "",
+          variablePrompt: request.content.trim() || operationScenario.variablePrompt || operationScenario.content || "",
+        }
+        : undefined,
+      extraNegativeRules: operationScenario ? [] : agent.defaultNegativeRules,
+      usePromptOrchestrator: operationScenario ? false : request.usePromptOrchestrator !== false,
+      orchestrationContext: {
+        selectedImage: {
+          referenceLabel: primaryAsset.referenceLabel,
+          filename: primaryAsset.filename,
+          mimeType: primaryAsset.mimeType,
+          width: primaryAssetWidth,
+          height: primaryAssetHeight,
+          sizeBytes: primaryAsset.sizeBytes,
+        },
+        selectedImages: selectionAssets.map((asset, index) => ({
+          referenceLabel: asset.referenceLabel || `图${index + 1}`,
+          filename: asset.filename,
+          mimeType: asset.mimeType,
+          width: asset.width,
+          height: asset.height,
+          sizeBytes: asset.sizeBytes,
+        })),
+        styleSkill: {
+          name: agent.name,
+          description: agent.description,
+          systemPrompt: agentSystemPromptForGeneration,
+        },
+        materials: materials.map((material) => ({
+          name: material.name,
+          description: material.description,
+          prompt: material.prompt,
+        })),
+        colorPalette: colorPalette
+          ? {
+            name: colorPalette.name,
+            description: colorPalette.description,
+            colors: colorPalette.colors,
+            prompt: colorPalette.prompt,
+          }
+          : undefined,
+        shapeArchitecture: shapeArchitecture
+          ? {
+            name: shapeArchitecture.name,
+            description: shapeArchitecture.description,
+            prompt: shapeArchitecture.prompt,
+          }
+          : undefined,
+      },
+      constraints: {
+        preserveStructure: true,
+        styleLock: true,
+        transparentBackground: true,
+        fidelityLevel: "balanced",
+        variationStrength: "medium",
+        batchSize,
+        aspectRatio: request.aspectRatio || "1:1",
+        resolution: request.resolution || "2k",
+      },
+      target: "figma",
+    };
+    const previewService = new TaskService(this.taskStore, new MockImageProvider(), this.createPromptOrchestrator());
+    const preview = await previewService.previewPrompt(taskRequest);
+    const stripAssetData = (asset: Record<string, unknown>) => {
+      const { dataUrl, ...safeAsset } = asset;
+
+      return { ...safeAsset, hasDataUrl: Boolean(dataUrl) };
+    };
+
+    return {
+      resolvedConfig: {
+        model: { id: model.id, name: model.name, provider: model.provider },
+        styleSkill: { id: agent.id, name: agent.name },
+        materials: materials.map((material) => ({ id: material.id, name: material.name })),
+        colorPalette: colorPalette ? { id: colorPalette.id, name: colorPalette.name } : undefined,
+        shapeArchitecture: shapeArchitecture ? { id: shapeArchitecture.id, name: shapeArchitecture.name } : undefined,
+        operationScenario: operationScenario ? { id: operationScenario.id, name: operationScenario.name } : undefined,
+        usePromptOrchestrator: taskRequest.usePromptOrchestrator,
+        referenceImageCount: selectionAssets.length,
+        batchSize,
+      },
+      positivePrompt: preview.providerRequest.prompt.positive,
+      negativePrompt: preview.providerRequest.prompt.negative,
+      removedLowPrioritySegments: operationScenario ? [] : dedupedStylePrompt.removedLowPrioritySegments,
+      finalModelPayload: {
+        ...preview.providerRequest,
+        inputAsset: stripAssetData(preview.providerRequest.inputAsset as unknown as Record<string, unknown>),
+        referenceAssets: preview.providerRequest.referenceAssets?.map((asset) => stripAssetData(asset as unknown as Record<string, unknown>)),
+      },
+      promptOrchestratorError: preview.promptOrchestratorError,
     };
   }
 

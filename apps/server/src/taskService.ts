@@ -75,9 +75,11 @@ export class TaskService {
     this.promptOrchestrator = promptOrchestrator;
   }
 
-  async createTask(request: CreateTaskRequest): Promise<CreateTaskResponse> {
-    const now = new Date().toISOString();
-    const taskId = `task_${Date.now()}`;
+  private async buildGenerateImageRequest(request: CreateTaskRequest, taskId: string): Promise<{
+    providerRequest: GenerateImageRequest;
+    preprocess: ReturnType<typeof preprocessInput>;
+    promptOrchestratorError?: string;
+  }> {
     const constraints = normalizeConstraints(request.constraints || {});
     const inputAsset = parseInputAsset(request);
     const referenceAssets = parseReferenceAssets(request, inputAsset);
@@ -105,18 +107,49 @@ export class TaskService {
           userMessage: request.userMessage,
           context: request.orchestrationContext,
         });
-      } catch {
+      } catch (error) {
         // Prompt orchestration is an enhancement; generation should still work without it.
+        return {
+          providerRequest: {
+            taskId,
+            inputAsset: primaryInputAsset,
+            referenceAssets,
+            stylePreset: stylePack.stylePreset,
+            prompt,
+            constraints,
+          },
+          preprocess,
+          promptOrchestratorError: error instanceof Error ? error.message : "Prompt orchestration failed.",
+        };
       }
     }
-    const providerRequest: GenerateImageRequest = {
-      taskId,
-      inputAsset: primaryInputAsset,
-      referenceAssets,
-      stylePreset: stylePack.stylePreset,
-      prompt,
-      constraints,
+
+    return {
+      providerRequest: {
+        taskId,
+        inputAsset: primaryInputAsset,
+        referenceAssets,
+        stylePreset: stylePack.stylePreset,
+        prompt,
+        constraints,
+      },
+      preprocess,
     };
+  }
+
+  async previewPrompt(request: CreateTaskRequest): Promise<{
+    providerRequest: GenerateImageRequest;
+    preprocess: ReturnType<typeof preprocessInput>;
+    promptOrchestratorError?: string;
+  }> {
+    return this.buildGenerateImageRequest(request, `debug_${Date.now()}`);
+  }
+
+  async createTask(request: CreateTaskRequest): Promise<CreateTaskResponse> {
+    const now = new Date().toISOString();
+    const taskId = `task_${Date.now()}`;
+    const { providerRequest, preprocess } = await this.buildGenerateImageRequest(request, taskId);
+    const { inputAsset: primaryInputAsset, referenceAssets, stylePreset, prompt, constraints } = providerRequest;
     const generatedImages = await this.imageProvider.generate(providerRequest);
     const results = buildDirectResults(generatedImages, providerRequest);
 
@@ -126,7 +159,7 @@ export class TaskService {
       target: request.target,
       inputAsset: primaryInputAsset,
       referenceAssets,
-      stylePreset: stylePack.stylePreset,
+      stylePreset,
       constraints,
       preprocess,
       prompt,

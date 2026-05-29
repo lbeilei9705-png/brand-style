@@ -129,7 +129,7 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
     return;
   }
 
-  const safePath = pathname;
+  const safePath = pathname === "/debug-prompt" ? "/debug-prompt.html" : pathname;
   const filePath = path.resolve(webDir, `.${safePath}`);
 
   if (!filePath.startsWith(webDir)) {
@@ -290,6 +290,14 @@ const server = http.createServer(async (req, res) => {
       const driverModel = configStore.listModels().find((model) => model.id === body.driverModelId);
       const draft = importAgentFromMarkdown(body.markdown || "", driverModel);
       sendJson(res, 200, { draft });
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/api/debug-prompt") {
+      const preview = await conversationService.previewPrompt(
+        await readJsonRequest(req) as Parameters<ConversationService["previewPrompt"]>[0],
+      );
+      sendJson(res, 200, preview);
       return;
     }
 

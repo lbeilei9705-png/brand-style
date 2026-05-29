@@ -88,12 +88,19 @@ const scenarios = [
   {
     id: "multi-reference",
     name: "多图关系",
-    content: "保持图1结构，参考图2材质和质感",
-    referenceCount: 2,
+    content: "保持图2结构，参考图1材质、图3的色彩",
+    referenceCount: 3,
     expect: [
       { label: "应该识别图1", includes: "图1" },
       { label: "应该识别图2", includes: "图2" },
+      { label: "应该识别图3", includes: "图3" },
       { label: "应该包含跨图参考规则", includes: "跨图参考规则" },
+      { label: "应该只提醒按用户图号关系执行", includes: "严格按用户本轮输入中的图号关系执行" },
+      { label: "不应自动展开图2结构职责", notIncludes: "图2负责结构" },
+      { label: "不应自动展开图1材质职责", notIncludes: "图1负责材质" },
+      { label: "不应自动展开图3色彩职责", notIncludes: "图3负责色彩" },
+      { label: "不应出现写死的图1结构图2材质示例", notIncludes: "保持图1结构，把图2材质用到图1上" },
+      { label: "不应追加默认结构要求", notIncludes: "结构要求：保持原图主体轮廓" },
     ],
   },
   {

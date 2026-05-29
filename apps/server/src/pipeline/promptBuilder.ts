@@ -151,7 +151,8 @@ export function buildPromptBundle(
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(context.userMessage);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(context.userMessage);
   const isSketchTo3d = preprocess.mode === "sketch_to_3d";
-  const structureRule = isSketchTo3d
+  const shouldSkipDefaultStructureRule = shouldTransferReferenceMaterial && !context.shapeArchitecturePrompt;
+  const structureRule = isSketchTo3d || shouldSkipDefaultStructureRule
     ? ""
     : formatStructureRule(context.shapeArchitecturePrompt, constraints.preserveStructure, hasReferenceImage);
   const shouldRemapManualPalette = context.colorPrompt?.includes("手动配色方案")
@@ -159,12 +160,12 @@ export function buildPromptBundle(
   const colorRule = context.colorPrompt
     ? formatColorRule(context.colorPrompt, Boolean(shouldRemapManualPalette), hasReferenceImage)
     : shouldTransferReferenceMaterial && shouldPreserveExplicitColors
-      ? "正在执行跨图材质/质感迁移，并且用户明确要求保持目标图颜色：必须保留目标图的原始色相、主色关系、局部颜色对应关系和色彩数量；只从来源图提取材质的物理属性，例如玻璃/塑料/金属/亚克力质感、透明度、厚度、粗糙度、折射、高光、阴影和边缘亮线。不要迁移来源图的绿色、品牌色或整体配色。"
+      ? "跨图色彩规则：用户明确要求保持颜色时，按用户原文指定的目标图或结构图保留原有色彩关系；材质来源图只提供材质和质感，不覆盖颜色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
-      ? "正在执行跨图材质/质感迁移：目标图负责结构、轮廓、元素位置和识别特征；来源图负责材质、表面质感、光泽、厚度、透明度、高光阴影和必要的色彩倾向。允许为了匹配来源图材质而调整表面明暗、高光、阴影和材质色彩，不要被默认保留原色规则限制。"
+      ? "跨图色彩规则：未选择配色方案时，优先按用户原文中指定的色彩来源执行；如果用户没有指定色彩来源，则结合参考图色彩关系、材质、光照和阴影自然转译。"
     : formatColorRule(undefined, false, hasReferenceImage);
   const referenceTransferRule = shouldTransferReferenceMaterial
-    ? `跨图参考规则：当用户说“保持图1结构，把图2材质用到图1上”这类需求时，图1只提供结构、轮廓、构图和视觉语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状、视觉内容或构图。${shouldPreserveExplicitColors ? "用户要求保持图1颜色时，图2的绿色/品牌色/配色不能迁移，只能迁移材质的物理质感。" : ""}`
+    ? "跨图参考规则：严格按用户本轮输入中的图号关系执行，不要混淆图1、图2、图3等参考图的职责。"
     : "";
   const outputRule = isSketchTo3d
     ? `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和体块关系可辨。`
@@ -177,7 +178,7 @@ export function buildPromptBundle(
     ]),
     ...(context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
       "不要迁移材质来源图的颜色",
-      "不要把图1改成图2的绿色或品牌色",
+      "不要让材质来源图的颜色覆盖结构来源图",
       "不要复制材质来源图的物体形状",
       "不要忽略材质来源图的表面质感",
       "不要保持扁平贴纸质感",

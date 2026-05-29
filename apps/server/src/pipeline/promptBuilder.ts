@@ -125,8 +125,8 @@ function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: b
 
   if (shouldRemapManualPalette) {
     return hasReferenceImage
-      ? `配色要求：优先参考当前配色进行色彩转译。${text}${colorValues}。保持参考图原有结构、图标数量、元素位置和色块关系；材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`
-      : `配色要求：${text}${colorValues}。优先使用当前配色进行色彩设计；材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`;
+      ? `配色要求：当前选择的配色方案为 ${text}${colorValues}；在不改变参考图结构、图标数量、元素位置和色块关系的前提下，参考该配色方案进行色彩转译。材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`
+      : `配色要求：当前选择的配色方案为 ${text}${colorValues}；参考该配色方案进行色彩设计。材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`;
   }
 
   return `配色要求：${text}${colorValues}。`;

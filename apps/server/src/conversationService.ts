@@ -5,6 +5,7 @@ import type { ConversationStore } from "./conversationStore.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import type { ImageProvider } from "./providers/imageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
+import { resolveComboIconSkill } from "./pipeline/comboIconSkill.ts";
 import { PromptOrchestrator } from "./pipeline/promptOrchestrator.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
@@ -444,8 +445,18 @@ export class ConversationService {
     negativePrompt: string;
     removedLowPrioritySegments: RemovedLowPrioritySegment[];
     finalModelPayload: Record<string, unknown>;
+    isComboIconSkillApplied: boolean;
+    triggerMode: "explicit" | "implicit" | "none";
+    matchedSubject?: string;
+    matchedAlias?: string;
+    businessIntent?: string;
+    visualDirection?: string;
+    candidateElements?: string[];
+    comboIconPlan?: Record<string, unknown>;
+    finalPrompt: string;
     promptOrchestratorError?: string;
   }> {
+    const debugRequest = request as AddConversationMessageRequest & { comboIconTriggerMode?: "explicit" | "auto" | "none" };
     const model = this.getModel(request.modelId);
     const agent = this.getAgent(request.agentId);
     const selectionAssets = (request.selectionAssets || []).map((asset, index) => ({
@@ -580,6 +591,18 @@ export class ConversationService {
     };
     const previewService = new TaskService(this.taskStore, new MockImageProvider(), this.createPromptOrchestrator());
     const preview = await previewService.previewPrompt(taskRequest);
+    const comboIconSkill = debugRequest.comboIconTriggerMode === "none"
+      ? {
+        isComboIconSkillApplied: false,
+        triggerMode: "none" as const,
+      }
+      : resolveComboIconSkill(request.content, { explicit: debugRequest.comboIconTriggerMode === "explicit" });
+    const positivePrompt = comboIconSkill.isComboIconSkillApplied && comboIconSkill.comboIconPrompt
+      ? [
+        comboIconSkill.comboIconPrompt,
+        preview.providerRequest.prompt.positive.replace(`用户本轮要求：${request.content}`, "").replace(/\s{2,}/g, " ").trim(),
+      ].filter(Boolean).join("\n\n")
+      : preview.providerRequest.prompt.positive;
     const stripAssetData = (asset: Record<string, unknown>) => {
       const { dataUrl, ...safeAsset } = asset;
 
@@ -598,14 +621,27 @@ export class ConversationService {
         referenceImageCount: selectionAssets.length,
         batchSize,
       },
-      positivePrompt: preview.providerRequest.prompt.positive,
+      positivePrompt,
       negativePrompt: preview.providerRequest.prompt.negative,
       removedLowPrioritySegments: operationScenario ? [] : dedupedStylePrompt.removedLowPrioritySegments,
       finalModelPayload: {
         ...preview.providerRequest,
+        prompt: {
+          ...preview.providerRequest.prompt,
+          positive: positivePrompt,
+        },
         inputAsset: stripAssetData(preview.providerRequest.inputAsset as unknown as Record<string, unknown>),
         referenceAssets: preview.providerRequest.referenceAssets?.map((asset) => stripAssetData(asset as unknown as Record<string, unknown>)),
       },
+      isComboIconSkillApplied: comboIconSkill.isComboIconSkillApplied,
+      triggerMode: comboIconSkill.triggerMode,
+      matchedSubject: comboIconSkill.matchedSubject,
+      matchedAlias: comboIconSkill.matchedAlias,
+      businessIntent: comboIconSkill.businessIntent,
+      visualDirection: comboIconSkill.visualDirection,
+      candidateElements: comboIconSkill.candidateElements,
+      comboIconPlan: comboIconSkill.comboIconPlan,
+      finalPrompt: positivePrompt,
       promptOrchestratorError: preview.promptOrchestratorError,
     };
   }

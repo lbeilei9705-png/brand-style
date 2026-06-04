@@ -181,3 +181,11 @@ export function resolveComboIconSkill(
     comboIconPrompt: formatComboIconPrompt(comboIconPlan),
   };
 }
+
+export function sanitizeComboIconUserMessage(text: string): string {
+  return text
+    .replace(/(不要出现|不要|去掉)\s*[^，。；,;、\s]+/g, "")
+    .replace(/(但|但是)$/g, "")
+    .replace(/[，。；,;、\s]+$/g, "")
+    .trim();
+}

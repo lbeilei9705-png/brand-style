@@ -5,7 +5,7 @@ import type { ConversationStore } from "./conversationStore.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import type { ImageProvider } from "./providers/imageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
-import { resolveComboIconSkill } from "./pipeline/comboIconSkill.ts";
+import { resolveComboIconSkill, sanitizeComboIconUserMessage } from "./pipeline/comboIconSkill.ts";
 import { PromptOrchestrator } from "./pipeline/promptOrchestrator.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
@@ -295,7 +295,16 @@ export class ConversationService {
       hasManualMaterials: materials.length > 0,
       hasManualShape: Boolean(shapeArchitecture),
     });
-    const agentSystemPromptForGeneration = dedupedStylePrompt.prompt;
+    const comboIconSkill = operationScenario
+      ? { isComboIconSkillApplied: false, comboIconPrompt: undefined }
+      : resolveComboIconSkill(request.content);
+    const agentSystemPromptForGeneration = [
+      comboIconSkill.comboIconPrompt,
+      dedupedStylePrompt.prompt,
+    ].filter(Boolean).join("\n\n");
+    const userMessageForGeneration = comboIconSkill.isComboIconSkillApplied
+      ? sanitizeComboIconUserMessage(request.content)
+      : request.content;
     const primaryAssetWidth = "width" in primaryAsset ? primaryAsset.width : undefined;
     const primaryAssetHeight = "height" in primaryAsset ? primaryAsset.height : undefined;
     const taskRequest: CreateTaskRequest = {
@@ -307,7 +316,7 @@ export class ConversationService {
       sizeBytes: primaryAsset.sizeBytes,
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
-      userMessage: request.content,
+      userMessage: userMessageForGeneration,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
@@ -506,7 +515,19 @@ export class ConversationService {
       hasManualMaterials: materials.length > 0,
       hasManualShape: Boolean(shapeArchitecture),
     });
-    const agentSystemPromptForGeneration = dedupedStylePrompt.prompt;
+    const comboIconSkill = operationScenario || debugRequest.comboIconTriggerMode === "none"
+      ? {
+        isComboIconSkillApplied: false,
+        triggerMode: "none" as const,
+      }
+      : resolveComboIconSkill(request.content, { explicit: debugRequest.comboIconTriggerMode === "explicit" });
+    const agentSystemPromptForGeneration = [
+      comboIconSkill.comboIconPrompt,
+      dedupedStylePrompt.prompt,
+    ].filter(Boolean).join("\n\n");
+    const userMessageForGeneration = comboIconSkill.isComboIconSkillApplied
+      ? sanitizeComboIconUserMessage(request.content)
+      : request.content;
     const primaryAssetWidth = "width" in primaryAsset ? primaryAsset.width : undefined;
     const primaryAssetHeight = "height" in primaryAsset ? primaryAsset.height : undefined;
     const taskRequest: CreateTaskRequest = {
@@ -518,7 +539,7 @@ export class ConversationService {
       sizeBytes: primaryAsset.sizeBytes,
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
-      userMessage: request.content,
+      userMessage: userMessageForGeneration,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
@@ -591,18 +612,7 @@ export class ConversationService {
     };
     const previewService = new TaskService(this.taskStore, new MockImageProvider(), this.createPromptOrchestrator());
     const preview = await previewService.previewPrompt(taskRequest);
-    const comboIconSkill = debugRequest.comboIconTriggerMode === "none"
-      ? {
-        isComboIconSkillApplied: false,
-        triggerMode: "none" as const,
-      }
-      : resolveComboIconSkill(request.content, { explicit: debugRequest.comboIconTriggerMode === "explicit" });
-    const positivePrompt = comboIconSkill.isComboIconSkillApplied && comboIconSkill.comboIconPrompt
-      ? [
-        comboIconSkill.comboIconPrompt,
-        preview.providerRequest.prompt.positive.replace(`用户本轮要求：${request.content}`, "").replace(/\s{2,}/g, " ").trim(),
-      ].filter(Boolean).join("\n\n")
-      : preview.providerRequest.prompt.positive;
+    const positivePrompt = preview.providerRequest.prompt.positive;
     const stripAssetData = (asset: Record<string, unknown>) => {
       const { dataUrl, ...safeAsset } = asset;
 

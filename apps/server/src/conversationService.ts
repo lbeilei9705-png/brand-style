@@ -5,7 +5,6 @@ import type { ConversationStore } from "./conversationStore.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import type { ImageProvider } from "./providers/imageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
-import { resolveComboIconSkill, sanitizeComboIconUserMessage } from "./pipeline/comboIconSkill.ts";
 import { PromptOrchestrator } from "./pipeline/promptOrchestrator.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
@@ -295,16 +294,7 @@ export class ConversationService {
       hasManualMaterials: materials.length > 0,
       hasManualShape: Boolean(shapeArchitecture),
     });
-    const comboIconSkill = operationScenario
-      ? { isComboIconSkillApplied: false, comboIconPrompt: undefined }
-      : resolveComboIconSkill(request.content);
-    const agentSystemPromptForGeneration = [
-      comboIconSkill.comboIconPrompt,
-      dedupedStylePrompt.prompt,
-    ].filter(Boolean).join("\n\n");
-    const userMessageForGeneration = comboIconSkill.isComboIconSkillApplied
-      ? sanitizeComboIconUserMessage(request.content)
-      : request.content;
+    const agentSystemPromptForGeneration = dedupedStylePrompt.prompt;
     const primaryAssetWidth = "width" in primaryAsset ? primaryAsset.width : undefined;
     const primaryAssetHeight = "height" in primaryAsset ? primaryAsset.height : undefined;
     const taskRequest: CreateTaskRequest = {
@@ -316,7 +306,7 @@ export class ConversationService {
       sizeBytes: primaryAsset.sizeBytes,
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
-      userMessage: userMessageForGeneration,
+      userMessage: request.content,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
@@ -454,18 +444,8 @@ export class ConversationService {
     negativePrompt: string;
     removedLowPrioritySegments: RemovedLowPrioritySegment[];
     finalModelPayload: Record<string, unknown>;
-    isComboIconSkillApplied: boolean;
-    triggerMode: "explicit" | "implicit" | "none";
-    matchedSubject?: string;
-    matchedAlias?: string;
-    businessIntent?: string;
-    visualDirection?: string;
-    candidateElements?: string[];
-    comboIconPlan?: Record<string, unknown>;
-    finalPrompt: string;
     promptOrchestratorError?: string;
   }> {
-    const debugRequest = request as AddConversationMessageRequest & { comboIconTriggerMode?: "explicit" | "auto" | "none" };
     const model = this.getModel(request.modelId);
     const agent = this.getAgent(request.agentId);
     const selectionAssets = (request.selectionAssets || []).map((asset, index) => ({
@@ -515,19 +495,7 @@ export class ConversationService {
       hasManualMaterials: materials.length > 0,
       hasManualShape: Boolean(shapeArchitecture),
     });
-    const comboIconSkill = operationScenario || debugRequest.comboIconTriggerMode === "none"
-      ? {
-        isComboIconSkillApplied: false,
-        triggerMode: "none" as const,
-      }
-      : resolveComboIconSkill(request.content, { explicit: debugRequest.comboIconTriggerMode === "explicit" });
-    const agentSystemPromptForGeneration = [
-      comboIconSkill.comboIconPrompt,
-      dedupedStylePrompt.prompt,
-    ].filter(Boolean).join("\n\n");
-    const userMessageForGeneration = comboIconSkill.isComboIconSkillApplied
-      ? sanitizeComboIconUserMessage(request.content)
-      : request.content;
+    const agentSystemPromptForGeneration = dedupedStylePrompt.prompt;
     const primaryAssetWidth = "width" in primaryAsset ? primaryAsset.width : undefined;
     const primaryAssetHeight = "height" in primaryAsset ? primaryAsset.height : undefined;
     const taskRequest: CreateTaskRequest = {
@@ -539,7 +507,7 @@ export class ConversationService {
       sizeBytes: primaryAsset.sizeBytes,
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
-      userMessage: userMessageForGeneration,
+      userMessage: request.content,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
@@ -612,7 +580,6 @@ export class ConversationService {
     };
     const previewService = new TaskService(this.taskStore, new MockImageProvider(), this.createPromptOrchestrator());
     const preview = await previewService.previewPrompt(taskRequest);
-    const positivePrompt = preview.providerRequest.prompt.positive;
     const stripAssetData = (asset: Record<string, unknown>) => {
       const { dataUrl, ...safeAsset } = asset;
 
@@ -631,27 +598,14 @@ export class ConversationService {
         referenceImageCount: selectionAssets.length,
         batchSize,
       },
-      positivePrompt,
+      positivePrompt: preview.providerRequest.prompt.positive,
       negativePrompt: preview.providerRequest.prompt.negative,
       removedLowPrioritySegments: operationScenario ? [] : dedupedStylePrompt.removedLowPrioritySegments,
       finalModelPayload: {
         ...preview.providerRequest,
-        prompt: {
-          ...preview.providerRequest.prompt,
-          positive: positivePrompt,
-        },
         inputAsset: stripAssetData(preview.providerRequest.inputAsset as unknown as Record<string, unknown>),
         referenceAssets: preview.providerRequest.referenceAssets?.map((asset) => stripAssetData(asset as unknown as Record<string, unknown>)),
       },
-      isComboIconSkillApplied: comboIconSkill.isComboIconSkillApplied,
-      triggerMode: comboIconSkill.triggerMode,
-      matchedSubject: comboIconSkill.matchedSubject,
-      matchedAlias: comboIconSkill.matchedAlias,
-      businessIntent: comboIconSkill.businessIntent,
-      visualDirection: comboIconSkill.visualDirection,
-      candidateElements: comboIconSkill.candidateElements,
-      comboIconPlan: comboIconSkill.comboIconPlan,
-      finalPrompt: positivePrompt,
       promptOrchestratorError: preview.promptOrchestratorError,
     };
   }

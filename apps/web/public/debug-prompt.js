@@ -124,94 +124,6 @@ const scenarios = [
       { label: "应该选择 mock provider", resolvedProvider: "mock" },
     ],
   },
-  {
-    id: "combo-limit",
-    name: "组合图标：提额",
-    content: "提额",
-    comboIconTriggerMode: "auto",
-    expect: [
-      { label: "应该命中 comboIconSkill", comboApplied: true },
-      { label: "应该是隐式命中", triggerMode: "implicit" },
-      { label: "应该命中提额", matchedSubject: "提额" },
-      { label: "businessIntent 应该是额度增长", businessIntent: "额度增长" },
-      { label: "visualDirection 应该是增长表达", visualDirection: "增长表达" },
-      { label: "候选元素应该包含增长曲线", candidateIncludes: "增长曲线" },
-      { label: "主元素应该是额度卡片", planMainElement: "额度卡片" },
-      { label: "finalPrompt 应该包含组合规则", finalPromptIncludes: "主元素：额度卡片，占画面约70%" },
-    ],
-  },
-  {
-    id: "combo-loan",
-    name: "组合图标：放款",
-    content: "资金到账",
-    comboIconTriggerMode: "auto",
-    expect: [
-      { label: "应该命中 comboIconSkill", comboApplied: true },
-      { label: "应该命中放款", matchedSubject: "放款" },
-      { label: "应该记录 matchedAlias", matchedAlias: "资金到账" },
-    ],
-  },
-  {
-    id: "combo-security",
-    name: "组合图标：安全",
-    content: "支付安全",
-    comboIconTriggerMode: "auto",
-    expect: [
-      { label: "应该命中安全", matchedSubject: "安全" },
-      { label: "主元素应该是安全盾牌", planMainElement: "安全盾牌" },
-    ],
-  },
-  {
-    id: "combo-approval",
-    name: "组合图标：审批通过",
-    content: "审核通过",
-    comboIconTriggerMode: "auto",
-    expect: [
-      { label: "应该命中审批通过", matchedSubject: "审批通过" },
-      { label: "应该记录审核通过 alias", matchedAlias: "审核通过" },
-    ],
-  },
-  {
-    id: "combo-invite",
-    name: "组合图标：邀请好友",
-    content: "拉新",
-    comboIconTriggerMode: "auto",
-    expect: [
-      { label: "应该命中邀请好友", matchedSubject: "邀请好友" },
-      { label: "主元素应该是好友头像", planMainElement: "好友头像" },
-    ],
-  },
-  {
-    id: "combo-repay",
-    name: "组合图标：还款提醒",
-    content: "账单提醒",
-    comboIconTriggerMode: "auto",
-    expect: [
-      { label: "应该命中还款提醒", matchedSubject: "还款提醒" },
-      { label: "主元素应该是账单日历", planMainElement: "账单日历" },
-    ],
-  },
-  {
-    id: "combo-negative",
-    name: "组合图标：反向测试",
-    content: "做一个可爱的图标",
-    comboIconTriggerMode: "auto",
-    expect: [
-      { label: "不应该命中 comboIconSkill", comboApplied: false },
-      { label: "triggerMode 应该为 none", triggerMode: "none" },
-    ],
-  },
-  {
-    id: "combo-negation",
-    name: "组合图标：不要金币",
-    content: "提额，但不要金币",
-    comboIconTriggerMode: "explicit",
-    expect: [
-      { label: "应该显式命中 comboIconSkill", comboApplied: true },
-      { label: "triggerMode 应该为 explicit", triggerMode: "explicit" },
-      { label: "finalPrompt 不应包含金币", finalPromptNotIncludes: "金币" },
-    ],
-  },
 ];
 
 function qs(selector) {
@@ -329,7 +241,6 @@ function applyScenario(scenarioId) {
   qs("#operation-select").value = operation?.id || "";
   qs("#reference-count-select").value = String(scenario.referenceCount || 0);
   qs("#input-type-select").value = "auto";
-  qs("#combo-icon-trigger-select").value = scenario.comboIconTriggerMode || "auto";
 
   for (const optionItem of qs("#material-select").options) {
     optionItem.selected = Boolean(material && optionItem.value === material.id);
@@ -367,7 +278,6 @@ function buildRequestFromForm(overrides = {}) {
     colorPaletteId: qs("#palette-select").value || undefined,
     shapeArchitectureId: qs("#shape-select").value || undefined,
     operationScenarioId: qs("#operation-select").value || undefined,
-    comboIconTriggerMode: qs("#combo-icon-trigger-select").value,
     usePromptOrchestrator: qs("#orchestrator-checkbox").checked,
     ...overrides,
   };
@@ -385,7 +295,7 @@ function getByPath(value, path) {
 }
 
 function evaluateExpectations(result, scenario) {
-  const combinedPrompt = `${result.finalPrompt || result.positivePrompt}\n${result.negativePrompt}`;
+  const combinedPrompt = `${result.positivePrompt}\n${result.negativePrompt}`;
 
   return (scenario.expect || []).map((expectation) => {
     let passed = true;
@@ -410,46 +320,6 @@ function evaluateExpectations(result, scenario) {
       passed = result.resolvedConfig.model?.provider === expectation.resolvedProvider;
     }
 
-    if (expectation.comboApplied !== undefined) {
-      passed = result.isComboIconSkillApplied === expectation.comboApplied;
-    }
-
-    if (expectation.triggerMode) {
-      passed = result.triggerMode === expectation.triggerMode;
-    }
-
-    if (expectation.matchedSubject) {
-      passed = result.matchedSubject === expectation.matchedSubject;
-    }
-
-    if (expectation.matchedAlias) {
-      passed = result.matchedAlias === expectation.matchedAlias;
-    }
-
-    if (expectation.businessIntent) {
-      passed = result.businessIntent === expectation.businessIntent;
-    }
-
-    if (expectation.visualDirection) {
-      passed = result.visualDirection === expectation.visualDirection;
-    }
-
-    if (expectation.candidateIncludes) {
-      passed = (result.candidateElements || []).includes(expectation.candidateIncludes);
-    }
-
-    if (expectation.planMainElement) {
-      passed = result.comboIconPlan?.mainElement === expectation.planMainElement;
-    }
-
-    if (expectation.finalPromptIncludes) {
-      passed = (result.finalPrompt || "").includes(expectation.finalPromptIncludes);
-    }
-
-    if (expectation.finalPromptNotIncludes) {
-      passed = !(result.finalPrompt || "").includes(expectation.finalPromptNotIncludes);
-    }
-
     return { label: expectation.label, passed };
   });
 }
@@ -469,16 +339,6 @@ function renderSingleResult(result, scenario) {
   const removedText = result.removedLowPrioritySegments.length
     ? JSON.stringify(result.removedLowPrioritySegments, null, 2)
     : "没有剔除低优先级片段";
-  const comboDebug = {
-    isComboIconSkillApplied: result.isComboIconSkillApplied,
-    triggerMode: result.triggerMode,
-    matchedSubject: result.matchedSubject,
-    matchedAlias: result.matchedAlias,
-    businessIntent: result.businessIntent,
-    visualDirection: result.visualDirection,
-    candidateElements: result.candidateElements,
-    comboIconPlan: result.comboIconPlan,
-  };
 
   qs("#single-result").innerHTML = `
     <div class="result-grid">
@@ -497,14 +357,6 @@ function renderSingleResult(result, scenario) {
       <div>
         <h2>removedLowPrioritySegments</h2>
         <pre>${escapeHtml(removedText)}</pre>
-      </div>
-      <div>
-        <h2>comboIconSkill</h2>
-        <pre>${escapeHtml(JSON.stringify(comboDebug, null, 2))}</pre>
-      </div>
-      <div>
-        <h2>finalPrompt</h2>
-        <div class="prompt-box">${escapeHtml(result.finalPrompt || result.positivePrompt)}</div>
       </div>
     </div>
     ${renderAssertions(assertions)}
@@ -534,7 +386,7 @@ function renderBatchResult(rows) {
       <div class="test-row">
         <strong>${row.name}</strong>
         <div>
-          <div class="muted">${escapeHtml((row.result.finalPrompt || row.result.positivePrompt).slice(0, 220))}${(row.result.finalPrompt || row.result.positivePrompt).length > 220 ? "..." : ""}</div>
+          <div class="muted">${escapeHtml(row.result.positivePrompt.slice(0, 220))}${row.result.positivePrompt.length > 220 ? "..." : ""}</div>
           ${renderAssertions(row.assertions)}
         </div>
         <span class="pill${statusClass}">${statusText}</span>

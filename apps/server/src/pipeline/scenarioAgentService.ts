@@ -280,10 +280,12 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
 }
 
 function extractJsonObject(content: string): Record<string, unknown> | undefined {
+  const cleanContent = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+
   try {
-    return JSON.parse(content);
+    return JSON.parse(cleanContent);
   } catch {
-    const match = content.match(/\{[\s\S]*\}/);
+    const match = cleanContent.match(/\{[\s\S]*\}/);
     if (!match) {
       return undefined;
     }
@@ -298,8 +300,52 @@ function extractJsonObject(content: string): Record<string, unknown> | undefined
 
 function extractMarkdownSection(content: string, heading: string): string | undefined {
   const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = content.match(new RegExp(`(?:^|\\n)(?:##\\s*)?${escaped}\\s*[:：]?\\s*\\n([\\s\\S]*?)(?=\\n(?:##\\s*)?prompt_(?:main|negative)\\s*[:：]?\\s*\\n|$)`, "i"));
-  return match?.[1]?.trim();
+  const sameLineMatch = content.match(new RegExp(`(?:^|\\n)\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?${escaped}(?:\\*\\*)?\\s*[:：]\\s*([^\\n]+)`, "i"));
+
+  if (sameLineMatch?.[1]?.trim()) {
+    return sameLineMatch[1].trim();
+  }
+
+  const blockMatch = content.match(new RegExp(`(?:^|\\n)\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?${escaped}(?:\\*\\*)?\\s*[:：]?\\s*\\n([\\s\\S]*?)(?=\\n\\s*(?:#{1,6}\\s*)?(?:\\*\\*)?prompt[_-](?:main|negative)(?:\\*\\*)?\\s*[:：]?\\s*(?:\\n|$)|$)`, "i"));
+
+  return blockMatch?.[1]?.trim();
+}
+
+function getStringField(value: Record<string, unknown> | undefined, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const field = value?.[key];
+
+    if (typeof field === "string" && field.trim()) {
+      return field.trim();
+    }
+  }
+
+  return undefined;
+}
+
+function buildMiniatureWorldPrompt(parsedOutput: Record<string, unknown> | undefined, rawOutput: string): string {
+  const modelPrompt = getStringField(parsedOutput, ["finalPrompt", "final_prompt", "prompt_main", "promptMain"]);
+
+  if (modelPrompt?.includes(miniatureWorldBasePrompt)) {
+    return modelPrompt;
+  }
+
+  const sceneModules = Array.isArray(parsedOutput?.sceneModules)
+    ? parsedOutput.sceneModules.map((item) => String(item)).filter(Boolean)
+    : [];
+  const layoutDescription = Array.isArray(parsedOutput?.layoutDescription)
+    ? parsedOutput.layoutDescription.map((item) => String(item)).filter(Boolean)
+    : [];
+  const fallbackSceneText = [
+    getStringField(parsedOutput, ["topicAnalysis", "topic_analysis"]),
+    getStringField(parsedOutput, ["spatialArchetype", "spatial_archetype"]),
+    getStringField(parsedOutput, ["surfaceDecision", "surface_decision"]),
+    ...layoutDescription,
+    ...sceneModules,
+  ].filter(Boolean).join("\n");
+  const sceneText = fallbackSceneText || rawOutput.trim();
+
+  return `${miniatureWorldBasePrompt}\n\n【场景模块】\n${sceneText}`;
 }
 
 export function parseScenarioAgentTrigger(content: string): { agent: ScenarioAgentDefinition; userTheme: string } | undefined {
@@ -379,11 +425,12 @@ export async function runScenarioAgent(
 
     const rawOutput = payload.choices?.[0]?.message?.content || "";
     const parsedOutput = parsed.agent.id === "miniature-world" ? extractJsonObject(rawOutput) : undefined;
+    const stageOutput = parsed.agent.id === "single-stage" ? extractJsonObject(rawOutput) : undefined;
     const promptMain = parsed.agent.id === "miniature-world"
-      ? String(parsedOutput?.finalPrompt || "")
-      : extractMarkdownSection(rawOutput, "prompt_main");
+      ? buildMiniatureWorldPrompt(parsedOutput, rawOutput)
+      : getStringField(stageOutput, ["prompt_main", "promptMain", "mainPrompt"]) || extractMarkdownSection(rawOutput, "prompt_main");
     const promptNegative = parsed.agent.id === "single-stage"
-      ? extractMarkdownSection(rawOutput, "prompt_negative")
+      ? getStringField(stageOutput, ["prompt_negative", "promptNegative", "negativePrompt"]) || extractMarkdownSection(rawOutput, "prompt_negative")
       : undefined;
 
     return {

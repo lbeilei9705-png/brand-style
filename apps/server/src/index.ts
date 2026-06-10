@@ -301,6 +301,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "POST" && pathname === "/api/scenario-agent/complete") {
+      const completion = await conversationService.completeScenarioAgent(
+        await readJsonRequest(req) as Parameters<ConversationService["completeScenarioAgent"]>[0],
+      );
+      sendJson(res, 200, completion);
+      return;
+    }
+
     const deleteAgentMatch = pathname.match(/^\/api\/config\/agents\/([^/]+)$/);
 
     if (req.method === "DELETE" && deleteAgentMatch) {

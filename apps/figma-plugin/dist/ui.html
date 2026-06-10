@@ -1189,6 +1189,20 @@
       let activeConversationId = null;
       let activeGenerationController = null;
       const pendingInsertButtons = new Map();
+      const builtInScenarioAgents = [
+        {
+          id: "miniature-world",
+          name: "微缩世界",
+          trigger: "/微缩世界",
+          description: "适合微缩模型世界、运营活动主视觉、3:4 KV。",
+        },
+        {
+          id: "single-stage",
+          name: "单体舞台",
+          trigger: "/单体舞台",
+          description: "适合圆形舞台单体场景、系列化活动视觉、4:3 KV。",
+        },
+      ];
 
       function authHeaders(extraHeaders = {}) {
         return {
@@ -1636,6 +1650,7 @@
         }
 
         const hasText = Boolean(messageInput.value.trim());
+        const isScenarioAgentPrompt = Boolean(getScenarioAgentFromContent(messageInput.value));
         const hasConfig = Boolean(
           agentSelect.value
           || colorPaletteId
@@ -1647,11 +1662,11 @@
         const canRun = hasText || (selectedAssets.length > 0 && !hasOnlyImageWithoutDirection);
         const directionHint = "请描述要怎么处理这张图，或选择一个风格/形状/配色/材质。";
         sendButton.disabled = !canRun;
-        sendButton.textContent = canRun ? "整活" : "没活";
+        sendButton.textContent = canRun ? isScenarioAgentPrompt ? "生成Prompt" : "整活" : "没活";
         sendButton.title = hasOnlyImageWithoutDirection
           ? directionHint
           : canRun
-            ? "开始生成"
+            ? isScenarioAgentPrompt ? "让场景智能体补全 Prompt" : "开始生成"
             : "请输入需求，或添加参考图并选择生成方向。";
 
         if (hasOnlyImageWithoutDirection) {
@@ -1738,6 +1753,44 @@
         selectionStatus.textContent = "生成完成，已清空本次参考图和搭配选择。";
       }
 
+      function clearStyleSelectionsForScenarioAgent() {
+        materialPresetIds = [];
+        colorPaletteId = "";
+        shapeArchitectureId = "";
+        selectedOperationScenarioId = "";
+        agentSelect.value = "";
+        colorPaletteSelect.value = "";
+        shapeArchitectureSelect.value = "";
+        materialPanel.classList.remove("open");
+        renderMaterialPanel();
+        updateRunState();
+      }
+
+      function getScenarioAgentFromContent(content) {
+        const trimmed = content.trim();
+
+        return builtInScenarioAgents.find((agent) => (
+          trimmed === agent.trigger || trimmed.startsWith(`${agent.trigger} `)
+        ));
+      }
+
+      function getSlashContext() {
+        const cursor = messageInput.selectionStart || 0;
+        const beforeCursor = messageInput.value.slice(0, cursor);
+        const match = beforeCursor.match(/(^|\s)\/([^\s/]*)$/);
+
+        if (!match) {
+          return undefined;
+        }
+
+        const query = match[2];
+        return {
+          query,
+          start: cursor - query.length - 1,
+          end: cursor,
+        };
+      }
+
       function getMentionContext() {
         const cursor = messageInput.selectionStart || 0;
         const beforeCursor = messageInput.value.slice(0, cursor);
@@ -1763,6 +1816,36 @@
 
       function buildScenarioText(scenario) {
         return scenario.variablePrompt || scenario.content || "";
+      }
+
+      function insertScenarioAgentTrigger(agent) {
+        const context = getSlashContext();
+        const value = messageInput.value;
+        const insertText = `${agent.trigger} `;
+        clearStyleSelectionsForScenarioAgent();
+
+        if (!context) {
+          messageInput.value = value ? `${value}\n${insertText}` : insertText;
+          messageInput.focus();
+          messageInput.selectionStart = messageInput.selectionEnd = messageInput.value.length;
+          hideScenarioPanel();
+          resizeMessageInput();
+          selectionStatus.textContent = "已选择场景智能体，请继续输入主题后点击“生成Prompt”。";
+          updateRunState();
+          return;
+        }
+
+        const prefix = value.slice(0, context.start);
+        const suffix = value.slice(context.end);
+        const needsSpace = suffix && !/^\s/.test(suffix) ? " " : "";
+        messageInput.value = `${prefix}${insertText}${needsSpace}${suffix}`;
+        const cursor = prefix.length + insertText.length;
+        messageInput.focus();
+        messageInput.selectionStart = messageInput.selectionEnd = cursor;
+        hideScenarioPanel();
+        resizeMessageInput();
+        selectionStatus.textContent = "已选择场景智能体，请继续输入主题后点击“生成Prompt”。";
+        updateRunState();
       }
 
       function insertScenarioContent(scenario) {
@@ -1793,7 +1876,46 @@
         updateRunState();
       }
 
+      function insertActiveScenarioSuggestion(suggestion) {
+        if (suggestion.type === "scenario-agent") {
+          insertScenarioAgentTrigger(suggestion.agent);
+          return;
+        }
+
+        insertScenarioContent(suggestion.scenario);
+      }
+
       function renderScenarioSuggestions() {
+        const slashContext = getSlashContext();
+        if (slashContext) {
+          const query = slashContext.query.trim().toLowerCase();
+          activeScenarioSuggestions = builtInScenarioAgents
+            .filter((agent) => !query || agent.name.toLowerCase().includes(query) || agent.trigger.toLowerCase().includes(query))
+            .slice(0, 8)
+            .map((agent) => ({ type: "scenario-agent", agent }));
+
+          scenarioPanel.innerHTML = "";
+
+          if (!activeScenarioSuggestions.length) {
+            hideScenarioPanel();
+            return;
+          }
+
+          for (const [index, suggestion] of activeScenarioSuggestions.entries()) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `scenario-option${index === 0 ? " active" : ""}`;
+            button.innerHTML = `<strong></strong><span></span>`;
+            button.querySelector("strong").textContent = suggestion.agent.trigger;
+            button.querySelector("span").textContent = suggestion.agent.description;
+            button.addEventListener("click", () => insertActiveScenarioSuggestion(suggestion));
+            scenarioPanel.appendChild(button);
+          }
+
+          scenarioPanel.classList.add("open");
+          return;
+        }
+
         const context = getMentionContext();
 
         if (!context) {
@@ -1804,7 +1926,8 @@
         const query = context.query.trim().toLowerCase();
         activeScenarioSuggestions = operationScenarios
           .filter((scenario) => !query || scenario.name.toLowerCase().includes(query))
-          .slice(0, 8);
+          .slice(0, 8)
+          .map((scenario) => ({ type: "operation-scenario", scenario }));
 
         scenarioPanel.innerHTML = "";
 
@@ -1813,14 +1936,14 @@
           return;
         }
 
-        for (const [index, scenario] of activeScenarioSuggestions.entries()) {
+        for (const [index, suggestion] of activeScenarioSuggestions.entries()) {
           const button = document.createElement("button");
           button.type = "button";
           button.className = `scenario-option${index === 0 ? " active" : ""}`;
           button.innerHTML = `<strong></strong><span></span>`;
-          button.querySelector("strong").textContent = `@${scenario.name}`;
-          button.querySelector("span").textContent = scenario.description || buildScenarioText(scenario).slice(0, 36);
-          button.addEventListener("click", () => insertScenarioContent(scenario));
+          button.querySelector("strong").textContent = `@${suggestion.scenario.name}`;
+          button.querySelector("span").textContent = suggestion.scenario.description || buildScenarioText(suggestion.scenario).slice(0, 36);
+          button.addEventListener("click", () => insertActiveScenarioSuggestion(suggestion));
           scenarioPanel.appendChild(button);
         }
 
@@ -2101,6 +2224,27 @@
         return data;
       }
 
+      async function completeScenarioAgentPrompt(content, messageAttachments, signal) {
+        const response = await apiFetch("/api/scenario-agent/complete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            content,
+            selectionAssets: messageAttachments,
+          }),
+          signal,
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "场景智能体生成 Prompt 失败");
+        }
+
+        return data;
+      }
+
       function isAbortError(error) {
         return error?.name === "AbortError";
       }
@@ -2144,9 +2288,41 @@
           return;
         }
 
+        const scenarioAgent = getScenarioAgentFromContent(content);
+        const messageAttachments = getLabeledSelectedAssets();
+
+        if (scenarioAgent) {
+          const generationController = new AbortController();
+          activeGenerationController = generationController;
+          isSending = true;
+          clearStyleSelectionsForScenarioAgent();
+          updateRunState();
+          const pending = addMessage("system", `正在调用「${scenarioAgent.name}」补全 Prompt...`);
+
+          try {
+            const data = await completeScenarioAgentPrompt(content, messageAttachments, generationController.signal);
+            messageInput.value = data.prompt;
+            resizeMessageInput();
+            pending.textContent = data.promptNegative
+              ? `「${scenarioAgent.name}」已生成 Prompt，已回填正向 Prompt。负面提示词供调试参考：${data.promptNegative}`
+              : `「${scenarioAgent.name}」已生成 Prompt，已回填到输入框。你可以继续修改，确认后再点击生成。`;
+            selectionStatus.textContent = "场景智能体已补全 Prompt；普通风格套装和自由搭配已清空。";
+          } catch (error) {
+            pending.textContent = isAbortError(error)
+              ? "已暂停场景智能体补全。"
+              : error.message;
+          } finally {
+            isSending = false;
+            if (activeGenerationController === generationController) {
+              activeGenerationController = null;
+            }
+            updateRunState();
+          }
+          return;
+        }
+
         const loadingText = "正在渲染一种‘甲方闭嘴’的高级感...";
         let renderTimer;
-        const messageAttachments = getLabeledSelectedAssets();
         const generationController = new AbortController();
         activeGenerationController = generationController;
         isSending = true;
@@ -2322,7 +2498,7 @@
       messageInput.addEventListener("keydown", (event) => {
         if ((event.key === "Enter" || event.key === "Tab") && scenarioPanel.classList.contains("open") && activeScenarioSuggestions[0]) {
           event.preventDefault();
-          insertScenarioContent(activeScenarioSuggestions[0]);
+          insertActiveScenarioSuggestion(activeScenarioSuggestions[0]);
           return;
         }
 

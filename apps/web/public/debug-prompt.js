@@ -245,20 +245,25 @@ function getOriginalPalette() {
   return enabled(state.colorPalettes).find((palette) => palette.name.includes("原图色彩"));
 }
 
+function isScenarioAgentScenario(scenario) {
+  return scenario.content.trim().startsWith("/");
+}
+
 function applyScenario(scenarioId) {
   const scenario = scenarios.find((item) => item.id === scenarioId) || scenarios[0];
+  const isScenarioAgent = isScenarioAgentScenario(scenario);
   const model = scenario.pickMockModel
     ? enabled(state.models).find((item) => item.provider === "mock") || getFirstImageModel()
     : getFirstImageModel();
-  const agent = getDefaultAgent();
-  const palette = scenario.pickPalette === "original"
+  const agent = isScenarioAgent ? undefined : getDefaultAgent();
+  const palette = !isScenarioAgent && scenario.pickPalette === "original"
     ? getOriginalPalette()
-    : scenario.pickPalette === "firstManual"
+    : !isScenarioAgent && scenario.pickPalette === "firstManual"
       ? getManualPalette()
       : undefined;
-  const shape = scenario.pickShape ? enabled(state.shapeArchitectures)[0] : undefined;
-  const material = scenario.pickMaterial ? enabled(state.materials)[0] : undefined;
-  const operation = scenario.pickOperation ? enabled(state.operationScenarios)[0] : undefined;
+  const shape = !isScenarioAgent && scenario.pickShape ? enabled(state.shapeArchitectures)[0] : undefined;
+  const material = !isScenarioAgent && scenario.pickMaterial ? enabled(state.materials)[0] : undefined;
+  const operation = !isScenarioAgent && scenario.pickOperation ? enabled(state.operationScenarios)[0] : undefined;
 
   qs("#content-input").value = scenario.content;
   qs("#model-select").value = model?.id || "";
@@ -399,6 +404,16 @@ function renderSingleResult(result, scenario) {
     ? JSON.stringify(result.removedLowPrioritySegments, null, 2)
     : "没有剔除低优先级片段";
   const scenarioAgentHtml = renderScenarioAgent(result.scenarioAgent);
+
+  if (result.scenarioAgent?.isScenarioAgentApplied) {
+    qs("#single-result").innerHTML = `
+      ${scenarioAgentHtml}
+      ${renderAssertions(assertions)}
+      <h2 style="margin-top:16px;">resolvedConfig</h2>
+      <pre>${escapeHtml(JSON.stringify(result.resolvedConfig, null, 2))}</pre>
+    `;
+    return;
+  }
 
   qs("#single-result").innerHTML = `
     ${scenarioAgentHtml}

@@ -459,12 +459,36 @@ export class ConversationService {
     if (highestReferencedImageIndex > selectionAssets.length) {
       throw new Error(`你提到了图${highestReferencedImageIndex}，但当前只添加了 ${selectionAssets.length} 张参考图。`);
     }
+    const languageModel = this.getLanguageModel();
     const scenarioAgent = await runScenarioAgent({
       content: request.content,
       selectionAssets,
-      model: this.getLanguageModel(),
+      model: languageModel,
       fallbackConfig: this.fintopiaConfig,
     });
+
+    if (scenarioAgent.isScenarioAgentApplied) {
+      return {
+        resolvedConfig: {
+          model: { id: model.id, name: model.name, provider: model.provider },
+          languageModel: languageModel
+            ? { id: languageModel.id, name: languageModel.name, provider: languageModel.provider }
+            : undefined,
+          styleSkill: { id: agent.id, name: agent.name },
+          usePromptOrchestrator: false,
+          referenceImageCount: selectionAssets.length,
+          scenarioAgentMode: true,
+        },
+        positivePrompt: "",
+        negativePrompt: "",
+        removedLowPrioritySegments: [],
+        finalModelPayload: {
+          scenarioAgentOnly: true,
+          message: "场景智能体模式只生成 Prompt，不运行普通 prompt 拼装，也不调用真实生图。",
+        },
+        scenarioAgent,
+      };
+    }
 
     const primaryAsset = selectionAssets[0] || {
       id: "text-only",
@@ -616,6 +640,52 @@ export class ConversationService {
       },
       scenarioAgent,
       promptOrchestratorError: preview.promptOrchestratorError,
+    };
+  }
+
+  async completeScenarioAgent(request: {
+    content: string;
+    selectionAssets?: AddConversationMessageRequest["selectionAssets"];
+  }): Promise<{
+    scenarioAgent: ScenarioAgentDebugResult;
+    prompt: string;
+    promptNegative?: string;
+  }> {
+    const selectionAssets = (request.selectionAssets || []).map((asset, index) => ({
+      ...asset,
+      referenceLabel: asset.referenceLabel || `图${index + 1}`,
+    }));
+    const highestReferencedImageIndex = getHighestReferencedImageIndex(request.content);
+
+    if (highestReferencedImageIndex > selectionAssets.length) {
+      throw new Error(`你提到了图${highestReferencedImageIndex}，但当前只添加了 ${selectionAssets.length} 张参考图。`);
+    }
+
+    const scenarioAgent = await runScenarioAgent({
+      content: request.content,
+      selectionAssets,
+      model: this.getLanguageModel(),
+      fallbackConfig: this.fintopiaConfig,
+    });
+
+    if (!scenarioAgent.isScenarioAgentApplied) {
+      throw new Error("没有识别到场景智能体，请先用 /微缩世界 或 /单体舞台 触发。");
+    }
+
+    if (scenarioAgent.error) {
+      throw new Error(scenarioAgent.error);
+    }
+
+    const prompt = scenarioAgent.promptMain || scenarioAgent.rawOutput || "";
+
+    if (!prompt.trim()) {
+      throw new Error("场景智能体没有返回可用 Prompt。");
+    }
+
+    return {
+      scenarioAgent,
+      prompt,
+      promptNegative: scenarioAgent.promptNegative,
     };
   }
 

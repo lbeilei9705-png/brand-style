@@ -287,36 +287,78 @@ function renderScenarioAgents() {
 }
 
 function renderScenarioAgentCases() {
-  const table = qs("#scenario-agent-cases-table");
-  table.innerHTML = "";
+  const container = qs("#scenario-agent-cases-groups");
+  container.innerHTML = "";
   const ratingText = {
     excellent: "优秀",
     neutral: "一般",
     failed: "失败",
   };
+  const groups = state.scenarioAgents.map((agent) => ({
+    id: agent.id,
+    name: agent.name,
+    trigger: agent.trigger,
+    description: agent.description,
+    items: state.scenarioAgentCases.filter((item) => item.scenarioAgentId === agent.id),
+  }));
+  const unmatchedItems = state.scenarioAgentCases.filter((item) => (
+    !state.scenarioAgents.some((agent) => agent.id === item.scenarioAgentId)
+  ));
 
-  for (const item of state.scenarioAgentCases) {
-    const agent = state.scenarioAgents.find((scenarioAgent) => scenarioAgent.id === item.scenarioAgentId);
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>
-        <strong>${item.title}</strong>
-        <span class="muted">${item.userInput}</span>
-      </td>
-      <td>${agent ? `${agent.name}<br><span class="muted">${agent.trigger}</span>` : item.scenarioAgentId}</td>
-      <td>
-        <strong>${ratingText[item.rating] || item.rating}</strong>
-        <span class="muted">${(item.tags || []).join(" / ") || "-"}</span>
-      </td>
-      <td>${renderStatus(item.enabled)}</td>
-      <td>
-        <div class="row-actions">
-          <button class="secondary-button" data-action="edit-scenario-agent-case" data-id="${item.id}" type="button">编辑</button>
-          <button class="danger-button" data-action="delete-scenario-agent-case" data-id="${item.id}" type="button">删除</button>
+  if (unmatchedItems.length) {
+    groups.push({
+      id: "__unmatched__",
+      name: "未匹配智能体",
+      trigger: "案例所属智能体已删除或不可用",
+      description: "这些案例仍保留在案例库中，但当前找不到对应智能体配置。",
+      items: unmatchedItems,
+    });
+  }
+
+  for (const group of groups) {
+    const section = document.createElement("section");
+    section.className = "case-group";
+    const rows = group.items.map((item) => `
+      <tr>
+        <td>
+          <strong>${item.title}</strong>
+          <span class="muted">${item.userInput}</span>
+        </td>
+        <td>
+          <strong>${ratingText[item.rating] || item.rating}</strong>
+          <span class="muted">${(item.tags || []).join(" / ") || "-"}</span>
+        </td>
+        <td>${renderStatus(item.enabled)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="secondary-button" data-action="edit-scenario-agent-case" data-id="${item.id}" type="button">编辑</button>
+            <button class="danger-button" data-action="delete-scenario-agent-case" data-id="${item.id}" type="button">删除</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+
+    section.innerHTML = `
+      <header class="case-group-header">
+        <div>
+          <h3>${group.name}</h3>
+          <p class="muted">${group.trigger}${group.description ? ` · ${group.description}` : ""}</p>
         </div>
-      </td>
+        <span class="case-count">${group.items.length} 个案例</span>
+      </header>
+      <table>
+        <thead>
+          <tr>
+            <th>案例</th>
+            <th>标签 / 评分</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>${rows || '<tr><td colspan="4" class="muted">暂无案例</td></tr>'}</tbody>
+      </table>
     `;
-    table.appendChild(row);
+    container.appendChild(section);
   }
 }
 

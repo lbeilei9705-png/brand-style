@@ -564,5 +564,140 @@
       "updatedAt": "2026-06-10T10:20:15.423Z"
     }
   ],
-  "scenarioAgentCases": []
+  "scenarioAgentCases": [
+    {
+      "id": "scenario_agent_case_1781097174106",
+      "scenarioAgentId": "miniature-world",
+      "title": "春节",
+      "userInput": "春节",
+      "positivePrompt": "场景1:春节\n超级符号造型的地板作为微缩场景主体，超级符号造型的地板摆放在书法桌面上，桌面上有一张宣纸，宣纸上是超级符号造型的地板，地板上有挂起来的灯笼、福字装饰、符号为¥的金币堆、梅花、中国结等。IP角色穿着春节主题简化服饰（红色中式外套、金色点缀），IP角色站在地板上正在挂灯笼，动作幅度小且稳定。\n",
+      "negativePrompt": "",
+      "tags": [
+        "春节",
+        "中式"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:12:54.106Z",
+      "updatedAt": "2026-06-10T13:12:54.106Z"
+    },
+    {
+      "id": "scenario_agent_case_1781097222543",
+      "scenarioAgentId": "miniature-world",
+      "title": "端午节",
+      "userInput": "端午节\n",
+      "positivePrompt": "场景2:端午节\n超级符号造型的小船作为微缩场景主体，超级符号造型的木棍扎成的小船上有成堆的金币、粽叶、桌子、蒸笼。小船飘在水面上，水面有几个荷叶和荷花。IP角色穿着极简的端午节氛围服饰元素，灰色背心低饱和度青绿色围裙，进行包粽子的动作，双手合拢粽叶，将闪亮的金币作为馅料放入其中，动作幅度小且稳定，IP头微微仰起。\n",
+      "negativePrompt": "",
+      "tags": [
+        "端午",
+        "粽子"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:13:42.543Z",
+      "updatedAt": "2026-06-10T13:13:42.543Z"
+    },
+    {
+      "id": "scenario_agent_case_1781097261396",
+      "scenarioAgentId": "miniature-world",
+      "title": "国庆节",
+      "userInput": "国庆节",
+      "positivePrompt": "超级符号造型的立体行李箱作为微缩场景主体，没有盖子的黄色行李箱摆放在棕色地板的黄绿色短毛绒地垫上。超级符号造型的行李箱有一圈拉链。超级符号造型的行李箱内部有堆放的符号为¥的金币。叠好的衣服、墨镜，一个帽子搭在行李箱边缘。IP 小罐穿着简化的出游风格服饰（轻便外套、小背包），站在行李箱内拿着望远镜，动作幅度小且稳定，呈现轻松出行状态。",
+      "negativePrompt": "",
+      "tags": [
+        "国庆节"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:14:21.396Z",
+      "updatedAt": "2026-06-10T13:14:21.396Z"
+    },
+    {
+      "id": "scenario_agent_case_1781097366322",
+      "scenarioAgentId": "miniature-world",
+      "title": "超级钱包节",
+      "userInput": "超级钱包节",
+      "positivePrompt": "超级符号造型的立体钱包容器作为微缩场景主体。\n超级符号造型的钱包容器摆放在地面基底上，整体处于打开状态。\n超级符号造型的钱包内部陈列有¥金币与额度卡片。\n部分金币自然分布在容器内部或边缘位置。\n 角色小罐站在钱包容器内部进行互动。\n场景元素：¥金币、额度卡片、优惠券图形卡\n服饰：简化商务休闲风外套，低饱和蓝绿色系\n动作：双手捧着额度卡片进行展示，动作幅度小且稳定",
+      "negativePrompt": "",
+      "tags": [
+        "超级钱包节"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:16:06.322Z",
+      "updatedAt": "2026-06-10T13:16:06.322Z"
+    },
+    {
+      "id": "scenario_agent_case_1781097418010",
+      "scenarioAgentId": "miniature-world",
+      "title": "中秋节",
+      "userInput": "中秋节",
+      "positivePrompt": "空间结构：\n超级符号造型的圆形月饼台座作为微缩场景主体。\n超级符号造型的月饼台座摆放在木质桌面上。\n木质桌面上铺有浅色桌布，桌布中央承载超级符号造型的月饼台座结构。\nIP 角色小罐站在月饼台座上进行互动。\n场景元素：切开的月饼、¥金币（作为馅料点缀）、玉兔摆件、茶壶、茶杯、桂花装饰\n服饰：浅米色中式外套，低饱和金色细节点缀\n动作：双手捧着切开的月饼进行展示，动作幅度小且稳定\n",
+      "negativePrompt": "",
+      "tags": [
+        "中秋节"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:16:58.010Z",
+      "updatedAt": "2026-06-10T13:16:58.010Z"
+    },
+    {
+      "id": "scenario_agent_case_1781097465023",
+      "scenarioAgentId": "miniature-world",
+      "title": "教师节",
+      "userInput": "教师节",
+      "positivePrompt": "超级符号造型的书本作为微缩场景主体。超级符号书本摆放在木质基础桌面上。桌面上铺有浅色桌布，桌布中央承载书本结构。IP 角色小罐站在超级符号上进行互动。场景元素：超大的教案纸张铺在超级符号下面、超大的笔筒放在超级符号旁边、一束鲜花、 ¥金币点缀、一支粉笔服饰：简化日常风格服饰，浅色系动作：微微仰头，双手捧着鲜花向前递出，动作幅度小且稳定氛围描述：整体画面呈现教师节的温和纪念氛围，安静克制，突出尊重与感谢",
+      "negativePrompt": "",
+      "tags": [
+        "教师节",
+        "教育"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:17:45.023Z",
+      "updatedAt": "2026-06-10T13:17:45.023Z"
+    },
+    {
+      "id": "scenario_agent_case_1781097528218",
+      "scenarioAgentId": "single-stage",
+      "title": "金秋钱袋丰收",
+      "userInput": "金秋钱袋丰收",
+      "positivePrompt": "场景主题1：[金秋钱袋丰收]\n角色动作：[双手抱着红色钱袋，身穿浅米色背心，浅棕色裤子带腰带，简化披风]\n主道具：[自然鼓起的大号钱袋]\n辅助道具：[元宝]、[符号为¥的金币]、[宝石]、[麦穗]、[果实]、[田地]、[元宝贴纸]。金币堆满脚下，果实放在篮子中。\n氛围词：[丰收稳定财富]\n",
+      "negativePrompt": "",
+      "tags": [
+        "金秋",
+        "钱袋",
+        "丰收"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:18:48.218Z",
+      "updatedAt": "2026-06-10T13:18:48.218Z"
+    },
+    {
+      "id": "scenario_agent_case_1781097575558",
+      "scenarioAgentId": "single-stage",
+      "title": "春天户外野餐",
+      "userInput": "春天户外野餐",
+      "positivePrompt": "场景主题2：[春天户外野餐]\n角色动作：[坐着的姿势，身体微微后仰，姿态轻松]\n主道具：[野餐篮放在脚边]\n辅助道具：[鲜花]、[小植物]、[木质围栏]、[野餐垫]、[音乐和花朵贴纸]\n氛围词：[氛围活力]\n",
+      "negativePrompt": "",
+      "tags": [
+        "野餐",
+        "春天"
+      ],
+      "rating": "excellent",
+      "notes": "",
+      "enabled": true,
+      "createdAt": "2026-06-10T13:19:35.558Z",
+      "updatedAt": "2026-06-10T13:20:30.480Z"
+    }
+  ]
 }

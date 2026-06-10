@@ -1173,6 +1173,7 @@
       const sendButton = document.querySelector("#send-button");
       const resizeHandle = document.querySelector("#resize-handle");
       const scenarioPanel = document.querySelector("#scenario-panel");
+      const scenarioAgentDraftStorageKey = "brand-style-scenario-agent-draft";
       let selectedAssets = [];
       let batchSize = 1;
       let aspectRatio = "auto";
@@ -1745,7 +1746,7 @@
         colorPaletteId = "";
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
-        scenarioAgentDraft = null;
+        clearScenarioAgentDraft();
         agentSelect.value = "";
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
@@ -1762,7 +1763,7 @@
         colorPaletteId = "";
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
-        scenarioAgentDraft = null;
+        clearScenarioAgentDraft();
         agentSelect.value = "";
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
@@ -1777,6 +1778,55 @@
         return scenarioAgents.find((agent) => agent.enabled !== false && (
           trimmed === agent.trigger || trimmed.startsWith(`${agent.trigger} `)
         ));
+      }
+
+      function normalizeScenarioDraftPrompt(value) {
+        return (value || "").replace(/\s+/g, " ").trim();
+      }
+
+      function clearScenarioAgentDraft() {
+        scenarioAgentDraft = null;
+
+        try {
+          sessionStorage.removeItem(scenarioAgentDraftStorageKey);
+        } catch {
+          // Storage is best-effort; in-memory draft is enough for the current session.
+        }
+      }
+
+      function saveScenarioAgentDraft(draft) {
+        scenarioAgentDraft = draft;
+
+        try {
+          sessionStorage.setItem(scenarioAgentDraftStorageKey, JSON.stringify(draft));
+        } catch {
+          // Ignore storage failures; the in-memory draft still works until the plugin reloads.
+        }
+      }
+
+      function getScenarioAgentDraftForContent(content) {
+        const normalizedContent = normalizeScenarioDraftPrompt(content);
+
+        if (scenarioAgentDraft && normalizeScenarioDraftPrompt(scenarioAgentDraft.promptMain) === normalizedContent) {
+          return scenarioAgentDraft;
+        }
+
+        try {
+          const stored = JSON.parse(sessionStorage.getItem(scenarioAgentDraftStorageKey) || "null");
+
+          if (stored && normalizeScenarioDraftPrompt(stored.promptMain) === normalizedContent) {
+            scenarioAgentDraft = stored;
+            return stored;
+          }
+        } catch {
+          try {
+            sessionStorage.removeItem(scenarioAgentDraftStorageKey);
+          } catch {
+            // Ignore storage cleanup failures.
+          }
+        }
+
+        return null;
       }
 
       function getPreferredAspectRatioForScenarioAgent(agent, prompt) {
@@ -1794,13 +1844,15 @@
       }
 
       function buildDirectPromptFromScenarioDraft(content) {
-        if (!scenarioAgentDraft) {
+        const draft = getScenarioAgentDraftForContent(content);
+
+        if (!draft) {
           return undefined;
         }
 
         return {
           positive: content,
-          negative: scenarioAgentDraft.promptNegative || "",
+          negative: draft.promptNegative || "",
           template: "flat_to_3d",
           referencePack: {
             inputAssetId: selectedAssets[0]?.id || "text-only",
@@ -2344,10 +2396,11 @@
           try {
             const data = await completeScenarioAgentPrompt(content, messageAttachments, generationController.signal);
             messageInput.value = data.prompt;
-            scenarioAgentDraft = {
+            saveScenarioAgentDraft({
               scenarioAgentId: data.scenarioAgent?.agentId || scenarioAgent.id,
+              promptMain: data.prompt,
               promptNegative: data.promptNegative || "",
-            };
+            });
             const preferredAspectRatio = getPreferredAspectRatioForScenarioAgent(scenarioAgent, data.prompt);
 
             if (preferredAspectRatio) {
@@ -2498,7 +2551,7 @@
         colorPaletteId = "";
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
-        scenarioAgentDraft = null;
+        clearScenarioAgentDraft();
         messageInput.value = "";
         resizeMessageInput();
         selectionBar.textContent = "正在读取当前选区...";

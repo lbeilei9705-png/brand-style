@@ -6,6 +6,7 @@ const state = {
   shapeArchitectures: [],
   operationScenarios: [],
   scenarioAgents: [],
+  scenarioAgentCases: [],
 };
 
 const accessTokenStorageKey = "brand-style-admin-token";
@@ -108,9 +109,11 @@ function renderAgentDriverOptions() {
   const select = qs("#agent-driver-model");
   const importSelect = qs("#import-driver-model");
   const scenarioAgentSelect = qs("#scenario-agent-driver-model");
+  const scenarioAgentCaseSelect = qs("#scenario-agent-case-agent");
   select.innerHTML = "";
   importSelect.innerHTML = "";
   scenarioAgentSelect.innerHTML = "";
+  scenarioAgentCaseSelect.innerHTML = "";
 
   for (const model of state.models) {
     const option = document.createElement("option");
@@ -119,6 +122,13 @@ function renderAgentDriverOptions() {
     select.appendChild(option);
     importSelect.appendChild(option.cloneNode(true));
     scenarioAgentSelect.appendChild(option.cloneNode(true));
+  }
+
+  for (const agent of state.scenarioAgents) {
+    const option = document.createElement("option");
+    option.value = agent.id;
+    option.textContent = `${agent.name}（${agent.trigger}）`;
+    scenarioAgentCaseSelect.appendChild(option);
   }
 }
 
@@ -276,8 +286,42 @@ function renderScenarioAgents() {
   }
 }
 
+function renderScenarioAgentCases() {
+  const table = qs("#scenario-agent-cases-table");
+  table.innerHTML = "";
+  const ratingText = {
+    excellent: "优秀",
+    neutral: "一般",
+    failed: "失败",
+  };
+
+  for (const item of state.scenarioAgentCases) {
+    const agent = state.scenarioAgents.find((scenarioAgent) => scenarioAgent.id === item.scenarioAgentId);
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>
+        <strong>${item.title}</strong>
+        <span class="muted">${item.userInput}</span>
+      </td>
+      <td>${agent ? `${agent.name}<br><span class="muted">${agent.trigger}</span>` : item.scenarioAgentId}</td>
+      <td>
+        <strong>${ratingText[item.rating] || item.rating}</strong>
+        <span class="muted">${(item.tags || []).join(" / ") || "-"}</span>
+      </td>
+      <td>${renderStatus(item.enabled)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="secondary-button" data-action="edit-scenario-agent-case" data-id="${item.id}" type="button">编辑</button>
+          <button class="danger-button" data-action="delete-scenario-agent-case" data-id="${item.id}" type="button">删除</button>
+        </div>
+      </td>
+    `;
+    table.appendChild(row);
+  }
+}
+
 async function loadConfig() {
-  const [modelsData, agentsData, materialsData, palettesData, shapeArchitecturesData, scenariosData, scenarioAgentsData] = await Promise.all([
+  const [modelsData, agentsData, materialsData, palettesData, shapeArchitecturesData, scenariosData, scenarioAgentsData, scenarioAgentCasesData] = await Promise.all([
     requestJson("/api/config/models"),
     requestJson("/api/config/style-skills"),
     requestJson("/api/config/materials"),
@@ -285,6 +329,7 @@ async function loadConfig() {
     requestJson("/api/config/shape-architectures"),
     requestJson("/api/config/operation-scenarios"),
     requestJson("/api/config/scenario-agents"),
+    requestJson("/api/config/scenario-agent-cases"),
   ]);
   state.models = modelsData.models;
   state.agents = agentsData.styleSkills || agentsData.agents || [];
@@ -293,6 +338,7 @@ async function loadConfig() {
   state.shapeArchitectures = shapeArchitecturesData.shapeArchitectures || [];
   state.operationScenarios = scenariosData.operationScenarios || [];
   state.scenarioAgents = scenarioAgentsData.scenarioAgents || [];
+  state.scenarioAgentCases = scenarioAgentCasesData.scenarioAgentCases || [];
   renderModels();
   renderAgentDriverOptions();
   renderAgents();
@@ -301,6 +347,7 @@ async function loadConfig() {
   renderShapeArchitectures();
   renderScenarios();
   renderScenarioAgents();
+  renderScenarioAgentCases();
 }
 
 function resetModelForm() {
@@ -709,6 +756,70 @@ async function deleteScenarioAgent(agentId) {
   await loadConfig();
 }
 
+function parseTags(value) {
+  return value.split(/[\n,，]/).map((item) => item.trim()).filter(Boolean);
+}
+
+function resetScenarioAgentCaseForm() {
+  qs("#scenario-agent-case-modal-title").textContent = "新建智能体案例";
+  qs("#scenario-agent-case-form").reset();
+  qs("#scenario-agent-case-id").value = "";
+  qs("#scenario-agent-case-agent").value = state.scenarioAgents[0]?.id || "";
+  qs("#scenario-agent-case-rating").value = "excellent";
+  qs("#scenario-agent-case-enabled").value = "true";
+}
+
+function fillScenarioAgentCaseForm(item) {
+  qs("#scenario-agent-case-modal-title").textContent = "编辑智能体案例";
+  qs("#scenario-agent-case-id").value = item.id;
+  qs("#scenario-agent-case-title").value = item.title;
+  qs("#scenario-agent-case-agent").value = item.scenarioAgentId;
+  qs("#scenario-agent-case-rating").value = item.rating || "excellent";
+  qs("#scenario-agent-case-enabled").value = String(item.enabled);
+  qs("#scenario-agent-case-user-input").value = item.userInput;
+  qs("#scenario-agent-case-positive-prompt").value = item.positivePrompt;
+  qs("#scenario-agent-case-negative-prompt").value = item.negativePrompt || "";
+  qs("#scenario-agent-case-tags").value = (item.tags || []).join("\n");
+  qs("#scenario-agent-case-notes").value = item.notes || "";
+}
+
+async function saveScenarioAgentCase(event) {
+  event.preventDefault();
+  await requestJson("/api/config/scenario-agent-cases", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: qs("#scenario-agent-case-id").value || undefined,
+      scenarioAgentId: qs("#scenario-agent-case-agent").value,
+      title: qs("#scenario-agent-case-title").value,
+      userInput: qs("#scenario-agent-case-user-input").value,
+      positivePrompt: qs("#scenario-agent-case-positive-prompt").value,
+      negativePrompt: qs("#scenario-agent-case-negative-prompt").value,
+      tags: parseTags(qs("#scenario-agent-case-tags").value),
+      rating: qs("#scenario-agent-case-rating").value,
+      notes: qs("#scenario-agent-case-notes").value,
+      enabled: boolValue(qs("#scenario-agent-case-enabled").value),
+    }),
+  });
+  closeModals();
+  await loadConfig();
+}
+
+async function deleteScenarioAgentCase(caseId) {
+  const item = state.scenarioAgentCases.find((caseItem) => caseItem.id === caseId);
+
+  if (!item || !confirm(`确认删除案例「${item.title}」？`)) {
+    return;
+  }
+
+  await requestJson(`/api/config/scenario-agent-cases/${caseId}`, {
+    method: "DELETE",
+  });
+  await loadConfig();
+}
+
 document.addEventListener("click", async (event) => {
   const target = event.target;
 
@@ -761,6 +872,11 @@ document.addEventListener("click", async (event) => {
   if (target.id === "new-scenario-agent-button") {
     resetScenarioAgentForm();
     openModal("scenario-agent-modal");
+  }
+
+  if (target.id === "new-scenario-agent-case-button") {
+    resetScenarioAgentCaseForm();
+    openModal("scenario-agent-case-modal");
   }
 
   if (target.id === "import-agent-button") {
@@ -854,6 +970,18 @@ document.addEventListener("click", async (event) => {
   if (target.dataset.action === "delete-scenario-agent") {
     await deleteScenarioAgent(target.dataset.id);
   }
+
+  if (target.dataset.action === "edit-scenario-agent-case") {
+    const item = state.scenarioAgentCases.find((caseItem) => caseItem.id === target.dataset.id);
+    if (item) {
+      fillScenarioAgentCaseForm(item);
+      openModal("scenario-agent-case-modal");
+    }
+  }
+
+  if (target.dataset.action === "delete-scenario-agent-case") {
+    await deleteScenarioAgentCase(target.dataset.id);
+  }
 });
 
 qs("#model-form").addEventListener("submit", saveModel);
@@ -863,6 +991,7 @@ qs("#palette-form").addEventListener("submit", savePalette);
 qs("#shape-architecture-form").addEventListener("submit", saveShapeArchitecture);
 qs("#scenario-form").addEventListener("submit", saveScenario);
 qs("#scenario-agent-form").addEventListener("submit", saveScenarioAgent);
+qs("#scenario-agent-case-form").addEventListener("submit", saveScenarioAgentCase);
 qs("#agent-md-file").addEventListener("change", async (event) => {
   const file = event.target.files[0];
 

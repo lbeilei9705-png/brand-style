@@ -92,6 +92,23 @@ export interface ScenarioAgentConfig {
   updatedAt: string;
 }
 
+export type ScenarioAgentCaseRating = "excellent" | "neutral" | "failed";
+
+export interface ScenarioAgentCaseConfig {
+  id: string;
+  scenarioAgentId: string;
+  title: string;
+  userInput: string;
+  positivePrompt: string;
+  negativePrompt?: string;
+  tags: string[];
+  rating: ScenarioAgentCaseRating;
+  notes?: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AgentConfig {
   id: string;
   name: string;

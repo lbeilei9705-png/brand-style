@@ -283,6 +283,7 @@
           <button class="nav-button" data-page="shape-architectures-page" type="button">形状管理</button>
           <button class="nav-button" data-page="scenarios-page" type="button">运营场景管理</button>
           <button class="nav-button" data-page="scenario-agents-page" type="button">场景智能体管理</button>
+          <button class="nav-button" data-page="scenario-agent-cases-page" type="button">智能体案例库</button>
         </nav>
       </aside>
 
@@ -453,6 +454,30 @@
                 </tr>
               </thead>
               <tbody id="scenario-agents-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="scenario-agent-cases-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>智能体案例库</h2>
+              <p class="muted">沉淀场景智能体的优秀、一般和失败案例。当前版本先用于人工管理，暂不参与生成检索。</p>
+            </div>
+            <button id="new-scenario-agent-case-button" class="primary-button" type="button">新建案例</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>案例</th>
+                  <th>所属智能体</th>
+                  <th>标签 / 评分</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="scenario-agent-cases-table"></tbody>
             </table>
           </div>
         </section>
@@ -789,6 +814,65 @@
       </form>
     </div>
 
-    <script src="/admin.js?v=20260610-scenario-agents"></script>
+    <div id="scenario-agent-case-modal" class="modal-backdrop">
+      <form id="scenario-agent-case-form" class="modal">
+        <header class="modal-header">
+          <h2 id="scenario-agent-case-modal-title">新建智能体案例</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="scenario-agent-case-id" type="hidden" />
+          <label class="admin-field">
+            <span>案例标题</span>
+            <input id="scenario-agent-case-title" type="text" placeholder="例如 教师节圆形舞台" required />
+          </label>
+          <label class="admin-field">
+            <span>所属智能体</span>
+            <select id="scenario-agent-case-agent" required></select>
+          </label>
+          <label class="admin-field">
+            <span>评分</span>
+            <select id="scenario-agent-case-rating">
+              <option value="excellent">优秀</option>
+              <option value="neutral">一般</option>
+              <option value="failed">失败</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="scenario-agent-case-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>用户输入主题</span>
+            <textarea id="scenario-agent-case-user-input" placeholder="/单体舞台 教师节" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>正向 Prompt</span>
+            <textarea id="scenario-agent-case-positive-prompt" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>负向 Prompt</span>
+            <textarea id="scenario-agent-case-negative-prompt"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>标签（一行一个或逗号分隔）</span>
+            <textarea id="scenario-agent-case-tags" placeholder="教师节&#10;教育&#10;花束"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>备注</span>
+            <textarea id="scenario-agent-case-notes" placeholder="记录为什么好、哪里需要规避、是否来自人工修正版"></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存案例</button>
+        </footer>
+      </form>
+    </div>
+
+    <script src="/admin.js?v=20260610-scenario-agent-cases"></script>
   </body>
 </html>

@@ -246,6 +246,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && pathname === "/api/config/scenario-agent-cases") {
+      sendJson(res, 200, { scenarioAgentCases: configStore.listScenarioAgentCases() });
+      return;
+    }
+
     if (req.method === "POST" && pathname === "/api/config/agents") {
       const agent = configStore.upsertAgent(await readJsonRequest(req) as Parameters<ConfigStore["upsertAgent"]>[0]);
       sendJson(res, 200, { agent });
@@ -285,6 +290,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && pathname === "/api/config/scenario-agents") {
       const scenarioAgent = configStore.upsertScenarioAgent(await readJsonRequest(req) as Parameters<ConfigStore["upsertScenarioAgent"]>[0]);
       sendJson(res, 200, { scenarioAgent });
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/api/config/scenario-agent-cases") {
+      const scenarioAgentCase = configStore.upsertScenarioAgentCase(await readJsonRequest(req) as Parameters<ConfigStore["upsertScenarioAgentCase"]>[0]);
+      sendJson(res, 200, { scenarioAgentCase });
       return;
     }
 
@@ -364,6 +375,14 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "DELETE" && deleteScenarioAgentMatch) {
       const deleted = configStore.deleteScenarioAgent(deleteScenarioAgentMatch[1]);
+      sendJson(res, deleted ? 200 : 404, { deleted });
+      return;
+    }
+
+    const deleteScenarioAgentCaseMatch = pathname.match(/^\/api\/config\/scenario-agent-cases\/([^/]+)$/);
+
+    if (req.method === "DELETE" && deleteScenarioAgentCaseMatch) {
+      const deleted = configStore.deleteScenarioAgentCase(deleteScenarioAgentCaseMatch[1]);
       sendJson(res, deleted ? 200 : 404, { deleted });
       return;
     }

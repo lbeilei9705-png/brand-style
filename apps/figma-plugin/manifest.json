@@ -6,7 +6,19 @@
   "ui": "dist/ui.html",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["https://brand-style-api.onrender.com"],
-    "devAllowedDomains": ["http://localhost:5180", "https://brand-style-api.onrender.com"]
+    "allowedDomains": [
+      "https://brand-style-api.onrender.com",
+      "https://*.onrender.com",
+      "https://yunwu.site",
+      "https://all-in-one-ai.fintopia.tech"
+    ],
+    "reasoning": "The plugin calls the hosted Brand Style backend and configured model gateways to generate prompts and images.",
+    "devAllowedDomains": [
+      "http://localhost:5180",
+      "https://brand-style-api.onrender.com",
+      "https://*.onrender.com",
+      "https://yunwu.site",
+      "https://all-in-one-ai.fintopia.tech"
+    ]
   }
 }

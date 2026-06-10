@@ -1421,7 +1421,7 @@
 
       function getReadableError(error) {
         if (error instanceof TypeError && error.message === "Failed to fetch") {
-          return "本地服务未启动或连接失败，请先启动后端服务后重试。";
+          return "无法连接后端服务，请确认网络可访问 https://brand-style-api.onrender.com，并重新打开插件后重试。";
         }
 
         return error?.message || "发生未知错误，请稍后重试。";

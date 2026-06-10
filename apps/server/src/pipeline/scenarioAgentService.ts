@@ -384,6 +384,14 @@ function formatReferenceText(selectionAssets: SelectionAsset[]): string {
   )).join("\n");
 }
 
+function withChineseOutputInstruction(systemPrompt: string): string {
+  const instruction = "【输出语言硬规则】最终返回必须使用中文。prompt_main、prompt_negative、finalPrompt、自检和所有解释性字段都必须用中文表达；不要输出英文 Prompt，除非是必须保留的专有名词。";
+
+  return systemPrompt.includes("输出语言硬规则")
+    ? systemPrompt
+    : `${systemPrompt}\n\n${instruction}`;
+}
+
 export async function runScenarioAgent(
   input: {
     content: string;
@@ -426,7 +434,7 @@ export async function runScenarioAgent(
         body: JSON.stringify({
           model: (input.model.apiStyle || input.fallbackConfig?.apiStyle) === "azure" ? undefined : input.model.model,
           messages: [
-            { role: "system", content: parsed.agent.systemPrompt },
+            { role: "system", content: withChineseOutputInstruction(parsed.agent.systemPrompt) },
             { role: "user", content: userContent },
           ],
           temperature: 0.2,

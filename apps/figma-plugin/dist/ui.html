@@ -1180,6 +1180,7 @@
       let materials = [];
       let materialPresetIds = [];
       let operationScenarios = [];
+      let scenarioAgents = [];
       let activeScenarioSuggestions = [];
       let selectedOperationScenarioId = "";
       let colorPaletteId = "";
@@ -1189,7 +1190,7 @@
       let activeConversationId = null;
       let activeGenerationController = null;
       const pendingInsertButtons = new Map();
-      const builtInScenarioAgents = [
+      const defaultScenarioAgents = [
         {
           id: "miniature-world",
           name: "微缩世界",
@@ -1203,6 +1204,7 @@
           description: "适合圆形舞台单体场景、系列化活动视觉、4:3 KV。",
         },
       ];
+      scenarioAgents = [...defaultScenarioAgents];
 
       function authHeaders(extraHeaders = {}) {
         return {
@@ -1769,7 +1771,7 @@
       function getScenarioAgentFromContent(content) {
         const trimmed = content.trim();
 
-        return builtInScenarioAgents.find((agent) => (
+        return scenarioAgents.find((agent) => agent.enabled !== false && (
           trimmed === agent.trigger || trimmed.startsWith(`${agent.trigger} `)
         ));
       }
@@ -1889,7 +1891,8 @@
         const slashContext = getSlashContext();
         if (slashContext) {
           const query = slashContext.query.trim().toLowerCase();
-          activeScenarioSuggestions = builtInScenarioAgents
+          activeScenarioSuggestions = scenarioAgents
+            .filter((agent) => agent.enabled !== false)
             .filter((agent) => !query || agent.name.toLowerCase().includes(query) || agent.trigger.toLowerCase().includes(query))
             .slice(0, 8)
             .map((agent) => ({ type: "scenario-agent", agent }));
@@ -2066,13 +2069,14 @@
         const selectedShapeArchitectureId = shapeArchitectureSelect.value;
 
         try {
-          const [modelsResponse, agentsResponse, materialsResponse, colorPalettesResponse, shapeArchitecturesResponse, scenariosResponse] = await Promise.all([
+          const [modelsResponse, agentsResponse, materialsResponse, colorPalettesResponse, shapeArchitecturesResponse, scenariosResponse, scenarioAgentsResponse] = await Promise.all([
             apiFetch("/api/config/models"),
             apiFetch("/api/config/style-skills"),
             apiFetch("/api/config/materials"),
             apiFetch("/api/config/color-palettes"),
             apiFetch("/api/config/shape-architectures"),
             apiFetch("/api/config/operation-scenarios"),
+            apiFetch("/api/config/scenario-agents"),
           ]);
           const modelsData = await modelsResponse.json();
           const agentsData = await agentsResponse.json();
@@ -2080,6 +2084,7 @@
           const colorPalettesData = await colorPalettesResponse.json();
           const shapeArchitecturesData = await shapeArchitecturesResponse.json();
           const scenariosData = await scenariosResponse.json();
+          const scenarioAgentsData = await scenarioAgentsResponse.json();
 
           modelSelect.innerHTML = "";
           agentSelect.innerHTML = "";
@@ -2107,6 +2112,7 @@
 
           materials = (materialsData.materials || []).filter((item) => item.enabled);
           operationScenarios = (scenariosData.operationScenarios || []).filter((item) => item.enabled);
+          scenarioAgents = (scenarioAgentsData.scenarioAgents || defaultScenarioAgents).filter((item) => item.enabled !== false);
 
           const emptyPaletteOption = document.createElement("option");
           emptyPaletteOption.value = "";

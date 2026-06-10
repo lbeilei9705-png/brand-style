@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import type { AgentConfig, ColorPaletteConfig, MaterialPresetConfig, ModelConfig, OperationScenarioConfig, ShapeArchitectureConfig, StyleSkillConfig } from "../../../packages/shared/src/index.ts";
+import type { AgentConfig, ColorPaletteConfig, MaterialPresetConfig, ModelConfig, OperationScenarioConfig, ScenarioAgentConfig, ShapeArchitectureConfig, StyleSkillConfig } from "../../../packages/shared/src/index.ts";
+import { defaultScenarioAgents } from "./pipeline/scenarioAgentService.ts";
 
 interface StoredConfig {
   models: ModelConfig[];
@@ -10,6 +11,7 @@ interface StoredConfig {
   colorPalettes: ColorPaletteConfig[];
   shapeArchitectures: ShapeArchitectureConfig[];
   operationScenarios: OperationScenarioConfig[];
+  scenarioAgents?: ScenarioAgentConfig[];
 }
 
 function now(): string {
@@ -116,6 +118,7 @@ function hydrateConfig(config: StoredConfig): StoredConfig {
     colorPalettes: config.colorPalettes.map((palette) => ({ ...palette })),
     shapeArchitectures: config.shapeArchitectures.map((architecture) => ({ ...architecture })),
     operationScenarios: config.operationScenarios.map((scenario) => ({ ...scenario })),
+    scenarioAgents: (config.scenarioAgents?.length ? config.scenarioAgents : defaultScenarioAgents).map((agent) => ({ ...agent })),
   };
 }
 
@@ -364,6 +367,7 @@ function defaultConfig(): StoredConfig {
         updatedAt: timestamp,
       },
     ],
+    scenarioAgents: defaultScenarioAgents,
   };
 }
 
@@ -414,6 +418,12 @@ export class ConfigStore {
         fixedPrompt: scenario.fixedPrompt || scenario.content || "",
         variablePrompt: scenario.variablePrompt || "",
         enabled: scenario.enabled ?? true,
+      })),
+      scenarioAgents: (config.scenarioAgents || defaults.scenarioAgents).map((agent) => ({
+        ...agent,
+        outputMode: agent.outputMode || (agent.id === "miniature-world" ? "json_final_prompt" : "prompt_sections"),
+        version: agent.version || "v1.0",
+        enabled: agent.enabled ?? true,
       })),
     });
   }
@@ -651,5 +661,45 @@ export class ConfigStore {
     config.operationScenarios = config.operationScenarios.filter((scenario) => scenario.id !== scenarioId);
     this.write(config);
     return config.operationScenarios.length !== before;
+  }
+
+  listScenarioAgents(): ScenarioAgentConfig[] {
+    return this.read().scenarioAgents || defaultScenarioAgents;
+  }
+
+  upsertScenarioAgent(agent: Partial<ScenarioAgentConfig> & Pick<ScenarioAgentConfig, "name" | "trigger" | "description" | "systemPrompt">): ScenarioAgentConfig {
+    const config = this.read();
+    const timestamp = now();
+    const id = agent.id || `scenario_agent_${Date.now()}`;
+    const scenarioAgents = config.scenarioAgents || [];
+    const existing = scenarioAgents.find((item) => item.id === id);
+    const next: ScenarioAgentConfig = {
+      id,
+      name: agent.name,
+      trigger: agent.trigger.startsWith("/") ? agent.trigger : `/${agent.trigger}`,
+      description: agent.description,
+      systemPrompt: agent.systemPrompt,
+      outputMode: agent.outputMode || existing?.outputMode || "prompt_sections",
+      driverModelId: agent.driverModelId || existing?.driverModelId,
+      version: agent.version || existing?.version || "v1.0",
+      enabled: agent.enabled ?? true,
+      createdAt: existing?.createdAt || timestamp,
+      updatedAt: timestamp,
+    };
+
+    config.scenarioAgents = existing
+      ? scenarioAgents.map((item) => (item.id === id ? next : item))
+      : [...scenarioAgents, next];
+    this.write(config);
+    return next;
+  }
+
+  deleteScenarioAgent(agentId: string): boolean {
+    const config = this.read();
+    const scenarioAgents = config.scenarioAgents || [];
+    const before = scenarioAgents.length;
+    config.scenarioAgents = scenarioAgents.filter((agent) => agent.id !== agentId);
+    this.write(config);
+    return config.scenarioAgents.length !== before;
   }
 }

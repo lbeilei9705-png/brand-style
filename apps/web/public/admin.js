@@ -5,6 +5,7 @@ const state = {
   colorPalettes: [],
   shapeArchitectures: [],
   operationScenarios: [],
+  scenarioAgents: [],
 };
 
 const accessTokenStorageKey = "brand-style-admin-token";
@@ -106,8 +107,10 @@ function renderModels() {
 function renderAgentDriverOptions() {
   const select = qs("#agent-driver-model");
   const importSelect = qs("#import-driver-model");
+  const scenarioAgentSelect = qs("#scenario-agent-driver-model");
   select.innerHTML = "";
   importSelect.innerHTML = "";
+  scenarioAgentSelect.innerHTML = "";
 
   for (const model of state.models) {
     const option = document.createElement("option");
@@ -115,6 +118,7 @@ function renderAgentDriverOptions() {
     option.textContent = model.name;
     select.appendChild(option);
     importSelect.appendChild(option.cloneNode(true));
+    scenarioAgentSelect.appendChild(option.cloneNode(true));
   }
 }
 
@@ -247,14 +251,40 @@ function renderScenarios() {
   }
 }
 
+function renderScenarioAgents() {
+  const table = qs("#scenario-agents-table");
+  table.innerHTML = "";
+
+  for (const agent of state.scenarioAgents) {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>
+        <strong>${agent.name}</strong>
+        <span class="muted">${agent.description}</span>
+      </td>
+      <td><strong>${agent.trigger}</strong><span class="muted">${agent.version || "-"}</span></td>
+      <td>${agent.outputMode === "json_final_prompt" ? "JSON finalPrompt" : "prompt_main / prompt_negative"}</td>
+      <td>${renderStatus(agent.enabled)}</td>
+      <td>
+        <div class="row-actions">
+          <button class="secondary-button" data-action="edit-scenario-agent" data-id="${agent.id}" type="button">编辑</button>
+          <button class="danger-button" data-action="delete-scenario-agent" data-id="${agent.id}" type="button">删除</button>
+        </div>
+      </td>
+    `;
+    table.appendChild(row);
+  }
+}
+
 async function loadConfig() {
-  const [modelsData, agentsData, materialsData, palettesData, shapeArchitecturesData, scenariosData] = await Promise.all([
+  const [modelsData, agentsData, materialsData, palettesData, shapeArchitecturesData, scenariosData, scenarioAgentsData] = await Promise.all([
     requestJson("/api/config/models"),
     requestJson("/api/config/style-skills"),
     requestJson("/api/config/materials"),
     requestJson("/api/config/color-palettes"),
     requestJson("/api/config/shape-architectures"),
     requestJson("/api/config/operation-scenarios"),
+    requestJson("/api/config/scenario-agents"),
   ]);
   state.models = modelsData.models;
   state.agents = agentsData.styleSkills || agentsData.agents || [];
@@ -262,6 +292,7 @@ async function loadConfig() {
   state.colorPalettes = palettesData.colorPalettes || [];
   state.shapeArchitectures = shapeArchitecturesData.shapeArchitectures || [];
   state.operationScenarios = scenariosData.operationScenarios || [];
+  state.scenarioAgents = scenarioAgentsData.scenarioAgents || [];
   renderModels();
   renderAgentDriverOptions();
   renderAgents();
@@ -269,6 +300,7 @@ async function loadConfig() {
   renderPalettes();
   renderShapeArchitectures();
   renderScenarios();
+  renderScenarioAgents();
 }
 
 function resetModelForm() {
@@ -617,6 +649,66 @@ async function deleteScenario(scenarioId) {
   await loadConfig();
 }
 
+function resetScenarioAgentForm() {
+  qs("#scenario-agent-modal-title").textContent = "新建场景智能体";
+  qs("#scenario-agent-form").reset();
+  qs("#scenario-agent-id").value = "";
+  qs("#scenario-agent-trigger").value = "/";
+  qs("#scenario-agent-output-mode").value = "prompt_sections";
+  qs("#scenario-agent-version").value = "v1.0";
+  qs("#scenario-agent-driver-model").value = state.models.find((model) => model.purpose === "language")?.id || state.models[0]?.id || "";
+  qs("#scenario-agent-enabled").value = "true";
+}
+
+function fillScenarioAgentForm(agent) {
+  qs("#scenario-agent-modal-title").textContent = "编辑场景智能体";
+  qs("#scenario-agent-id").value = agent.id;
+  qs("#scenario-agent-name").value = agent.name;
+  qs("#scenario-agent-trigger").value = agent.trigger;
+  qs("#scenario-agent-description").value = agent.description;
+  qs("#scenario-agent-output-mode").value = agent.outputMode || "prompt_sections";
+  qs("#scenario-agent-driver-model").value = agent.driverModelId || state.models.find((model) => model.purpose === "language")?.id || state.models[0]?.id || "";
+  qs("#scenario-agent-version").value = agent.version || "v1.0";
+  qs("#scenario-agent-enabled").value = String(agent.enabled);
+  qs("#scenario-agent-system-prompt").value = agent.systemPrompt;
+}
+
+async function saveScenarioAgent(event) {
+  event.preventDefault();
+  await requestJson("/api/config/scenario-agents", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: qs("#scenario-agent-id").value || undefined,
+      name: qs("#scenario-agent-name").value,
+      trigger: qs("#scenario-agent-trigger").value,
+      description: qs("#scenario-agent-description").value,
+      systemPrompt: qs("#scenario-agent-system-prompt").value,
+      outputMode: qs("#scenario-agent-output-mode").value,
+      driverModelId: qs("#scenario-agent-driver-model").value || undefined,
+      version: qs("#scenario-agent-version").value || "v1.0",
+      enabled: boolValue(qs("#scenario-agent-enabled").value),
+    }),
+  });
+  closeModals();
+  await loadConfig();
+}
+
+async function deleteScenarioAgent(agentId) {
+  const agent = state.scenarioAgents.find((item) => item.id === agentId);
+
+  if (!agent || !confirm(`确认删除场景智能体「${agent.name}」？`)) {
+    return;
+  }
+
+  await requestJson(`/api/config/scenario-agents/${agentId}`, {
+    method: "DELETE",
+  });
+  await loadConfig();
+}
+
 document.addEventListener("click", async (event) => {
   const target = event.target;
 
@@ -664,6 +756,11 @@ document.addEventListener("click", async (event) => {
   if (target.id === "new-scenario-button") {
     resetScenarioForm();
     openModal("scenario-modal");
+  }
+
+  if (target.id === "new-scenario-agent-button") {
+    resetScenarioAgentForm();
+    openModal("scenario-agent-modal");
   }
 
   if (target.id === "import-agent-button") {
@@ -745,6 +842,18 @@ document.addEventListener("click", async (event) => {
   if (target.dataset.action === "delete-scenario") {
     await deleteScenario(target.dataset.id);
   }
+
+  if (target.dataset.action === "edit-scenario-agent") {
+    const agent = state.scenarioAgents.find((item) => item.id === target.dataset.id);
+    if (agent) {
+      fillScenarioAgentForm(agent);
+      openModal("scenario-agent-modal");
+    }
+  }
+
+  if (target.dataset.action === "delete-scenario-agent") {
+    await deleteScenarioAgent(target.dataset.id);
+  }
 });
 
 qs("#model-form").addEventListener("submit", saveModel);
@@ -753,6 +862,7 @@ qs("#material-form").addEventListener("submit", saveMaterial);
 qs("#palette-form").addEventListener("submit", savePalette);
 qs("#shape-architecture-form").addEventListener("submit", saveShapeArchitecture);
 qs("#scenario-form").addEventListener("submit", saveScenario);
+qs("#scenario-agent-form").addEventListener("submit", saveScenarioAgent);
 qs("#agent-md-file").addEventListener("change", async (event) => {
   const file = event.target.files[0];
 

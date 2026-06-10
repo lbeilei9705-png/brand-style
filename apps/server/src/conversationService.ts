@@ -6,7 +6,7 @@ import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import type { ImageProvider } from "./providers/imageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
 import { PromptOrchestrator } from "./pipeline/promptOrchestrator.ts";
-import { runScenarioAgent, type ScenarioAgentDebugResult } from "./pipeline/scenarioAgentService.ts";
+import { parseScenarioAgentTrigger, runScenarioAgent, type ScenarioAgentDebugResult } from "./pipeline/scenarioAgentService.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
 
@@ -459,12 +459,15 @@ export class ConversationService {
     if (highestReferencedImageIndex > selectionAssets.length) {
       throw new Error(`你提到了图${highestReferencedImageIndex}，但当前只添加了 ${selectionAssets.length} 张参考图。`);
     }
-    const languageModel = this.getLanguageModel();
+    const scenarioAgents = this.configStore.listScenarioAgents();
+    const scenarioAgentConfig = parseScenarioAgentTrigger(request.content, scenarioAgents)?.agent;
+    const languageModel = this.getLanguageModel(scenarioAgentConfig?.driverModelId);
     const scenarioAgent = await runScenarioAgent({
       content: request.content,
       selectionAssets,
       model: languageModel,
       fallbackConfig: this.fintopiaConfig,
+      scenarioAgents,
     });
 
     if (scenarioAgent.isScenarioAgentApplied) {
@@ -661,11 +664,14 @@ export class ConversationService {
       throw new Error(`你提到了图${highestReferencedImageIndex}，但当前只添加了 ${selectionAssets.length} 张参考图。`);
     }
 
+    const scenarioAgents = this.configStore.listScenarioAgents();
+    const scenarioAgentConfig = parseScenarioAgentTrigger(request.content, scenarioAgents)?.agent;
     const scenarioAgent = await runScenarioAgent({
       content: request.content,
       selectionAssets,
-      model: this.getLanguageModel(),
+      model: this.getLanguageModel(scenarioAgentConfig?.driverModelId),
       fallbackConfig: this.fintopiaConfig,
+      scenarioAgents,
     });
 
     if (!scenarioAgent.isScenarioAgentApplied) {
@@ -763,7 +769,15 @@ export class ConversationService {
     return new PromptOrchestrator(model, this.fintopiaConfig);
   }
 
-  private getLanguageModel(): ModelConfig | undefined {
+  private getLanguageModel(modelId?: string): ModelConfig | undefined {
+    if (modelId) {
+      const model = this.configStore.listModels().find((item) => item.id === modelId && item.enabled && item.purpose === "language");
+
+      if (model) {
+        return model;
+      }
+    }
+
     return this.configStore.listModels().find((item) => (
       item.enabled
       && item.provider === "fintopia"

@@ -1,20 +1,10 @@
-import type { ModelConfig, SelectionAsset } from "../../../../packages/shared/src/index.ts";
+import type { ModelConfig, ScenarioAgentConfig, SelectionAsset } from "../../../../packages/shared/src/index.ts";
 import type { FintopiaConfig } from "../config.ts";
-
-export type ScenarioAgentId = "miniature-world" | "single-stage";
-
-export interface ScenarioAgentDefinition {
-  id: ScenarioAgentId;
-  name: string;
-  trigger: string;
-  description: string;
-  systemPrompt: string;
-}
 
 export interface ScenarioAgentDebugResult {
   isScenarioAgentApplied: boolean;
   trigger?: string;
-  agentId?: ScenarioAgentId;
+  agentId?: string;
   agentName?: string;
   userTheme?: string;
   referenceCount?: number;
@@ -221,13 +211,20 @@ IP 规则：
 prompt_negative 固定包含：
 禁止俯视，禁止仰视，禁止倾斜镜头，禁止广角透视，禁止非 4:3 构图，禁止舞台裁切，禁止角色高度超过舞台，禁止缩小舞台放大角色，禁止无限空间纵深，禁止远景，禁止地平线，禁止背景吞没舞台，禁止写实摄影风格，禁止强景深，禁止过曝高光，禁止真实金属反射，禁止乱码文字，禁止角色变形，禁止服饰过度复杂。`;
 
-export const scenarioAgents: ScenarioAgentDefinition[] = [
+const defaultTimestamp = "2026-06-10T00:00:00.000Z";
+
+export const defaultScenarioAgents: ScenarioAgentConfig[] = [
   {
     id: "miniature-world",
     name: "微缩世界场景智能体",
     trigger: "/微缩世界",
     description: "在世界法则下生成微缩世界场景提示词。",
     systemPrompt: miniatureWorldSystemPrompt,
+    outputMode: "json_final_prompt",
+    version: "v1.0",
+    enabled: true,
+    createdAt: defaultTimestamp,
+    updatedAt: defaultTimestamp,
   },
   {
     id: "single-stage",
@@ -235,6 +232,11 @@ export const scenarioAgents: ScenarioAgentDefinition[] = [
     trigger: "/单体舞台",
     description: "生成符合 NBP 单体式圆形舞台系统的提示词。",
     systemPrompt: singleStageSystemPrompt,
+    outputMode: "prompt_sections",
+    version: "v1.0",
+    enabled: true,
+    createdAt: defaultTimestamp,
+    updatedAt: defaultTimestamp,
   },
 ];
 
@@ -277,6 +279,16 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
   }
 
   return headers;
+}
+
+function getReadableLanguageModelError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error || "");
+
+  if (/fetch failed|network|ENOTFOUND|ECONN|ETIMEDOUT|timeout|TLS|certificate/i.test(message)) {
+    return "场景智能体暂时无法访问语言模型，请检查 Fintopia GPT 5.5 服务、API Key 或 Render 到模型服务的网络连接。";
+  }
+
+  return message || "场景智能体调用语言模型失败。";
 }
 
 function extractJsonObject(content: string): Record<string, unknown> | undefined {
@@ -348,9 +360,9 @@ function buildMiniatureWorldPrompt(parsedOutput: Record<string, unknown> | undef
   return `${miniatureWorldBasePrompt}\n\n【场景模块】\n${sceneText}`;
 }
 
-export function parseScenarioAgentTrigger(content: string): { agent: ScenarioAgentDefinition; userTheme: string } | undefined {
+export function parseScenarioAgentTrigger(content: string, agents: ScenarioAgentConfig[] = defaultScenarioAgents): { agent: ScenarioAgentConfig; userTheme: string } | undefined {
   const trimmed = content.trim();
-  const agent = scenarioAgents.find((item) => trimmed === item.trigger || trimmed.startsWith(`${item.trigger} `));
+  const agent = agents.find((item) => item.enabled && (trimmed === item.trigger || trimmed.startsWith(`${item.trigger} `)));
 
   if (!agent) {
     return undefined;
@@ -378,9 +390,10 @@ export async function runScenarioAgent(
     selectionAssets: SelectionAsset[];
     model?: ModelConfig;
     fallbackConfig?: FintopiaConfig;
+    scenarioAgents?: ScenarioAgentConfig[];
   },
 ): Promise<ScenarioAgentDebugResult> {
-  const parsed = parseScenarioAgentTrigger(input.content);
+  const parsed = parseScenarioAgentTrigger(input.content, input.scenarioAgents);
 
   if (!parsed) {
     return { isScenarioAgentApplied: false };
@@ -405,18 +418,24 @@ export async function runScenarioAgent(
   ].join("\n");
 
   try {
-    const response = await fetch(buildEndpoint(input.model, input.fallbackConfig), {
-      method: "POST",
-      headers: buildHeaders(input.model, input.fallbackConfig),
-      body: JSON.stringify({
-        model: (input.model.apiStyle || input.fallbackConfig?.apiStyle) === "azure" ? undefined : input.model.model,
-        messages: [
-          { role: "system", content: parsed.agent.systemPrompt },
-          { role: "user", content: userContent },
-        ],
-        temperature: 0.2,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(buildEndpoint(input.model, input.fallbackConfig), {
+        method: "POST",
+        headers: buildHeaders(input.model, input.fallbackConfig),
+        body: JSON.stringify({
+          model: (input.model.apiStyle || input.fallbackConfig?.apiStyle) === "azure" ? undefined : input.model.model,
+          messages: [
+            { role: "system", content: parsed.agent.systemPrompt },
+            { role: "user", content: userContent },
+          ],
+          temperature: 0.2,
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+    } catch (error) {
+      throw new Error(getReadableLanguageModelError(error));
+    }
     const payload = await response.json();
 
     if (!response.ok) {
@@ -424,12 +443,13 @@ export async function runScenarioAgent(
     }
 
     const rawOutput = payload.choices?.[0]?.message?.content || "";
-    const parsedOutput = parsed.agent.id === "miniature-world" ? extractJsonObject(rawOutput) : undefined;
-    const stageOutput = parsed.agent.id === "single-stage" ? extractJsonObject(rawOutput) : undefined;
-    const promptMain = parsed.agent.id === "miniature-world"
+    const shouldParseFinalPrompt = parsed.agent.outputMode === "json_final_prompt";
+    const parsedOutput = shouldParseFinalPrompt ? extractJsonObject(rawOutput) : undefined;
+    const stageOutput = parsed.agent.outputMode === "prompt_sections" ? extractJsonObject(rawOutput) : undefined;
+    const promptMain = shouldParseFinalPrompt
       ? buildMiniatureWorldPrompt(parsedOutput, rawOutput)
       : getStringField(stageOutput, ["prompt_main", "promptMain", "mainPrompt"]) || extractMarkdownSection(rawOutput, "prompt_main");
-    const promptNegative = parsed.agent.id === "single-stage"
+    const promptNegative = parsed.agent.outputMode === "prompt_sections"
       ? getStringField(stageOutput, ["prompt_negative", "promptNegative", "negativePrompt"]) || extractMarkdownSection(rawOutput, "prompt_negative")
       : undefined;
 
@@ -453,7 +473,7 @@ export async function runScenarioAgent(
       agentName: parsed.agent.name,
       userTheme: parsed.userTheme,
       referenceCount: input.selectionAssets.length,
-      error: error instanceof Error ? error.message : "场景智能体调用失败。",
+      error: getReadableLanguageModelError(error),
     };
   }
 }

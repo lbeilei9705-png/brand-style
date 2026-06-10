@@ -282,6 +282,7 @@
           <button class="nav-button" data-page="palettes-page" type="button">配色管理</button>
           <button class="nav-button" data-page="shape-architectures-page" type="button">形状管理</button>
           <button class="nav-button" data-page="scenarios-page" type="button">运营场景管理</button>
+          <button class="nav-button" data-page="scenario-agents-page" type="button">场景智能体管理</button>
         </nav>
       </aside>
 
@@ -428,6 +429,30 @@
                 </tr>
               </thead>
               <tbody id="scenarios-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="scenario-agents-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>场景智能体管理</h2>
+              <p class="muted">配置插件输入框中可通过 / 调用的 Prompt 策划智能体。</p>
+            </div>
+            <button id="new-scenario-agent-button" class="primary-button" type="button">新建场景智能体</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>智能体</th>
+                  <th>触发词 / 版本</th>
+                  <th>输出格式</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="scenario-agents-table"></tbody>
             </table>
           </div>
         </section>
@@ -710,6 +735,60 @@
       </form>
     </div>
 
-    <script src="/admin.js?v=20260521-naming"></script>
+    <div id="scenario-agent-modal" class="modal-backdrop">
+      <form id="scenario-agent-form" class="modal">
+        <header class="modal-header">
+          <h2 id="scenario-agent-modal-title">新建场景智能体</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="scenario-agent-id" type="hidden" />
+          <label class="admin-field">
+            <span>智能体名称</span>
+            <input id="scenario-agent-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>触发词</span>
+            <input id="scenario-agent-trigger" type="text" placeholder="/微缩世界" required />
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="scenario-agent-description" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>输出格式</span>
+            <select id="scenario-agent-output-mode">
+              <option value="json_final_prompt">JSON finalPrompt</option>
+              <option value="prompt_sections">prompt_main / prompt_negative</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>驱动模型</span>
+            <select id="scenario-agent-driver-model"></select>
+          </label>
+          <label class="admin-field">
+            <span>版本</span>
+            <input id="scenario-agent-version" type="text" placeholder="v1.0" />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="scenario-agent-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>工作指令 System Prompt</span>
+            <textarea id="scenario-agent-system-prompt" required></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存场景智能体</button>
+        </footer>
+      </form>
+    </div>
+
+    <script src="/admin.js?v=20260610-scenario-agents"></script>
   </body>
 </html>

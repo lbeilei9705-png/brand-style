@@ -76,6 +76,22 @@ export interface OperationScenarioConfig {
   updatedAt: string;
 }
 
+export type ScenarioAgentOutputMode = "json_final_prompt" | "prompt_sections";
+
+export interface ScenarioAgentConfig {
+  id: string;
+  name: string;
+  trigger: string;
+  description: string;
+  systemPrompt: string;
+  outputMode: ScenarioAgentOutputMode;
+  driverModelId?: string;
+  version?: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AgentConfig {
   id: string;
   name: string;

@@ -1185,6 +1185,7 @@
       let selectedOperationScenarioId = "";
       let colorPaletteId = "";
       let shapeArchitectureId = "";
+      let scenarioAgentDraft = null;
       let isSending = false;
       let isLoadingConfig = false;
       let activeConversationId = null;
@@ -1744,6 +1745,7 @@
         colorPaletteId = "";
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
+        scenarioAgentDraft = null;
         agentSelect.value = "";
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
@@ -1760,6 +1762,7 @@
         colorPaletteId = "";
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
+        scenarioAgentDraft = null;
         agentSelect.value = "";
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
@@ -1774,6 +1777,37 @@
         return scenarioAgents.find((agent) => agent.enabled !== false && (
           trimmed === agent.trigger || trimmed.startsWith(`${agent.trigger} `)
         ));
+      }
+
+      function getPreferredAspectRatioForScenarioAgent(agent, prompt) {
+        const text = `${agent?.trigger || ""}\n${agent?.name || ""}\n${prompt || ""}`;
+
+        if (/单体舞台|4\s*:\s*3/.test(text)) {
+          return "4:3";
+        }
+
+        if (/微缩世界|3\s*:\s*4/.test(text)) {
+          return "3:4";
+        }
+
+        return "";
+      }
+
+      function buildDirectPromptFromScenarioDraft(content) {
+        if (!scenarioAgentDraft) {
+          return undefined;
+        }
+
+        return {
+          positive: content,
+          negative: scenarioAgentDraft.promptNegative || "",
+          template: "flat_to_3d",
+          referencePack: {
+            inputAssetId: selectedAssets[0]?.id || "text-only",
+            stylePresetId: "",
+            styleAnchors: [],
+          },
+        };
       }
 
       function getSlashContext() {
@@ -2194,6 +2228,7 @@
 
       async function submitConversationMessage(content, messageAttachments, inputType = "auto", hasRetried = false, signal) {
         const conversationId = await ensureConversation(signal);
+        const directPrompt = buildDirectPromptFromScenarioDraft(content);
         const response = await apiFetch(`/api/conversations/${conversationId}/messages`, {
           method: "POST",
           headers: {
@@ -2212,7 +2247,8 @@
             colorPaletteId,
             shapeArchitectureId,
             operationScenarioId: selectedOperationScenarioId || undefined,
-            usePromptOrchestrator: true,
+            directPrompt,
+            usePromptOrchestrator: directPrompt ? false : true,
           }),
           signal,
         });
@@ -2308,9 +2344,19 @@
           try {
             const data = await completeScenarioAgentPrompt(content, messageAttachments, generationController.signal);
             messageInput.value = data.prompt;
+            scenarioAgentDraft = {
+              scenarioAgentId: data.scenarioAgent?.agentId || scenarioAgent.id,
+              promptNegative: data.promptNegative || "",
+            };
+            const preferredAspectRatio = getPreferredAspectRatioForScenarioAgent(scenarioAgent, data.prompt);
+
+            if (preferredAspectRatio) {
+              aspectRatio = preferredAspectRatio;
+              aspectRatioSelect.value = preferredAspectRatio;
+            }
             resizeMessageInput();
             pending.textContent = data.promptNegative
-              ? `「${scenarioAgent.name}」已生成 Prompt，已回填正向 Prompt。负面提示词供调试参考：${data.promptNegative}`
+              ? `「${scenarioAgent.name}」已生成 Prompt，已回填正向 Prompt，并会在生成时使用智能体负面提示词：${data.promptNegative}`
               : `「${scenarioAgent.name}」已生成 Prompt，已回填到输入框。你可以继续修改，确认后再点击生成。`;
             selectionStatus.textContent = "场景智能体已补全 Prompt；普通风格套装和自由搭配已清空。";
           } catch (error) {
@@ -2452,6 +2498,7 @@
         colorPaletteId = "";
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
+        scenarioAgentDraft = null;
         messageInput.value = "";
         resizeMessageInput();
         selectionBar.textContent = "正在读取当前选区...";

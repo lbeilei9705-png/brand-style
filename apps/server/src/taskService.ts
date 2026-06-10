@@ -86,18 +86,22 @@ export class TaskService {
     const primaryInputAsset = referenceAssets[0] || inputAsset;
     const preprocess = preprocessInput(primaryInputAsset, constraints);
     const stylePack = buildStylePack(request.stylePresetId);
-    let prompt = request.operationScenarioPrompt
-      ? buildOperationScenarioPromptBundle(primaryInputAsset, preprocess, stylePack, request.operationScenarioPrompt)
-      : buildPromptBundle(primaryInputAsset, preprocess, stylePack, constraints, {
-        userMessage: request.userMessage,
-        agentSystemPrompt: request.agentSystemPrompt,
-        materialPrompt: request.materialPrompt,
-        colorPrompt: request.colorPrompt,
-        shapeArchitecturePrompt: request.shapeArchitecturePrompt,
-        extraNegativeRules: request.extraNegativeRules,
-      });
+    let prompt = request.directPrompt;
 
-    if (!request.operationScenarioPrompt && this.promptOrchestrator && request.usePromptOrchestrator !== false) {
+    if (!prompt) {
+      prompt = request.operationScenarioPrompt
+        ? buildOperationScenarioPromptBundle(primaryInputAsset, preprocess, stylePack, request.operationScenarioPrompt)
+        : buildPromptBundle(primaryInputAsset, preprocess, stylePack, constraints, {
+          userMessage: request.userMessage,
+          agentSystemPrompt: request.agentSystemPrompt,
+          materialPrompt: request.materialPrompt,
+          colorPrompt: request.colorPrompt,
+          shapeArchitecturePrompt: request.shapeArchitecturePrompt,
+          extraNegativeRules: request.extraNegativeRules,
+        });
+    }
+
+    if (!request.directPrompt && !request.operationScenarioPrompt && this.promptOrchestrator && request.usePromptOrchestrator !== false) {
       try {
         prompt = await this.promptOrchestrator.optimize({
           prompt,

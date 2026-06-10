@@ -318,6 +318,7 @@ export interface CreateTaskRequest {
   colorPrompt?: string;
   shapeArchitecturePrompt?: string;
   operationScenarioPrompt?: OperationScenarioPrompt;
+  directPrompt?: PromptBundle;
   extraNegativeRules?: string[];
   usePromptOrchestrator?: boolean;
   orchestrationContext?: PromptOrchestrationContext;
@@ -383,6 +384,7 @@ export interface AddConversationMessageRequest {
   colorPaletteId?: string;
   shapeArchitectureId?: string;
   operationScenarioId?: string;
+  directPrompt?: PromptBundle;
   usePromptOrchestrator?: boolean;
 }
 

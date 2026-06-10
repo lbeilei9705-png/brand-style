@@ -308,6 +308,7 @@ export class ConversationService {
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
       userMessage: request.content,
+      directPrompt: request.directPrompt,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")
@@ -543,6 +544,7 @@ export class ConversationService {
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
       userMessage: request.content,
+      directPrompt: request.directPrompt,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
         ? materials.map((material) => `材质球「${material.name}」：${material.prompt}`).join("；")

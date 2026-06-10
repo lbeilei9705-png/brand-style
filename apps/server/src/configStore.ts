@@ -53,8 +53,8 @@ const seedConfigPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "
 const modelApiKeyEnvNames: Record<string, string[]> = {
   "fintopia-gpt-image-2": ["FINTOPIA_API_KEY"],
   "fintopia-gpt-5-5": ["FINTOPIA_API_KEY"],
-  "model_1778388177536": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
-  "nano-banana-pro": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
+  "model_1778388177536": ["YUNWU_IMAGE_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
+  "nano-banana-pro": ["YUNWU_IMAGE_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
 };
 
 const mockPreviewModel: ModelConfig = {
@@ -91,8 +91,15 @@ function getModelApiKey(model: ModelConfig): string | undefined {
   }
 
   const normalizedId = model.id.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
+  const isYunwuModel = (model.apiUrl || "").includes("yunwu.site");
+  const yunwuPurposeEnvNames = isYunwuModel
+    ? model.purpose === "language"
+      ? ["YUNWU_LANGUAGE_API_KEY"]
+      : ["YUNWU_IMAGE_API_KEY"]
+    : [];
   const envNames = [
     `MODEL_API_KEY_${normalizedId}`,
+    ...yunwuPurposeEnvNames,
     ...(modelApiKeyEnvNames[model.id] || []),
   ];
 

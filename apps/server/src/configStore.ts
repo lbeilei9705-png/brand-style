@@ -53,6 +53,7 @@ const seedConfigPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "
 const modelApiKeyEnvNames: Record<string, string[]> = {
   "fintopia-gpt-image-2": ["FINTOPIA_API_KEY"],
   "fintopia-gpt-5-5": ["FINTOPIA_API_KEY"],
+  "yunwu-language": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
   "model_1778388177536": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
   "nano-banana-pro": ["YUNWU_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
 };

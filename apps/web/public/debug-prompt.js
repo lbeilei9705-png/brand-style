@@ -124,6 +124,33 @@ const scenarios = [
       { label: "应该选择 mock provider", resolvedProvider: "mock" },
     ],
   },
+  {
+    id: "scenario-miniature-world",
+    name: "/微缩世界",
+    content: "/微缩世界 提额春节活动，突出红包、金币和增长氛围",
+    referenceCount: 3,
+    usePromptOrchestrator: false,
+    expect: [
+      { label: "应该命中场景智能体", scenarioAgentApplied: true },
+      { label: "应该命中微缩世界智能体", scenarioAgentId: "miniature-world" },
+      { label: "应该返回最终 Prompt", scenarioPromptMain: true },
+      { label: "应该原样包含 Base Prompt", scenarioIncludes: "Base Prompt v1.0" },
+    ],
+  },
+  {
+    id: "scenario-single-stage",
+    name: "/单体舞台",
+    content: "/单体舞台 额度锦鲤周，春日，IP手拿鱼竿钓到一个红包",
+    referenceCount: 3,
+    usePromptOrchestrator: false,
+    expect: [
+      { label: "应该命中场景智能体", scenarioAgentApplied: true },
+      { label: "应该命中单体舞台智能体", scenarioAgentId: "single-stage" },
+      { label: "应该返回 prompt_main", scenarioPromptMain: true },
+      { label: "应该返回 prompt_negative", scenarioPromptNegative: true },
+      { label: "负面提示词应该限制镜头", scenarioNegativeIncludes: "禁止俯视" },
+    ],
+  },
 ];
 
 function qs(selector) {
@@ -241,6 +268,7 @@ function applyScenario(scenarioId) {
   qs("#operation-select").value = operation?.id || "";
   qs("#reference-count-select").value = String(scenario.referenceCount || 0);
   qs("#input-type-select").value = "auto";
+  qs("#orchestrator-checkbox").checked = scenario.usePromptOrchestrator !== false;
 
   for (const optionItem of qs("#material-select").options) {
     optionItem.selected = Boolean(material && optionItem.value === material.id);
@@ -296,6 +324,13 @@ function getByPath(value, path) {
 
 function evaluateExpectations(result, scenario) {
   const combinedPrompt = `${result.positivePrompt}\n${result.negativePrompt}`;
+  const scenarioAgent = result.scenarioAgent || {};
+  const scenarioCombined = [
+    scenarioAgent.rawOutput,
+    JSON.stringify(scenarioAgent.parsedOutput || {}),
+    scenarioAgent.promptMain,
+    scenarioAgent.promptNegative,
+  ].join("\n");
 
   return (scenario.expect || []).map((expectation) => {
     let passed = true;
@@ -320,6 +355,30 @@ function evaluateExpectations(result, scenario) {
       passed = result.resolvedConfig.model?.provider === expectation.resolvedProvider;
     }
 
+    if (expectation.scenarioAgentApplied !== undefined) {
+      passed = Boolean(scenarioAgent.isScenarioAgentApplied) === expectation.scenarioAgentApplied;
+    }
+
+    if (expectation.scenarioAgentId) {
+      passed = scenarioAgent.agentId === expectation.scenarioAgentId;
+    }
+
+    if (expectation.scenarioPromptMain) {
+      passed = Boolean(scenarioAgent.promptMain);
+    }
+
+    if (expectation.scenarioPromptNegative) {
+      passed = Boolean(scenarioAgent.promptNegative);
+    }
+
+    if (expectation.scenarioIncludes) {
+      passed = scenarioCombined.includes(expectation.scenarioIncludes);
+    }
+
+    if (expectation.scenarioNegativeIncludes) {
+      passed = String(scenarioAgent.promptNegative || "").includes(expectation.scenarioNegativeIncludes);
+    }
+
     return { label: expectation.label, passed };
   });
 }
@@ -339,8 +398,10 @@ function renderSingleResult(result, scenario) {
   const removedText = result.removedLowPrioritySegments.length
     ? JSON.stringify(result.removedLowPrioritySegments, null, 2)
     : "没有剔除低优先级片段";
+  const scenarioAgentHtml = renderScenarioAgent(result.scenarioAgent);
 
   qs("#single-result").innerHTML = `
+    ${scenarioAgentHtml}
     <div class="result-grid">
       <div>
         <h2>Positive Prompt</h2>
@@ -366,6 +427,49 @@ function renderSingleResult(result, scenario) {
   `;
 }
 
+function renderScenarioAgent(scenarioAgent) {
+  if (!scenarioAgent?.isScenarioAgentApplied) {
+    return "";
+  }
+
+  if (scenarioAgent.error) {
+    return `
+      <h2>Scenario Agent</h2>
+      <div class="error">${escapeHtml(scenarioAgent.error)}</div>
+    `;
+  }
+
+  return `
+    <h2>Scenario Agent</h2>
+    <div class="result-grid" style="margin-bottom:16px;">
+      <div>
+        <h2>命中信息</h2>
+        <pre>${escapeHtml(JSON.stringify({
+          trigger: scenarioAgent.trigger,
+          agentId: scenarioAgent.agentId,
+          agentName: scenarioAgent.agentName,
+          userTheme: scenarioAgent.userTheme,
+          referenceCount: scenarioAgent.referenceCount,
+        }, null, 2))}</pre>
+      </div>
+      <div>
+        <h2>结构化输出</h2>
+        <pre>${escapeHtml(JSON.stringify(scenarioAgent.parsedOutput || {}, null, 2))}</pre>
+      </div>
+      <div>
+        <h2>prompt_main / finalPrompt</h2>
+        <div class="prompt-box">${escapeHtml(scenarioAgent.promptMain || "未返回")}</div>
+      </div>
+      <div>
+        <h2>prompt_negative</h2>
+        <div class="prompt-box">${escapeHtml(scenarioAgent.promptNegative || "微缩世界智能体不单独返回负面提示词")}</div>
+      </div>
+    </div>
+    <h2>Scenario Agent Raw Output</h2>
+    <pre style="margin-bottom:16px;">${escapeHtml(scenarioAgent.rawOutput || "")}</pre>
+  `;
+}
+
 function renderBatchResult(rows) {
   qs("#batch-result").innerHTML = rows.map((row) => {
     if (row.error) {
@@ -381,12 +485,15 @@ function renderBatchResult(rows) {
     const failed = row.assertions.filter((item) => !item.passed).length;
     const statusClass = failed ? " fail" : "";
     const statusText = failed ? `${failed} 条不通过` : "通过";
+    const previewText = row.result.scenarioAgent?.isScenarioAgentApplied
+      ? (row.result.scenarioAgent.promptMain || row.result.scenarioAgent.rawOutput || "").slice(0, 220)
+      : row.result.positivePrompt.slice(0, 220);
 
     return `
       <div class="test-row">
         <strong>${row.name}</strong>
         <div>
-          <div class="muted">${escapeHtml(row.result.positivePrompt.slice(0, 220))}${row.result.positivePrompt.length > 220 ? "..." : ""}</div>
+          <div class="muted">${escapeHtml(previewText)}${previewText.length >= 220 ? "..." : ""}</div>
           ${renderAssertions(row.assertions)}
         </div>
         <span class="pill${statusClass}">${statusText}</span>

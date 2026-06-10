@@ -6,6 +6,7 @@ import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import type { ImageProvider } from "./providers/imageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
 import { PromptOrchestrator } from "./pipeline/promptOrchestrator.ts";
+import { runScenarioAgent, type ScenarioAgentDebugResult } from "./pipeline/scenarioAgentService.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
 
@@ -444,6 +445,7 @@ export class ConversationService {
     negativePrompt: string;
     removedLowPrioritySegments: RemovedLowPrioritySegment[];
     finalModelPayload: Record<string, unknown>;
+    scenarioAgent?: ScenarioAgentDebugResult;
     promptOrchestratorError?: string;
   }> {
     const model = this.getModel(request.modelId);
@@ -457,6 +459,12 @@ export class ConversationService {
     if (highestReferencedImageIndex > selectionAssets.length) {
       throw new Error(`你提到了图${highestReferencedImageIndex}，但当前只添加了 ${selectionAssets.length} 张参考图。`);
     }
+    const scenarioAgent = await runScenarioAgent({
+      content: request.content,
+      selectionAssets,
+      model: this.getLanguageModel(),
+      fallbackConfig: this.fintopiaConfig,
+    });
 
     const primaryAsset = selectionAssets[0] || {
       id: "text-only",
@@ -606,6 +614,7 @@ export class ConversationService {
         inputAsset: stripAssetData(preview.providerRequest.inputAsset as unknown as Record<string, unknown>),
         referenceAssets: preview.providerRequest.referenceAssets?.map((asset) => stripAssetData(asset as unknown as Record<string, unknown>)),
       },
+      scenarioAgent,
       promptOrchestratorError: preview.promptOrchestratorError,
     };
   }
@@ -675,16 +684,20 @@ export class ConversationService {
   }
 
   private createPromptOrchestrator(): PromptOrchestrator | undefined {
-    const model = this.configStore.listModels().find((item) => (
-      item.enabled
-      && item.provider === "fintopia"
-      && item.purpose === "language"
-    ));
+    const model = this.getLanguageModel();
 
     if (!model) {
       return undefined;
     }
 
     return new PromptOrchestrator(model, this.fintopiaConfig);
+  }
+
+  private getLanguageModel(): ModelConfig | undefined {
+    return this.configStore.listModels().find((item) => (
+      item.enabled
+      && item.provider === "fintopia"
+      && item.purpose === "language"
+    ));
   }
 }

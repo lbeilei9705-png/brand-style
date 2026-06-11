@@ -831,6 +831,14 @@
             <span>工作指令 System Prompt</span>
             <textarea id="scenario-agent-system-prompt" required></textarea>
           </label>
+          <label class="admin-field full">
+            <span>固定正向规则 / Base Prompt（不会回填输入框，会随最终生图 Prompt 一起发送）</span>
+            <textarea id="scenario-agent-fixed-positive-prompt" placeholder="例如 Base Prompt v1.0"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>固定负向规则（不会回填输入框，会随最终负向 Prompt 一起发送）</span>
+            <textarea id="scenario-agent-fixed-negative-prompt" placeholder="例如 不要真实人类；不要文字Logo；不要复杂剧情"></textarea>
+          </label>
         </section>
         <footer class="modal-footer">
           <button class="secondary-button" data-close-modal type="button">取消</button>

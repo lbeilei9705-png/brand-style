@@ -54,6 +54,8 @@ const miniatureWorldBasePrompt = `Base Prompt v1.0
 复杂叙事或剧情表达
 避免使用任何可能引导写实或真实尺度的描述。`;
 
+const miniatureWorldNegativePrompt = "不要真实人类；不要真人形象；不要写实摄影风格；不要文字 Logo；不要可识别品牌文字；不要复杂叙事；不要剧情表达；不要真实自然环境；不要单一角色特写；不要角色体量过大；不要超级符号体量过小；不要低清晰度；不要模糊；不要糊边；不要低分辨率。";
+
 const miniatureWorldSystemPrompt = `你是一个微缩世界视觉导演级智能体。
 你的任务不是自由创作，而是在既定世界法则下，稳定拼装可复用的微缩世界场景提示词。
 
@@ -220,6 +222,8 @@ export const defaultScenarioAgents: ScenarioAgentConfig[] = [
     trigger: "/微缩世界",
     description: "在世界法则下生成微缩世界场景提示词。",
     systemPrompt: miniatureWorldSystemPrompt,
+    fixedPositivePrompt: miniatureWorldBasePrompt,
+    fixedNegativePrompt: miniatureWorldNegativePrompt,
     outputMode: "json_final_prompt",
     version: "v1.0",
     enabled: true,

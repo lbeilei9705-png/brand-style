@@ -654,6 +654,7 @@ export class ConversationService {
   }): Promise<{
     scenarioAgent: ScenarioAgentDebugResult;
     prompt: string;
+    promptFixedPositive?: string;
     promptNegative?: string;
   }> {
     const selectionAssets = (request.selectionAssets || []).map((asset, index) => ({
@@ -690,10 +691,15 @@ export class ConversationService {
       throw new Error("场景智能体没有返回可用 Prompt。");
     }
 
+    const promptFixedPositive = scenarioAgentConfig?.fixedPositivePrompt?.trim() || "";
+    const fixedNegativePrompt = scenarioAgentConfig?.fixedNegativePrompt?.trim() || "";
+    const promptNegative = fixedNegativePrompt || scenarioAgent.promptNegative;
+
     return {
       scenarioAgent,
       prompt,
-      promptNegative: scenarioAgent.promptNegative,
+      promptFixedPositive,
+      promptNegative,
     };
   }
 

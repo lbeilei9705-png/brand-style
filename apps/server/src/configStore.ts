@@ -695,6 +695,8 @@ export class ConfigStore {
       trigger: agent.trigger.startsWith("/") ? agent.trigger : `/${agent.trigger}`,
       description: agent.description,
       systemPrompt: agent.systemPrompt,
+      fixedPositivePrompt: agent.fixedPositivePrompt ?? existing?.fixedPositivePrompt ?? "",
+      fixedNegativePrompt: agent.fixedNegativePrompt ?? existing?.fixedNegativePrompt ?? "",
       outputMode: agent.outputMode || existing?.outputMode || "prompt_sections",
       driverModelId: agent.driverModelId || existing?.driverModelId,
       version: agent.version || existing?.version || "v1.0",

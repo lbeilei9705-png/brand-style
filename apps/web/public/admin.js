@@ -760,6 +760,8 @@ function fillScenarioAgentForm(agent) {
   qs("#scenario-agent-version").value = agent.version || "v1.0";
   qs("#scenario-agent-enabled").value = String(agent.enabled);
   qs("#scenario-agent-system-prompt").value = agent.systemPrompt;
+  qs("#scenario-agent-fixed-positive-prompt").value = agent.fixedPositivePrompt || "";
+  qs("#scenario-agent-fixed-negative-prompt").value = agent.fixedNegativePrompt || "";
 }
 
 async function saveScenarioAgent(event) {
@@ -775,6 +777,8 @@ async function saveScenarioAgent(event) {
       trigger: qs("#scenario-agent-trigger").value,
       description: qs("#scenario-agent-description").value,
       systemPrompt: qs("#scenario-agent-system-prompt").value,
+      fixedPositivePrompt: qs("#scenario-agent-fixed-positive-prompt").value,
+      fixedNegativePrompt: qs("#scenario-agent-fixed-negative-prompt").value,
       outputMode: qs("#scenario-agent-output-mode").value,
       driverModelId: qs("#scenario-agent-driver-model").value || undefined,
       version: qs("#scenario-agent-version").value || "v1.0",

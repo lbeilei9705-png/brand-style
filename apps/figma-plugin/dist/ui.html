@@ -1851,7 +1851,7 @@
         }
 
         return {
-          positive: content,
+          positive: [draft.promptFixedPositive, content].filter(Boolean).join("\n\n"),
           negative: draft.promptNegative || "",
           template: "flat_to_3d",
           referencePack: {
@@ -2399,6 +2399,7 @@
             saveScenarioAgentDraft({
               scenarioAgentId: data.scenarioAgent?.agentId || scenarioAgent.id,
               promptMain: data.prompt,
+              promptFixedPositive: data.promptFixedPositive || "",
               promptNegative: data.promptNegative || "",
             });
             const preferredAspectRatio = getPreferredAspectRatioForScenarioAgent(scenarioAgent, data.prompt);

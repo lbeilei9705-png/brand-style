@@ -84,6 +84,8 @@ export interface ScenarioAgentConfig {
   trigger: string;
   description: string;
   systemPrompt: string;
+  fixedPositivePrompt?: string;
+  fixedNegativePrompt?: string;
   outputMode: ScenarioAgentOutputMode;
   driverModelId?: string;
   version?: string;

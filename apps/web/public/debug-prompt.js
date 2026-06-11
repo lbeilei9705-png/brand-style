@@ -134,7 +134,7 @@ const scenarios = [
       { label: "应该命中场景智能体", scenarioAgentApplied: true },
       { label: "应该命中微缩世界智能体", scenarioAgentId: "miniature-world" },
       { label: "应该返回最终 Prompt", scenarioPromptMain: true },
-      { label: "应该原样包含 Base Prompt", scenarioIncludes: "Base Prompt v1.0" },
+      { label: "应该使用结构化 Skill 卡", scenarioSkillIncludes: "结构化视觉生成 Skill" },
     ],
   },
   {
@@ -335,6 +335,8 @@ function evaluateExpectations(result, scenario) {
     JSON.stringify(scenarioAgent.parsedOutput || {}),
     scenarioAgent.promptMain,
     scenarioAgent.promptNegative,
+    scenarioAgent.skillSystemPrompt,
+    scenarioAgent.memoryContext,
   ].join("\n");
 
   return (scenario.expect || []).map((expectation) => {
@@ -382,6 +384,10 @@ function evaluateExpectations(result, scenario) {
 
     if (expectation.scenarioNegativeIncludes) {
       passed = String(scenarioAgent.promptNegative || "").includes(expectation.scenarioNegativeIncludes);
+    }
+
+    if (expectation.scenarioSkillIncludes) {
+      passed = String(scenarioAgent.skillSystemPrompt || "").includes(expectation.scenarioSkillIncludes);
     }
 
     return { label: expectation.label, passed };
@@ -465,7 +471,16 @@ function renderScenarioAgent(scenarioAgent) {
           agentName: scenarioAgent.agentName,
           userTheme: scenarioAgent.userTheme,
           referenceCount: scenarioAgent.referenceCount,
+          retrievedCases: scenarioAgent.retrievedCases || [],
         }, null, 2))}</pre>
+      </div>
+      <div>
+        <h2>结构化 Skill System Prompt</h2>
+        <pre>${escapeHtml(scenarioAgent.skillSystemPrompt || "未返回")}</pre>
+      </div>
+      <div>
+        <h2>上下文记忆摘要</h2>
+        <pre>${escapeHtml(scenarioAgent.memoryContext || "未命中")}</pre>
       </div>
       <div>
         <h2>结构化输出</h2>

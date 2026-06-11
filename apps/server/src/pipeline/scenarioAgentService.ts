@@ -9,6 +9,8 @@ export interface ScenarioAgentDebugResult {
   userTheme?: string;
   referenceCount?: number;
   retrievedCases?: ScenarioAgentRetrievedCase[];
+  skillSystemPrompt?: string;
+  memoryContext?: string;
   rawOutput?: string;
   parsedOutput?: Record<string, unknown>;
   promptMain?: string;
@@ -399,6 +401,12 @@ function formatReferenceText(selectionAssets: SelectionAsset[]): string {
   )).join("\n");
 }
 
+function truncateText(value: string, maxLength: number): string {
+  const trimmed = value.replace(/\s+/g, " ").trim();
+
+  return trimmed.length > maxLength ? `${trimmed.slice(0, maxLength)}...` : trimmed;
+}
+
 function normalizeTextForSearch(value: string): string {
   return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 }
@@ -470,15 +478,100 @@ function retrieveScenarioCases(input: {
 
 function formatRetrievedCases(cases: ScenarioAgentRetrievedCase[]): string {
   if (!cases.length) {
-    return "未命中可参考案例。";
+    return "未命中可参考案例记忆。";
   }
 
   return cases.map((caseItem, index) => [
-    `案例${index + 1}：${caseItem.title}`,
-    `用户需求：${caseItem.userInput}`,
-    `成功提示词：${caseItem.positivePrompt}`,
+    `记忆${index + 1}：${caseItem.title}`,
+    `历史需求：${truncateText(caseItem.userInput, 120)}`,
+    `可复用经验：参考其场景结构、主体关系、道具组织和画面约束，不要照抄完整 Prompt。`,
+    `成功结构摘要：${truncateText(caseItem.positivePrompt, 260)}`,
     caseItem.tags.length ? `标签：${caseItem.tags.join("、")}` : undefined,
   ].filter(Boolean).join("\n")).join("\n\n");
+}
+
+function getOutputContract(agent: ScenarioAgentConfig): string {
+  if (agent.outputMode === "json_final_prompt") {
+    return [
+      "只返回 JSON，不要 Markdown，不要解释，不要分析过程。",
+      'JSON 字段固定为：{"finalPrompt":"..."}。',
+      "finalPrompt 只写本次场景 Prompt，不要包含 Base Prompt、固定正向规则、prompt_negative、负向规则或自检过程。",
+    ].join("\n");
+  }
+
+  return [
+    "只返回两个 Markdown 小节，不要解释，不要分析过程。",
+    "## prompt_main",
+    "（本次场景 Prompt）",
+    "## prompt_negative",
+    "（如果后台固定负向规则已覆盖，可保持简短；不得输出分析过程）",
+  ].join("\n");
+}
+
+function buildMiniatureWorldSkillCard(agent: ScenarioAgentConfig): string {
+  return [
+    `【Skill 名称】${agent.name}`,
+    `【Skill 目标】${agent.description || "生成微缩世界场景 Prompt"}`,
+    "【核心硬规则】",
+    "1. 这是微缩模型世界，不是单一角色特写。",
+    "2. 超级符号必须作为世界本体、地形、舞台或容器，体量明显大于 IP。",
+    "3. IP 是微缩居民，只做小动作和换装，不能改变头部造型、物种和核心识别特征。",
+    "4. 画面关注整体空间结构，镜头为微缩沙盘视角，构图稳定，主体整体居中或偏下。",
+    "5. 材质统一为工业级玩具 3D 渲染、注塑塑料、软胶、半哑光、干净无噪点。",
+    "6. 可选空间母型只能是桌面承载型、水面漂浮型或立体容器型之一。",
+    "7. 禁止真人、写实摄影、可识别文字 Logo、复杂剧情、真实自然尺度。",
+    "【本次只生成场景增量】",
+    "后台固定正向 Base Prompt 会在生图前由系统拼接；你不要把 Base Prompt 原文输出给用户。",
+    "后台固定负向规则会在生图前由系统拼接；你不要生成 prompt_negative。",
+    "【输出契约】",
+    getOutputContract(agent),
+  ].join("\n");
+}
+
+function buildSingleStageSkillCard(agent: ScenarioAgentConfig): string {
+  return [
+    `【Skill 名称】${agent.name}`,
+    `【Skill 目标】${agent.description || "生成单体式圆形舞台场景 Prompt"}`,
+    "【核心硬规则】",
+    "1. 所有场景统一为正视视角 Eye-level，摄影机在角色正前方。",
+    "2. 所有场景统一为 4:3，圆形舞台必须完整显示，不能裁切。",
+    "3. 舞台始终是视觉中心，IP 位于舞台中央，角色高度约为舞台直径三分之二。",
+    "4. 必须有一个主道具，左侧 1-2 件辅助道具，右侧 1-2 件辅助道具，前景 1 件辅助道具。",
+    "5. 道具风格统一、比例可爱夸张，禁止随机散落或遮挡主体。",
+    "6. 服饰只能改变装饰层，不得改变角色轮廓、物种、头型和身体结构。",
+    "7. 材质统一为设计师潮玩、Vinyl Toy、软胶玩具、商业级 3D 插画渲染。",
+    "8. 背景纯白，可点缀 2-4 个白描边扁平贴纸，禁止复杂背景。",
+    "【输出契约】",
+    getOutputContract(agent),
+  ].join("\n");
+}
+
+function buildFallbackSkillCard(agent: ScenarioAgentConfig): string {
+  return [
+    `【Skill 名称】${agent.name}`,
+    `【Skill 目标】${agent.description}`,
+    "【压缩后的后台规则】",
+    truncateText(agent.systemPrompt, 1600),
+    "【输出契约】",
+    getOutputContract(agent),
+    "【硬性要求】只输出最终可用 Prompt，不要输出思考过程、推理过程、多个方案或额外说明。",
+  ].join("\n");
+}
+
+function buildStructuredSkillPrompt(agent: ScenarioAgentConfig): string {
+  const skillCard = agent.id === "miniature-world" || agent.trigger.includes("微缩世界")
+    ? buildMiniatureWorldSkillCard(agent)
+    : agent.id === "single-stage" || agent.trigger.includes("单体舞台")
+      ? buildSingleStageSkillCard(agent)
+      : buildFallbackSkillCard(agent);
+
+  return withChineseOutputInstruction([
+    "你正在执行一个结构化视觉生成 Skill。",
+    "你的任务是根据用户需求、参考图信息和上下文记忆，生成稳定、可直接用于生图的中文 Prompt。",
+    "不要展示思考过程，不要复述规则，不要把后台固定规则原文吐给用户。",
+    "",
+    skillCard,
+  ].join("\n"));
 }
 
 function withChineseOutputInstruction(systemPrompt: string): string {
@@ -522,12 +615,16 @@ export async function runScenarioAgent(
     userTheme: parsed.userTheme,
     scenarioAgentCases: input.scenarioAgentCases,
   });
+  const skillSystemPrompt = buildStructuredSkillPrompt(parsed.agent);
+  const memoryContext = formatRetrievedCases(retrievedCases);
   const userContent = [
     `用户主题：${parsed.userTheme || "未填写"}`,
     "",
     `参考图信息：\n${formatReferenceText(input.selectionAssets)}`,
     "",
-    `命中的优秀案例参考：\n${formatRetrievedCases(retrievedCases)}`,
+    `上下文记忆摘要：\n${memoryContext}`,
+    "",
+    "请基于以上信息生成本次最终 Prompt。只输出输出契约要求的内容。",
   ].join("\n");
   const apiKey = input.model.apiKey || (input.model.apiUrl ? "" : input.fallbackConfig?.apiKey);
 
@@ -552,7 +649,7 @@ export async function runScenarioAgent(
         body: JSON.stringify({
           model: (input.model.apiStyle || input.fallbackConfig?.apiStyle) === "azure" ? undefined : input.model.model,
           messages: [
-            { role: "system", content: withChineseOutputInstruction(parsed.agent.systemPrompt) },
+            { role: "system", content: skillSystemPrompt },
             { role: "user", content: userContent },
           ],
           temperature: 0.2,
@@ -587,6 +684,8 @@ export async function runScenarioAgent(
       userTheme: parsed.userTheme,
       referenceCount: input.selectionAssets.length,
       retrievedCases,
+      skillSystemPrompt,
+      memoryContext,
       rawOutput,
       parsedOutput,
       promptMain,

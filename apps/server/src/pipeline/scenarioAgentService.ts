@@ -343,7 +343,7 @@ function getStringField(value: Record<string, unknown> | undefined, keys: string
 function buildMiniatureWorldPrompt(parsedOutput: Record<string, unknown> | undefined, rawOutput: string): string {
   const modelPrompt = getStringField(parsedOutput, ["finalPrompt", "final_prompt", "prompt_main", "promptMain"]);
 
-  if (modelPrompt?.includes(miniatureWorldBasePrompt)) {
+  if (modelPrompt) {
     return modelPrompt;
   }
 
@@ -362,7 +362,7 @@ function buildMiniatureWorldPrompt(parsedOutput: Record<string, unknown> | undef
   ].filter(Boolean).join("\n");
   const sceneText = fallbackSceneText || rawOutput.trim();
 
-  return `${miniatureWorldBasePrompt}\n\n【场景模块】\n${sceneText}`;
+  return sceneText;
 }
 
 export function parseScenarioAgentTrigger(content: string, agents: ScenarioAgentConfig[] = defaultScenarioAgents): { agent: ScenarioAgentConfig; userTheme: string } | undefined {

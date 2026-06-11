@@ -28,6 +28,35 @@ function titleFromMessage(content: string): string {
   return trimmed.length > 18 ? `${trimmed.slice(0, 18)}...` : trimmed;
 }
 
+function stripPromptLabel(value: string): string {
+  return value
+    .replace(/^\s*(?:prompt_main|prompt_negative|finalPrompt|final_prompt)\s*[:：]\s*/i, "")
+    .trim();
+}
+
+function stripFixedPositiveFromScenarioPrompt(prompt: string, fixedPositive: string): string {
+  const cleanPrompt = stripPromptLabel(prompt)
+    .replace(/\n?\s*(?:prompt_negative|负面提示词)\s*[:：][\s\S]*$/i, "")
+    .trim();
+  const cleanFixed = stripPromptLabel(fixedPositive);
+
+  if (!cleanPrompt || !cleanFixed) {
+    return cleanPrompt;
+  }
+
+  if (cleanPrompt.startsWith(cleanFixed)) {
+    return cleanPrompt.slice(cleanFixed.length).trim();
+  }
+
+  const sceneModuleIndex = cleanPrompt.indexOf("【场景模块】");
+
+  if (sceneModuleIndex >= 0) {
+    return cleanPrompt.slice(sceneModuleIndex + "【场景模块】".length).trim();
+  }
+
+  return cleanPrompt;
+}
+
 function getHighestReferencedImageIndex(content: string): number {
   const matches = [...content.matchAll(/图\s*(\d+)/g)];
 
@@ -685,14 +714,15 @@ export class ConversationService {
       throw new Error(scenarioAgent.error);
     }
 
-    const prompt = scenarioAgent.promptMain || scenarioAgent.rawOutput || "";
+    const rawPrompt = scenarioAgent.promptMain || scenarioAgent.rawOutput || "";
+    const promptFixedPositive = stripPromptLabel(scenarioAgentConfig?.fixedPositivePrompt?.trim() || "");
+    const prompt = stripFixedPositiveFromScenarioPrompt(rawPrompt, promptFixedPositive);
 
     if (!prompt.trim()) {
       throw new Error("场景智能体没有返回可用 Prompt。");
     }
 
-    const promptFixedPositive = scenarioAgentConfig?.fixedPositivePrompt?.trim() || "";
-    const fixedNegativePrompt = scenarioAgentConfig?.fixedNegativePrompt?.trim() || "";
+    const fixedNegativePrompt = stripPromptLabel(scenarioAgentConfig?.fixedNegativePrompt?.trim() || "");
     const promptNegative = fixedNegativePrompt || scenarioAgent.promptNegative;
 
     return {

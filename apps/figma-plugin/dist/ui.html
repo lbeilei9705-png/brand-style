@@ -1807,6 +1807,10 @@
       function getScenarioAgentDraftForContent(content) {
         const normalizedContent = normalizeScenarioDraftPrompt(content);
 
+        if (scenarioAgentDraft && !getScenarioAgentFromContent(content)) {
+          return scenarioAgentDraft;
+        }
+
         if (scenarioAgentDraft && normalizeScenarioDraftPrompt(scenarioAgentDraft.promptMain) === normalizedContent) {
           return scenarioAgentDraft;
         }

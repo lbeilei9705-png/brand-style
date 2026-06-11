@@ -267,7 +267,7 @@ function buildEndpoint(model: ModelConfig, fallback?: FintopiaConfig): string {
 }
 
 function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersInit {
-  const apiKey = model.apiKey || fallback?.apiKey || "";
+  const apiKey = model.apiKey || (model.apiUrl ? "" : fallback?.apiKey) || "";
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -281,11 +281,12 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
   return headers;
 }
 
-function getReadableLanguageModelError(error: unknown): string {
+function getReadableLanguageModelError(error: unknown, model?: ModelConfig): string {
   const message = error instanceof Error ? error.message : String(error || "");
+  const modelName = model?.name || model?.model || "语言模型";
 
   if (/fetch failed|network|ENOTFOUND|ECONN|ETIMEDOUT|timeout|TLS|certificate/i.test(message)) {
-    return "场景智能体暂时无法访问语言模型，请检查 Fintopia GPT 5.5 服务、API Key 或 Render 到模型服务的网络连接。";
+    return `场景智能体暂时无法访问「${modelName}」，请检查该模型服务、API Key 或 Render 到模型服务的网络连接。`;
   }
 
   return message || "场景智能体调用语言模型失败。";
@@ -424,6 +425,19 @@ export async function runScenarioAgent(
     "",
     `参考图信息：\n${formatReferenceText(input.selectionAssets)}`,
   ].join("\n");
+  const apiKey = input.model.apiKey || (input.model.apiUrl ? "" : input.fallbackConfig?.apiKey);
+
+  if (!apiKey) {
+    return {
+      isScenarioAgentApplied: true,
+      trigger: parsed.agent.trigger,
+      agentId: parsed.agent.id,
+      agentName: parsed.agent.name,
+      userTheme: parsed.userTheme,
+      referenceCount: input.selectionAssets.length,
+      error: `当前语言模型「${input.model.name}」缺少 API Key，请检查 Render 环境变量或后台模型配置。`,
+    };
+  }
 
   try {
     let response: Response;
@@ -439,10 +453,10 @@ export async function runScenarioAgent(
           ],
           temperature: 0.2,
         }),
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(60000),
       });
     } catch (error) {
-      throw new Error(getReadableLanguageModelError(error));
+      throw new Error(getReadableLanguageModelError(error, input.model));
     }
     const payload = await response.json();
 

@@ -492,12 +492,14 @@ export class ConversationService {
     const scenarioAgents = this.configStore.listScenarioAgents();
     const scenarioAgentConfig = parseScenarioAgentTrigger(request.content, scenarioAgents)?.agent;
     const languageModel = this.getLanguageModel(scenarioAgentConfig?.driverModelId);
+    const scenarioAgentCases = this.configStore.listScenarioAgentCases();
     const scenarioAgent = await runScenarioAgent({
       content: request.content,
       selectionAssets,
       model: languageModel,
       fallbackConfig: this.fintopiaConfig,
       scenarioAgents,
+      scenarioAgentCases,
     });
 
     if (scenarioAgent.isScenarioAgentApplied) {
@@ -704,6 +706,7 @@ export class ConversationService {
       model: this.getLanguageModel(scenarioAgentConfig?.driverModelId),
       fallbackConfig: this.fintopiaConfig,
       scenarioAgents,
+      scenarioAgentCases: this.configStore.listScenarioAgentCases(),
     });
 
     if (!scenarioAgent.isScenarioAgentApplied) {

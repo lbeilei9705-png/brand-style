@@ -1,4 +1,4 @@
-import type { ModelConfig, ScenarioAgentConfig, SelectionAsset } from "../../../../packages/shared/src/index.ts";
+import type { ModelConfig, ScenarioAgentCaseConfig, ScenarioAgentConfig, SelectionAsset } from "../../../../packages/shared/src/index.ts";
 import type { FintopiaConfig } from "../config.ts";
 
 export interface ScenarioAgentDebugResult {
@@ -8,11 +8,21 @@ export interface ScenarioAgentDebugResult {
   agentName?: string;
   userTheme?: string;
   referenceCount?: number;
+  retrievedCases?: ScenarioAgentRetrievedCase[];
   rawOutput?: string;
   parsedOutput?: Record<string, unknown>;
   promptMain?: string;
   promptNegative?: string;
   error?: string;
+}
+
+export interface ScenarioAgentRetrievedCase {
+  id: string;
+  title: string;
+  userInput: string;
+  positivePrompt: string;
+  tags: string[];
+  score: number;
 }
 
 const miniatureWorldBasePrompt = `Base Prompt v1.0
@@ -389,6 +399,88 @@ function formatReferenceText(selectionAssets: SelectionAsset[]): string {
   )).join("\n");
 }
 
+function normalizeTextForSearch(value: string): string {
+  return value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+function tokenizeForSearch(value: string): string[] {
+  const normalized = normalizeTextForSearch(value);
+  const asciiTokens = normalized.match(/[a-z0-9]{2,}/g) || [];
+  const cjkTokens = normalized.match(/[\p{Script=Han}]{2,}/gu) || [];
+  const compactCjkText = cjkTokens.join("");
+  const cjkBigrams = compactCjkText.length >= 2
+    ? Array.from({ length: compactCjkText.length - 1 }, (_, index) => compactCjkText.slice(index, index + 2))
+    : [];
+
+  return [...new Set([...asciiTokens, ...cjkTokens, ...cjkBigrams])].filter((token) => token.length >= 2);
+}
+
+function scoreScenarioCase(caseItem: ScenarioAgentCaseConfig, userTheme: string): number {
+  const themeTokens = tokenizeForSearch(userTheme);
+  const tagTokens = caseItem.tags.flatMap(tokenizeForSearch);
+  const searchableText = normalizeTextForSearch([
+    caseItem.title,
+    caseItem.userInput,
+    caseItem.positivePrompt,
+    caseItem.notes || "",
+    caseItem.tags.join(" "),
+  ].join(" "));
+  let score = 0;
+
+  for (const token of themeTokens) {
+    if (searchableText.includes(token)) {
+      score += token.length >= 3 ? 2 : 1;
+    }
+  }
+
+  for (const token of tagTokens) {
+    if (normalizeTextForSearch(userTheme).includes(token)) {
+      score += 3;
+    }
+  }
+
+  if (caseItem.title && normalizeTextForSearch(userTheme).includes(normalizeTextForSearch(caseItem.title))) {
+    score += 4;
+  }
+
+  return score;
+}
+
+function retrieveScenarioCases(input: {
+  agentId: string;
+  userTheme: string;
+  scenarioAgentCases?: ScenarioAgentCaseConfig[];
+}): ScenarioAgentRetrievedCase[] {
+  return (input.scenarioAgentCases || [])
+    .filter((caseItem) => caseItem.enabled && caseItem.rating === "excellent" && caseItem.scenarioAgentId === input.agentId)
+    .map((caseItem) => ({
+      id: caseItem.id,
+      title: caseItem.title,
+      userInput: caseItem.userInput,
+      positivePrompt: caseItem.positivePrompt,
+      tags: caseItem.tags,
+      score: scoreScenarioCase(caseItem, input.userTheme),
+      updatedAt: caseItem.updatedAt,
+    }))
+    .filter((caseItem) => caseItem.score > 0)
+    .sort((a, b) => b.score - a.score || b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 3)
+    .map(({ updatedAt: _updatedAt, ...caseItem }) => caseItem);
+}
+
+function formatRetrievedCases(cases: ScenarioAgentRetrievedCase[]): string {
+  if (!cases.length) {
+    return "未命中可参考案例。";
+  }
+
+  return cases.map((caseItem, index) => [
+    `案例${index + 1}：${caseItem.title}`,
+    `用户需求：${caseItem.userInput}`,
+    `成功提示词：${caseItem.positivePrompt}`,
+    caseItem.tags.length ? `标签：${caseItem.tags.join("、")}` : undefined,
+  ].filter(Boolean).join("\n")).join("\n\n");
+}
+
 function withChineseOutputInstruction(systemPrompt: string): string {
   const instruction = "【输出语言硬规则】最终返回必须使用中文。prompt_main、prompt_negative、finalPrompt、自检和所有解释性字段都必须用中文表达；不要输出英文 Prompt，除非是必须保留的专有名词。";
 
@@ -404,6 +496,7 @@ export async function runScenarioAgent(
     model?: ModelConfig;
     fallbackConfig?: FintopiaConfig;
     scenarioAgents?: ScenarioAgentConfig[];
+    scenarioAgentCases?: ScenarioAgentCaseConfig[];
   },
 ): Promise<ScenarioAgentDebugResult> {
   const parsed = parseScenarioAgentTrigger(input.content, input.scenarioAgents);
@@ -424,10 +517,17 @@ export async function runScenarioAgent(
     };
   }
 
+  const retrievedCases = retrieveScenarioCases({
+    agentId: parsed.agent.id,
+    userTheme: parsed.userTheme,
+    scenarioAgentCases: input.scenarioAgentCases,
+  });
   const userContent = [
     `用户主题：${parsed.userTheme || "未填写"}`,
     "",
     `参考图信息：\n${formatReferenceText(input.selectionAssets)}`,
+    "",
+    `命中的优秀案例参考：\n${formatRetrievedCases(retrievedCases)}`,
   ].join("\n");
   const apiKey = input.model.apiKey || (input.model.apiUrl ? "" : input.fallbackConfig?.apiKey);
 
@@ -486,6 +586,7 @@ export async function runScenarioAgent(
       agentName: parsed.agent.name,
       userTheme: parsed.userTheme,
       referenceCount: input.selectionAssets.length,
+      retrievedCases,
       rawOutput,
       parsedOutput,
       promptMain,

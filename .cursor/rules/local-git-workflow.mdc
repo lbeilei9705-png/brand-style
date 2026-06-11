@@ -1,0 +1,15 @@
+---
+description: Local Git workflow rules for this project
+alwaysApply: true
+---
+
+# Local Git Workflow
+
+- Treat `main` as the local trunk branch. New feature branches should be created from the current `main` unless the user explicitly asks for another base.
+- Keep local working branches small and purpose-driven. Current local branches reserved for parallel work are `lj` and `bili`.
+- Do not commit, amend, rebase, reset, force push, or discard files unless the user explicitly asks.
+- Before creating commits, always inspect `git status`, `git diff`, and recent `git log`; include only relevant files and never include secrets.
+- If the worktree is dirty, assume existing changes may belong to the user. Work with them, do not revert them.
+- For server changes, run `node --experimental-strip-types --check apps/server/src/index.ts` when possible. If `npm` is available, `npm run check:server` is also acceptable.
+- For Figma plugin frontend changes, if editing `apps/figma-plugin/dist/ui.html` or `apps/figma-plugin/dist/code.js`, no build is required, but remind the user to reopen the plugin.
+- For backend/admin configuration changes that must survive deployment, sync the live config into `apps/server/src/defaultConfig.seed.json` before committing.

@@ -115,9 +115,7 @@ function splitColorPrompt(prompt: string): { text: string; colors: string[] } {
 
 function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: boolean, hasReferenceImage: boolean): string {
   if (!prompt) {
-    return hasReferenceImage
-      ? "未选择配色方案：按参考图的色彩关系，结合当前材质、光照和阴影进行自然转译。"
-      : "未选择配色方案：按用户文字需求和当前风格套装自然配色。";
+    return "";
   }
 
   const { text, colors } = splitColorPrompt(prompt);

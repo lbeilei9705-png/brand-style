@@ -308,9 +308,9 @@ function renderScenarioAgentCases() {
   if (unmatchedItems.length) {
     groups.push({
       id: "__unmatched__",
-      name: "未匹配智能体",
-      trigger: "案例所属智能体已删除或不可用",
-      description: "这些案例仍保留在案例库中，但当前找不到对应智能体配置。",
+      name: "未匹配 Skill",
+      trigger: "案例所属 Skill 已删除或不可用",
+      description: "这些案例仍保留在案例库中，但当前找不到对应场景 Skill 配置。",
       items: unmatchedItems,
     });
   }
@@ -739,7 +739,7 @@ async function deleteScenario(scenarioId) {
 }
 
 function resetScenarioAgentForm() {
-  qs("#scenario-agent-modal-title").textContent = "新建场景智能体";
+  qs("#scenario-agent-modal-title").textContent = "新建场景 Skill";
   qs("#scenario-agent-form").reset();
   qs("#scenario-agent-id").value = "";
   qs("#scenario-agent-trigger").value = "/";
@@ -750,7 +750,7 @@ function resetScenarioAgentForm() {
 }
 
 function fillScenarioAgentForm(agent) {
-  qs("#scenario-agent-modal-title").textContent = "编辑场景智能体";
+  qs("#scenario-agent-modal-title").textContent = "编辑场景 Skill";
   qs("#scenario-agent-id").value = agent.id;
   qs("#scenario-agent-name").value = agent.name;
   qs("#scenario-agent-trigger").value = agent.trigger;
@@ -759,6 +759,13 @@ function fillScenarioAgentForm(agent) {
   qs("#scenario-agent-driver-model").value = agent.driverModelId || state.models.find((model) => model.purpose === "language")?.id || state.models[0]?.id || "";
   qs("#scenario-agent-version").value = agent.version || "v1.0";
   qs("#scenario-agent-enabled").value = String(agent.enabled);
+  qs("#scenario-agent-skill-role").value = agent.skillRole || "";
+  qs("#scenario-agent-core-rules").value = (agent.coreRules || []).join("\n");
+  qs("#scenario-agent-output-contract").value = agent.outputContract || "";
+  qs("#scenario-agent-positive-template").value = agent.positiveTemplate || "";
+  qs("#scenario-agent-forbidden-rules").value = (agent.forbiddenRules || []).join("\n");
+  qs("#scenario-agent-memory-policy").value = agent.memoryPolicy || "";
+  qs("#scenario-agent-case-reference-policy").value = agent.caseReferencePolicy || "";
   qs("#scenario-agent-system-prompt").value = agent.systemPrompt;
   qs("#scenario-agent-fixed-positive-prompt").value = agent.fixedPositivePrompt || "";
   qs("#scenario-agent-fixed-negative-prompt").value = agent.fixedNegativePrompt || "";
@@ -777,6 +784,13 @@ async function saveScenarioAgent(event) {
       trigger: qs("#scenario-agent-trigger").value,
       description: qs("#scenario-agent-description").value,
       systemPrompt: qs("#scenario-agent-system-prompt").value,
+      skillRole: qs("#scenario-agent-skill-role").value,
+      coreRules: parseTags(qs("#scenario-agent-core-rules").value),
+      outputContract: qs("#scenario-agent-output-contract").value,
+      positiveTemplate: qs("#scenario-agent-positive-template").value,
+      forbiddenRules: parseTags(qs("#scenario-agent-forbidden-rules").value),
+      memoryPolicy: qs("#scenario-agent-memory-policy").value,
+      caseReferencePolicy: qs("#scenario-agent-case-reference-policy").value,
       fixedPositivePrompt: qs("#scenario-agent-fixed-positive-prompt").value,
       fixedNegativePrompt: qs("#scenario-agent-fixed-negative-prompt").value,
       outputMode: qs("#scenario-agent-output-mode").value,
@@ -792,7 +806,7 @@ async function saveScenarioAgent(event) {
 async function deleteScenarioAgent(agentId) {
   const agent = state.scenarioAgents.find((item) => item.id === agentId);
 
-  if (!agent || !confirm(`确认删除场景智能体「${agent.name}」？`)) {
+  if (!agent || !confirm(`确认删除场景 Skill「${agent.name}」？`)) {
     return;
   }
 
@@ -807,7 +821,7 @@ function parseTags(value) {
 }
 
 function resetScenarioAgentCaseForm() {
-  qs("#scenario-agent-case-modal-title").textContent = "新建智能体案例";
+  qs("#scenario-agent-case-modal-title").textContent = "新建 Skill 案例";
   qs("#scenario-agent-case-form").reset();
   qs("#scenario-agent-case-id").value = "";
   qs("#scenario-agent-case-agent").value = state.scenarioAgents[0]?.id || "";
@@ -816,7 +830,7 @@ function resetScenarioAgentCaseForm() {
 }
 
 function fillScenarioAgentCaseForm(item) {
-  qs("#scenario-agent-case-modal-title").textContent = "编辑智能体案例";
+  qs("#scenario-agent-case-modal-title").textContent = "编辑 Skill 案例";
   qs("#scenario-agent-case-id").value = item.id;
   qs("#scenario-agent-case-title").value = item.title;
   qs("#scenario-agent-case-agent").value = item.scenarioAgentId;

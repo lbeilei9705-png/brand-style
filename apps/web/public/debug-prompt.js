@@ -131,8 +131,8 @@ const scenarios = [
     referenceCount: 3,
     usePromptOrchestrator: false,
     expect: [
-      { label: "应该命中场景智能体", scenarioAgentApplied: true },
-      { label: "应该命中微缩世界智能体", scenarioAgentId: "miniature-world" },
+      { label: "应该命中场景 Skill", scenarioAgentApplied: true },
+      { label: "应该命中微缩世界 Skill", scenarioAgentId: "miniature-world" },
       { label: "应该返回最终 Prompt", scenarioPromptMain: true },
       { label: "应该使用结构化 Skill 卡", scenarioSkillIncludes: "结构化视觉生成 Skill" },
     ],
@@ -144,8 +144,8 @@ const scenarios = [
     referenceCount: 3,
     usePromptOrchestrator: false,
     expect: [
-      { label: "应该命中场景智能体", scenarioAgentApplied: true },
-      { label: "应该命中单体舞台智能体", scenarioAgentId: "single-stage" },
+      { label: "应该命中场景 Skill", scenarioAgentApplied: true },
+      { label: "应该命中单体舞台 Skill", scenarioAgentId: "single-stage" },
       { label: "应该返回 prompt_main", scenarioPromptMain: true },
       { label: "应该返回 prompt_negative", scenarioPromptNegative: true },
       { label: "负面提示词应该限制镜头", scenarioNegativeIncludes: "禁止俯视" },
@@ -455,13 +455,13 @@ function renderScenarioAgent(scenarioAgent) {
 
   if (scenarioAgent.error) {
     return `
-      <h2>Scenario Agent</h2>
+      <h2>Scenario Skill</h2>
       <div class="error">${escapeHtml(scenarioAgent.error)}</div>
     `;
   }
 
   return `
-    <h2>Scenario Agent</h2>
+    <h2>Scenario Skill</h2>
     <div class="result-grid" style="margin-bottom:16px;">
       <div>
         <h2>命中信息</h2>
@@ -492,10 +492,10 @@ function renderScenarioAgent(scenarioAgent) {
       </div>
       <div>
         <h2>prompt_negative</h2>
-        <div class="prompt-box">${escapeHtml(scenarioAgent.promptNegative || "微缩世界智能体不单独返回负面提示词")}</div>
+        <div class="prompt-box">${escapeHtml(scenarioAgent.promptNegative || "微缩世界 Skill 不单独返回负面提示词")}</div>
       </div>
     </div>
-    <h2>Scenario Agent Raw Output</h2>
+    <h2>Scenario Skill Raw Output</h2>
     <pre style="margin-bottom:16px;">${escapeHtml(scenarioAgent.rawOutput || "")}</pre>
   `;
 }

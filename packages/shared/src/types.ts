@@ -84,6 +84,13 @@ export interface ScenarioAgentConfig {
   trigger: string;
   description: string;
   systemPrompt: string;
+  skillRole?: string;
+  coreRules?: string[];
+  outputContract?: string;
+  positiveTemplate?: string;
+  forbiddenRules?: string[];
+  memoryPolicy?: string;
+  caseReferencePolicy?: string;
   fixedPositivePrompt?: string;
   fixedNegativePrompt?: string;
   outputMode: ScenarioAgentOutputMode;

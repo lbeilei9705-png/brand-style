@@ -234,6 +234,29 @@ export const defaultScenarioAgents: ScenarioAgentConfig[] = [
     trigger: "/微缩世界",
     description: "在世界法则下生成微缩世界场景提示词。",
     systemPrompt: miniatureWorldSystemPrompt,
+    skillRole: "微缩世界视觉生成 Skill：根据用户主题和参考图说明，生成本次微缩世界场景增量 Prompt。",
+    coreRules: [
+      "这是微缩模型世界，不是单一角色特写。",
+      "超级符号必须作为世界本体、地形、舞台或容器，体量明显大于 IP。",
+      "IP 是微缩居民，只做小动作和换装，不能改变头部造型、物种和核心识别特征。",
+      "画面关注整体空间结构，镜头为微缩沙盘视角，构图稳定，主体整体居中或偏下。",
+      "材质统一为工业级玩具 3D 渲染、注塑塑料、软胶、半哑光、干净无噪点。",
+      "可选空间母型只能是桌面承载型、水面漂浮型或立体容器型之一。",
+    ],
+    outputContract: [
+      "只返回 JSON，不要 Markdown，不要解释，不要分析过程。",
+      "{\"finalPrompt\":\"...\"}",
+      "finalPrompt 只写本次场景 Prompt，不要包含 Base Prompt、固定正向规则、prompt_negative、负向规则或自检过程。",
+    ].join("\n"),
+    positiveTemplate: "按整体世界本体、IP 微缩居民、空间母型、道具组织、材质灯光、画幅构图的顺序组织本次场景 Prompt。",
+    forbiddenRules: [
+      "不要输出 Base Prompt 原文。",
+      "不要生成 prompt_negative。",
+      "禁止真人、写实摄影、可识别文字 Logo、复杂剧情、真实自然尺度。",
+      "禁止把 IP 放大成画面唯一主体。",
+    ],
+    memoryPolicy: "只参考命中案例的场景结构、主体关系、道具组织和画面约束，不照抄完整 Prompt。",
+    caseReferencePolicy: "最多参考 3 条同智能体优秀案例；案例仅作为经验摘要，不作为必须复刻内容。",
     fixedPositivePrompt: miniatureWorldBasePrompt,
     fixedNegativePrompt: miniatureWorldNegativePrompt,
     outputMode: "json_final_prompt",
@@ -248,6 +271,33 @@ export const defaultScenarioAgents: ScenarioAgentConfig[] = [
     trigger: "/单体舞台",
     description: "生成符合 NBP 单体式圆形舞台系统的提示词。",
     systemPrompt: singleStageSystemPrompt,
+    skillRole: "单体式圆形舞台视觉生成 Skill：根据用户主题生成稳定、商业化、可控的单体舞台场景 Prompt。",
+    coreRules: [
+      "所有场景统一为正视视角 Eye-level，摄影机在角色正前方。",
+      "所有场景统一为 4:3，圆形舞台必须完整显示，不能裁切。",
+      "舞台始终是视觉中心，IP 位于舞台中央，角色高度约为舞台直径三分之二。",
+      "必须有一个主道具，左侧 1-2 件辅助道具，右侧 1-2 件辅助道具，前景 1 件辅助道具。",
+      "道具风格统一、比例可爱夸张，禁止随机散落或遮挡主体。",
+      "服饰只能改变装饰层，不得改变角色轮廓、物种、头型和身体结构。",
+      "材质统一为设计师潮玩、Vinyl Toy、软胶玩具、商业级 3D 插画渲染。",
+      "背景纯白，可点缀 2-4 个白描边扁平贴纸，禁止复杂背景。",
+    ],
+    outputContract: [
+      "只返回两个 Markdown 小节，不要解释，不要分析过程。",
+      "## prompt_main",
+      "（本次场景 Prompt）",
+      "## prompt_negative",
+      "（负面提示词）",
+    ].join("\n"),
+    positiveTemplate: "按画幅镜头、舞台结构、IP 主体、主道具、辅助道具、材质灯光、背景贴纸的顺序组织 Prompt。",
+    forbiddenRules: [
+      "禁止俯视、仰视、倾斜镜头、广角透视。",
+      "禁止非 4:3 构图、舞台裁切、角色高度超过舞台。",
+      "禁止无限空间纵深、远景、地平线、复杂背景。",
+      "禁止写实摄影风格、真实金属反射、乱码文字、角色变形。",
+    ],
+    memoryPolicy: "只参考命中案例的构图结构、道具搭配和主题转译方式，不照抄完整 Prompt。",
+    caseReferencePolicy: "最多参考 3 条同智能体优秀案例；优先复用结构经验，而非复刻具体元素。",
     outputMode: "prompt_sections",
     version: "v1.0",
     enabled: true,
@@ -491,6 +541,10 @@ function formatRetrievedCases(cases: ScenarioAgentRetrievedCase[]): string {
 }
 
 function getOutputContract(agent: ScenarioAgentConfig): string {
+  if (agent.outputContract?.trim()) {
+    return agent.outputContract.trim();
+  }
+
   if (agent.outputMode === "json_final_prompt") {
     return [
       "只返回 JSON，不要 Markdown，不要解释，不要分析过程。",
@@ -508,7 +562,36 @@ function getOutputContract(agent: ScenarioAgentConfig): string {
   ].join("\n");
 }
 
-function buildMiniatureWorldSkillCard(agent: ScenarioAgentConfig): string {
+function hasStructuredSkillConfig(agent: ScenarioAgentConfig): boolean {
+  return Boolean(
+    agent.skillRole?.trim()
+    || agent.coreRules?.length
+    || agent.outputContract?.trim()
+    || agent.positiveTemplate?.trim()
+    || agent.forbiddenRules?.length
+    || agent.memoryPolicy?.trim()
+    || agent.caseReferencePolicy?.trim()
+  );
+}
+
+function buildConfiguredSkillCard(agent: ScenarioAgentConfig): string {
+  return [
+    `【Skill 名称】${agent.name}`,
+    `【Skill 目标】${agent.skillRole || agent.description}`,
+    agent.coreRules?.length ? ["【核心硬规则】", ...agent.coreRules.map((rule, index) => `${index + 1}. ${rule}`)].join("\n") : undefined,
+    agent.positiveTemplate ? `【正向 Prompt 组织模板】\n${agent.positiveTemplate}` : undefined,
+    agent.forbiddenRules?.length ? ["【禁止项】", ...agent.forbiddenRules.map((rule, index) => `${index + 1}. ${rule}`)].join("\n") : undefined,
+    agent.memoryPolicy ? `【上下文记忆策略】\n${agent.memoryPolicy}` : undefined,
+    agent.caseReferencePolicy ? `【案例参考策略】\n${agent.caseReferencePolicy}` : undefined,
+    "【固定规则边界】",
+    "固定正向规则 / Base Prompt 由后端在最终生图前拼接；不要把它输出给用户。",
+    "固定负向规则由后端在最终生图前拼接；除非输出契约要求，否则不要额外生成负向规则。",
+    "【输出契约】",
+    getOutputContract(agent),
+  ].filter(Boolean).join("\n");
+}
+
+function buildLegacyMiniatureWorldSkillCard(agent: ScenarioAgentConfig): string {
   return [
     `【Skill 名称】${agent.name}`,
     `【Skill 目标】${agent.description || "生成微缩世界场景 Prompt"}`,
@@ -528,7 +611,7 @@ function buildMiniatureWorldSkillCard(agent: ScenarioAgentConfig): string {
   ].join("\n");
 }
 
-function buildSingleStageSkillCard(agent: ScenarioAgentConfig): string {
+function buildLegacySingleStageSkillCard(agent: ScenarioAgentConfig): string {
   return [
     `【Skill 名称】${agent.name}`,
     `【Skill 目标】${agent.description || "生成单体式圆形舞台场景 Prompt"}`,
@@ -559,10 +642,12 @@ function buildFallbackSkillCard(agent: ScenarioAgentConfig): string {
 }
 
 function buildStructuredSkillPrompt(agent: ScenarioAgentConfig): string {
-  const skillCard = agent.id === "miniature-world" || agent.trigger.includes("微缩世界")
-    ? buildMiniatureWorldSkillCard(agent)
+  const skillCard = hasStructuredSkillConfig(agent)
+    ? buildConfiguredSkillCard(agent)
+    : agent.id === "miniature-world" || agent.trigger.includes("微缩世界")
+      ? buildLegacyMiniatureWorldSkillCard(agent)
     : agent.id === "single-stage" || agent.trigger.includes("单体舞台")
-      ? buildSingleStageSkillCard(agent)
+      ? buildLegacySingleStageSkillCard(agent)
       : buildFallbackSkillCard(agent);
 
   return withChineseOutputInstruction([

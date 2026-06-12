@@ -320,8 +320,8 @@
           <button class="nav-button" data-page="palettes-page" type="button">配色管理</button>
           <button class="nav-button" data-page="shape-architectures-page" type="button">形状管理</button>
           <button class="nav-button" data-page="scenarios-page" type="button">运营场景管理</button>
-          <button class="nav-button" data-page="scenario-agents-page" type="button">场景智能体管理</button>
-          <button class="nav-button" data-page="scenario-agent-cases-page" type="button">智能体案例库</button>
+          <button class="nav-button" data-page="scenario-agents-page" type="button">场景 Skill 管理</button>
+          <button class="nav-button" data-page="scenario-agent-cases-page" type="button">Skill 案例库</button>
         </nav>
       </aside>
 
@@ -475,16 +475,16 @@
         <section id="scenario-agents-page" class="resource-page">
           <header class="page-header">
             <div>
-              <h2>场景智能体管理</h2>
-              <p class="muted">配置插件输入框中可通过 / 调用的 Prompt 策划智能体。</p>
+              <h2>场景 Skill 管理</h2>
+              <p class="muted">配置插件输入框中可通过 / 调用的场景 Prompt Skill。</p>
             </div>
-            <button id="new-scenario-agent-button" class="primary-button" type="button">新建场景智能体</button>
+            <button id="new-scenario-agent-button" class="primary-button" type="button">新建场景 Skill</button>
           </header>
           <div class="admin-card">
             <table>
               <thead>
                 <tr>
-                  <th>智能体</th>
+                  <th>Skill</th>
                   <th>触发词 / 版本</th>
                   <th>输出格式</th>
                   <th>状态</th>
@@ -499,8 +499,8 @@
         <section id="scenario-agent-cases-page" class="resource-page">
           <header class="page-header">
             <div>
-              <h2>智能体案例库</h2>
-              <p class="muted">沉淀场景智能体的优秀、一般和失败案例。当前版本先用于人工管理，暂不参与生成检索。</p>
+              <h2>Skill 案例库</h2>
+              <p class="muted">沉淀场景 Skill 的优秀、一般和失败案例，用于上下文记忆和生成参考。</p>
             </div>
             <button id="new-scenario-agent-case-button" class="primary-button" type="button">新建案例</button>
           </header>
@@ -788,13 +788,13 @@
     <div id="scenario-agent-modal" class="modal-backdrop">
       <form id="scenario-agent-form" class="modal">
         <header class="modal-header">
-          <h2 id="scenario-agent-modal-title">新建场景智能体</h2>
+          <h2 id="scenario-agent-modal-title">新建场景 Skill</h2>
           <button class="secondary-button" data-close-modal type="button">关闭</button>
         </header>
         <section class="modal-body admin-form-grid">
           <input id="scenario-agent-id" type="hidden" />
           <label class="admin-field">
-            <span>智能体名称</span>
+            <span>Skill 名称</span>
             <input id="scenario-agent-name" type="text" required />
           </label>
           <label class="admin-field">
@@ -828,7 +828,35 @@
             </select>
           </label>
           <label class="admin-field full">
-            <span>工作指令 System Prompt</span>
+            <span>Skill 定位 / 角色</span>
+            <textarea id="scenario-agent-skill-role" placeholder="说明这个场景 Skill 要解决什么视觉生成任务"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>核心硬规则（每行一条）</span>
+            <textarea id="scenario-agent-core-rules" placeholder="例如：超级符号必须作为世界本体，体量明显大于 IP"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>输出契约 / Output Contract</span>
+            <textarea id="scenario-agent-output-contract" placeholder="例如：只返回 JSON，不要解释；字段固定为 {&quot;finalPrompt&quot;:&quot;...&quot;}"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>正向 Prompt 组织模板</span>
+            <textarea id="scenario-agent-positive-template" placeholder="例如：按画幅镜头、主体关系、道具组织、材质灯光顺序组织"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>禁止项（每行一条）</span>
+            <textarea id="scenario-agent-forbidden-rules" placeholder="例如：不要输出 Base Prompt 原文"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>上下文记忆策略</span>
+            <textarea id="scenario-agent-memory-policy" placeholder="说明如何使用历史案例记忆"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>案例参考策略</span>
+            <textarea id="scenario-agent-case-reference-policy" placeholder="说明命中案例应该如何参考，如何避免照抄"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>兼容字段：原始 System Prompt（老配置兜底用）</span>
             <textarea id="scenario-agent-system-prompt" required></textarea>
           </label>
           <label class="admin-field full">
@@ -842,7 +870,7 @@
         </section>
         <footer class="modal-footer">
           <button class="secondary-button" data-close-modal type="button">取消</button>
-          <button class="primary-button" type="submit">保存场景智能体</button>
+          <button class="primary-button" type="submit">保存场景 Skill</button>
         </footer>
       </form>
     </div>
@@ -850,7 +878,7 @@
     <div id="scenario-agent-case-modal" class="modal-backdrop">
       <form id="scenario-agent-case-form" class="modal">
         <header class="modal-header">
-          <h2 id="scenario-agent-case-modal-title">新建智能体案例</h2>
+          <h2 id="scenario-agent-case-modal-title">新建 Skill 案例</h2>
           <button class="secondary-button" data-close-modal type="button">关闭</button>
         </header>
         <section class="modal-body admin-form-grid">
@@ -860,7 +888,7 @@
             <input id="scenario-agent-case-title" type="text" placeholder="例如 教师节圆形舞台" required />
           </label>
           <label class="admin-field">
-            <span>所属智能体</span>
+            <span>所属 Skill</span>
             <select id="scenario-agent-case-agent" required></select>
           </label>
           <label class="admin-field">
@@ -906,6 +934,6 @@
       </form>
     </div>
 
-    <script src="/admin.js?v=20260610-scenario-agent-cases"></script>
+    <script src="/admin.js?v=20260612-scenario-skill-copy"></script>
   </body>
 </html>

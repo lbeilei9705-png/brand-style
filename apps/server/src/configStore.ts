@@ -429,12 +429,23 @@ export class ConfigStore {
         variablePrompt: scenario.variablePrompt || "",
         enabled: scenario.enabled ?? true,
       })),
-      scenarioAgents: (config.scenarioAgents || defaults.scenarioAgents).map((agent) => ({
-        ...agent,
-        outputMode: agent.outputMode || (agent.id === "miniature-world" ? "json_final_prompt" : "prompt_sections"),
-        version: agent.version || "v1.0",
-        enabled: agent.enabled ?? true,
-      })),
+      scenarioAgents: (config.scenarioAgents || defaults.scenarioAgents).map((agent) => {
+        const defaultAgent = defaults.scenarioAgents.find((item) => item.id === agent.id);
+
+        return {
+          ...agent,
+          skillRole: agent.skillRole ?? defaultAgent?.skillRole ?? "",
+          coreRules: agent.coreRules || defaultAgent?.coreRules || [],
+          outputContract: agent.outputContract ?? defaultAgent?.outputContract ?? "",
+          positiveTemplate: agent.positiveTemplate ?? defaultAgent?.positiveTemplate ?? "",
+          forbiddenRules: agent.forbiddenRules || defaultAgent?.forbiddenRules || [],
+          memoryPolicy: agent.memoryPolicy ?? defaultAgent?.memoryPolicy ?? "",
+          caseReferencePolicy: agent.caseReferencePolicy ?? defaultAgent?.caseReferencePolicy ?? "",
+          outputMode: agent.outputMode || (agent.id === "miniature-world" ? "json_final_prompt" : "prompt_sections"),
+          version: agent.version || "v1.0",
+          enabled: agent.enabled ?? true,
+        };
+      }),
       scenarioAgentCases: (config.scenarioAgentCases || defaults.scenarioAgentCases || []).map((item) => ({
         ...item,
         tags: item.tags || [],
@@ -695,6 +706,13 @@ export class ConfigStore {
       trigger: agent.trigger.startsWith("/") ? agent.trigger : `/${agent.trigger}`,
       description: agent.description,
       systemPrompt: agent.systemPrompt,
+      skillRole: agent.skillRole ?? existing?.skillRole ?? "",
+      coreRules: agent.coreRules ?? existing?.coreRules ?? [],
+      outputContract: agent.outputContract ?? existing?.outputContract ?? "",
+      positiveTemplate: agent.positiveTemplate ?? existing?.positiveTemplate ?? "",
+      forbiddenRules: agent.forbiddenRules ?? existing?.forbiddenRules ?? [],
+      memoryPolicy: agent.memoryPolicy ?? existing?.memoryPolicy ?? "",
+      caseReferencePolicy: agent.caseReferencePolicy ?? existing?.caseReferencePolicy ?? "",
       fixedPositivePrompt: agent.fixedPositivePrompt ?? existing?.fixedPositivePrompt ?? "",
       fixedNegativePrompt: agent.fixedNegativePrompt ?? existing?.fixedNegativePrompt ?? "",
       outputMode: agent.outputMode || existing?.outputMode || "prompt_sections",

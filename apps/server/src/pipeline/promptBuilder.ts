@@ -218,13 +218,19 @@ export function buildOperationScenarioPromptBundle(
   scenarioPrompt: OperationScenarioPrompt,
 ): PromptBundle {
   const { stylePreset } = stylePack;
+  const negativeRules = splitNegativeRules([
+    ...(scenarioPrompt.negativeRules || []),
+    "不要模糊",
+    "不要糊边",
+    "不要低分辨率",
+  ]);
 
   return {
     positive: [
       scenarioPrompt.fixedPrompt,
       scenarioPrompt.variablePrompt,
     ].map((part) => part.trim()).filter(Boolean).join("\n\n"),
-    negative: "",
+    negative: negativeRules.join("；"),
     template: preprocess.mode,
     referencePack: {
       inputAssetId: inputAsset.id,

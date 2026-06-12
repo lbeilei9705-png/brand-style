@@ -112,6 +112,7 @@ const scenarios = [
     expect: [
       { label: "应该使用运营场景", resolvedPath: "operationScenario" },
       { label: "不应追加普通配色要求", notIncludes: "配色要求" },
+      { label: "应该返回负面提示词", includes: "不要模糊" },
     ],
   },
   {

@@ -223,6 +223,7 @@ export interface OperationScenarioPrompt {
   name: string;
   fixedPrompt: string;
   variablePrompt: string;
+  negativeRules?: string[];
 }
 
 export interface PromptOrchestrationContext {

@@ -349,6 +349,7 @@ export class ConversationService {
           name: operationScenario.name,
           fixedPrompt: operationScenario.fixedPrompt || operationScenario.content || "",
           variablePrompt: request.content.trim() || operationScenario.variablePrompt || operationScenario.content || "",
+          negativeRules: agent.defaultNegativeRules,
         }
         : undefined,
       extraNegativeRules: operationScenario ? [] : agent.defaultNegativeRules,
@@ -587,6 +588,7 @@ export class ConversationService {
           name: operationScenario.name,
           fixedPrompt: operationScenario.fixedPrompt || operationScenario.content || "",
           variablePrompt: request.content.trim() || operationScenario.variablePrompt || operationScenario.content || "",
+          negativeRules: agent.defaultNegativeRules,
         }
         : undefined,
       extraNegativeRules: operationScenario ? [] : agent.defaultNegativeRules,

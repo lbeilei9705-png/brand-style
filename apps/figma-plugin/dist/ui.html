@@ -866,30 +866,40 @@
 
       /* Minimal premium light theme for the Figma plugin surface. */
       :root {
-        color: #171a21;
-        background: #f7f7f5;
+        color: #1d1d1f;
+        background: #f5f5f7;
+        --surface: #ffffff;
+        --surface-soft: #f5f5f7;
+        --surface-raised: #fbfbfd;
+        --line: rgba(60, 60, 67, 0.14);
+        --line-strong: rgba(60, 60, 67, 0.26);
+        --text: #1d1d1f;
+        --muted: rgba(60, 60, 67, 0.62);
+        --accent: #1d1d1f;
+        --accent-hover: #000000;
+        --success: #34c759;
       }
 
       body {
-        background: #f7f7f5;
+        background: #f5f5f7;
       }
 
       .app {
-        background: linear-gradient(180deg, #fbfbfa 0%, #f7f7f5 100%);
+        background: #f5f5f7;
       }
 
       button,
       select {
-        border-color: #deded9;
+        border-color: var(--line);
         background-color: #ffffff;
-        color: #20242d;
+        color: var(--text);
         box-shadow: none;
       }
 
       button:hover:not(:disabled),
       select:hover {
-        border-color: #c8c8c1;
-        background-color: #fafafa;
+        border-color: var(--line-strong);
+        background-color: #fdfdfd;
       }
 
       button:focus-visible,
@@ -899,34 +909,34 @@
       }
 
       .chat {
-        padding: 18px 16px 10px;
+        padding: 18px 16px 12px;
       }
 
       .message {
-        border-color: #e1e1dc;
+        border-color: var(--line);
         background: #ffffff;
-        color: #20242d;
-        box-shadow: 0 8px 24px rgba(23, 26, 33, 0.06);
+        color: var(--text);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
       }
 
       .message.user {
-        border-color: #171a21;
-        background: #171a21;
+        border-color: var(--accent);
+        background: var(--accent);
         color: #ffffff;
-        box-shadow: 0 10px 28px rgba(23, 26, 33, 0.16);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
       }
 
       .message.system {
-        border-color: #e7e7e2;
-        background: #fdfdfc;
-        color: #777b84;
+        border-color: transparent;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
       }
 
       .message-attachment,
       .thumb {
-        border-color: #e1e1dc;
-        background: #f7f7f5;
-        box-shadow: 0 6px 18px rgba(23, 26, 33, 0.08);
+        border-color: var(--line);
+        background: var(--surface-soft);
+        box-shadow: none;
       }
 
       .reuse-message-button {
@@ -938,43 +948,44 @@
       }
 
       .reuse-message-button::after {
-        background: #171a21;
+        background: var(--accent);
       }
 
       .history-panel,
       .scenario-panel,
       .multi-select-panel {
-        border-color: #deded9;
-        background: rgba(255, 255, 255, 0.98);
-        box-shadow: 0 18px 44px rgba(23, 26, 33, 0.12);
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(22px);
       }
 
       .history-item {
-        border-bottom-color: #eeeeea;
-        color: #20242d;
+        border-bottom-color: var(--line);
+        color: var(--text);
       }
 
       .history-item:hover,
       .scenario-option:hover,
       .scenario-option.active,
       .material-option:hover {
-        background: #f5f5f2;
+        background: rgba(60, 60, 67, 0.08);
       }
 
       .result-card,
       .debug-panel,
       .composer-card {
-        border-color: #e1e1dc;
+        border-color: var(--line);
         background: #ffffff;
-        box-shadow: 0 12px 36px rgba(23, 26, 33, 0.08);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 22px rgba(0, 0, 0, 0.05);
       }
 
       .debug-panel {
-        color: #4e535c;
+        color: var(--muted);
       }
 
       .debug-panel summary {
-        color: #20242d;
+        color: var(--text);
       }
 
       .debug-copy-button,
@@ -983,9 +994,9 @@
       .multi-select-button,
       .icon-button,
       .control-select {
-        border-color: #deded9;
+        border-color: var(--line);
         background-color: #ffffff;
-        color: #20242d;
+        color: var(--text);
       }
 
       .debug-copy-button:hover,
@@ -994,76 +1005,108 @@
       .multi-select-button:hover,
       .icon-button:hover,
       .control-select:hover {
-        background-color: #f8f8f6;
-        border-color: #c8c8c1;
+        background-color: #ffffff;
+        border-color: var(--line-strong);
       }
 
       .debug-section {
-        border-top-color: #eeeeea;
+        border-top-color: var(--line);
       }
 
       .debug-section strong {
-        color: #4b3ad8;
+        color: var(--accent);
       }
 
       .debug-section pre {
-        color: #20242d;
+        color: var(--text);
       }
 
       .agent-console {
-        border-top-color: #e1e1dc;
-        background: rgba(247, 247, 245, 0.96);
-        box-shadow: 0 -10px 30px rgba(23, 26, 33, 0.06);
+        border-top-color: var(--line);
+        background: rgba(245, 245, 247, 0.86);
+        box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(24px);
       }
 
       .composer-card {
-        border-radius: 22px;
+        border-radius: 24px;
+        background: #ffffff;
       }
 
       .selection-status,
       .quantity-label,
       .control-section-label,
       .scenario-option span {
-        color: #81858d;
+        color: var(--muted);
+      }
+
+      .control-section-label {
+        padding: 1px 6px 0;
+        letter-spacing: 0.01em;
       }
 
       textarea {
-        color: #20242d;
+        color: var(--text);
+        padding: 11px 18px 10px;
+        font-weight: 500;
+        line-height: 1.65;
       }
 
       textarea::placeholder {
         color: #a0a2a8;
       }
 
+      .selection-tools {
+        padding-right: 18px;
+        padding-left: 18px;
+      }
+
+      .attachment-row {
+        padding-right: 18px;
+        padding-left: 18px;
+      }
+
+      .add-selection-button {
+        border-color: var(--line);
+        background: #f9f9fb;
+        color: var(--text);
+        box-shadow: none;
+      }
+
+      .add-selection-button:hover {
+        background: #ffffff;
+        border-color: var(--line-strong);
+      }
+
       .scenario-option,
       .material-option {
-        color: #20242d;
+        color: var(--text);
       }
 
       .multi-select-clear-button {
-        border-color: #deded9;
-        background: #fafafa;
-        color: #636872;
+        border-color: var(--line);
+        background: #f9f9fb;
+        color: var(--muted);
       }
 
       .run-button {
-        background: #ececea;
-        color: #92949a;
+        background: rgba(60, 60, 67, 0.12);
+        color: rgba(60, 60, 67, 0.48);
       }
 
       .run-button:not(:disabled) {
-        background: #171a21;
+        background: var(--accent);
         color: #ffffff;
-        box-shadow: 0 10px 24px rgba(23, 26, 33, 0.18);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
       }
 
       .run-button:not(:disabled):hover {
-        background: #2a2e38;
+        background: var(--accent-hover);
       }
 
       .resize-handle {
         background: rgba(255, 255, 255, 0.96);
-        box-shadow: 0 10px 28px rgba(23, 26, 33, 0.14);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
       }
 
       .resize-handle::before,
@@ -1076,7 +1119,7 @@
       .pill-select,
       .multi-select-button,
       .icon-button {
-        border: 1px solid #deded9;
+        border: 1px solid var(--line);
         background-color: #ffffff;
         box-shadow: none;
       }
@@ -1086,7 +1129,7 @@
       .pill-select:hover,
       .multi-select-button:hover,
       .icon-button:hover {
-        border-color: #c8c8c1;
+        border-color: var(--line-strong);
         background-color: #ffffff;
         box-shadow: none;
       }

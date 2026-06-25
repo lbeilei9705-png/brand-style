@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 视觉生产工作台</title>
+    <style>
+      :root {
+        --bg: #050505;
+        --panel: #111111;
+        --panel-soft: #181818;
+        --line: #2a2a2a;
+        --line-strong: #3d3d3d;
+        --text: #f4f4f5;
+        --muted: #a1a1aa;
+        --subtle: #666666;
+        --accent: #f7f7f7;
+        --green: #3fb950;
+        --blue: #58a6ff;
+        --yellow: #d29922;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background: var(--bg);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.08), transparent 30vw),
+          radial-gradient(circle at 86% 0%, rgba(88, 166, 255, 0.1), transparent 28vw),
+          var(--bg);
+        line-height: 1.5;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 22px 0 72px;
+      }
+
+      .topnav {
+        position: sticky;
+        top: 16px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 12px 14px;
+        background: rgba(10, 10, 10, 0.78);
+        backdrop-filter: blur(18px);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #0c0c0c;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      .brand strong,
+      .topbar-title {
+        display: block;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .brand span,
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .nav-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .nav-links a {
+        border-radius: 999px;
+        padding: 7px 10px;
+        color: var(--muted);
+        font-size: 12px;
+        text-decoration: none;
+      }
+
+      .nav-links a:hover {
+        background: var(--panel-soft);
+        color: var(--text);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 0.86fr) minmax(460px, 1.14fr);
+        gap: 34px;
+        align-items: center;
+        padding: 76px 0 42px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 10px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 18px rgba(63, 185, 80, 0.55);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin: 18px 0 18px;
+        font-size: clamp(44px, 7vw, 82px);
+        line-height: 0.92;
+        letter-spacing: -0.075em;
+      }
+
+      h2 {
+        margin-bottom: 10px;
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 1;
+        letter-spacing: -0.06em;
+      }
+
+      h3 {
+        margin-bottom: 8px;
+        font-size: 17px;
+        letter-spacing: -0.03em;
+      }
+
+      .lead {
+        max-width: 560px;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.72;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        border: 1px solid transparent;
+        border-radius: 10px;
+        padding: 0 14px;
+        background: var(--accent);
+        color: #0c0c0c;
+        font-size: 13px;
+        font-weight: 650;
+        text-decoration: none;
+      }
+
+      .button.secondary {
+        border-color: var(--line);
+        background: var(--panel-soft);
+        color: var(--text);
+      }
+
+      .window,
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgba(17, 17, 17, 0.84);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+        overflow: hidden;
+      }
+
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--line);
+        padding: 12px 14px;
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .dots {
+        display: inline-flex;
+        gap: 6px;
+      }
+
+      .dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #3f3f46;
+      }
+
+      .demo {
+        display: grid;
+        grid-template-columns: 210px minmax(0, 1fr) 220px;
+        min-height: 500px;
+      }
+
+      .demo-side,
+      .demo-agent {
+        padding: 16px;
+        background: #0b0b0c;
+      }
+
+      .demo-side {
+        border-right: 1px solid var(--line);
+      }
+
+      .demo-agent {
+        border-left: 1px solid var(--line);
+      }
+
+      .demo-canvas {
+        position: relative;
+        padding: 22px;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          #070707;
+        background-size: 36px 36px;
+      }
+
+      .canvas-frame {
+        height: 100%;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: #050505;
+        padding: 20px;
+      }
+
+      .visual-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        height: 100%;
+      }
+
+      .visual-tile {
+        position: relative;
+        min-height: 150px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 50% 42%, rgba(197, 251, 0, 0.18), transparent 32%),
+          radial-gradient(circle at 42% 58%, rgba(83, 56, 255, 0.22), transparent 26%),
+          linear-gradient(145deg, #141414, #090909);
+        animation: floatTile 5s ease-in-out infinite;
+      }
+
+      .visual-tile::after {
+        content: "";
+        position: absolute;
+        inset: 28%;
+        border-radius: 26px;
+        background:
+          radial-gradient(circle at 48% 36%, #f2f2f2, transparent 16%),
+          linear-gradient(145deg, #c5fb00, #5338ff);
+        filter: blur(0.2px);
+        box-shadow: 0 20px 50px rgba(83, 56, 255, 0.25);
+      }
+
+      .visual-tile:nth-child(2) {
+        animation-delay: -1.3s;
+      }
+
+      .visual-tile:nth-child(3) {
+        animation-delay: -2.4s;
+      }
+
+      .visual-tile:nth-child(4) {
+        animation-delay: -3.2s;
+      }
+
+      @keyframes floatTile {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      .field-card,
+      .agent-card,
+      .step {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 12px;
+        background: var(--panel);
+      }
+
+      .field-card {
+        margin-bottom: 10px;
+      }
+
+      .field-label,
+      .chip {
+        color: var(--subtle);
+        font-size: 11px;
+      }
+
+      .fake-input {
+        margin-top: 8px;
+        color: var(--text);
+        font-size: 13px;
+      }
+
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 10px;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 8px;
+        background: var(--panel-soft);
+      }
+
+      .chip.active {
+        color: var(--text);
+        border-color: var(--line-strong);
+      }
+
+      .agent-card {
+        margin-bottom: 12px;
+      }
+
+      .agent-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .progress {
+        height: 6px;
+        border-radius: 999px;
+        background: #27272a;
+        overflow: hidden;
+      }
+
+      .progress span {
+        display: block;
+        width: 72%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, var(--green), var(--blue));
+        animation: progress 3.6s ease-in-out infinite;
+      }
+
+      @keyframes progress {
+        0% {
+          width: 22%;
+        }
+        50% {
+          width: 92%;
+        }
+        100% {
+          width: 72%;
+        }
+      }
+
+      section {
+        padding: 54px 0;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 22px;
+      }
+
+      .section-head p {
+        max-width: 560px;
+        margin-bottom: 0;
+        color: var(--muted);
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card p {
+        color: var(--muted);
+      }
+
+      .tag {
+        display: inline-flex;
+        margin-bottom: 16px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 5px 8px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .step {
+        min-height: 150px;
+      }
+
+      .step-number {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 9px;
+        background: var(--panel-soft);
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 22px;
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .metric strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 36px;
+        letter-spacing: -0.06em;
+      }
+
+      .demo-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      .demo-tab {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0 12px;
+        background: var(--panel);
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .demo-tab.active {
+        background: var(--accent);
+        color: #0c0c0c;
+      }
+
+      .demo-copy {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .demo,
+        .feature-grid,
+        .flow,
+        .metric-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          padding-top: 42px;
+        }
+
+        .topnav,
+        .section-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <nav class="topnav">
+        <a class="brand" href="#top">
+          <span class="brand-mark">BS</span>
+          <span>
+            <strong>Brand Style AI</strong>
+            <span>Visual production workspace</span>
+          </span>
+        </a>
+        <div class="nav-links">
+          <a href="#plugin">前台插件</a>
+          <a href="#admin">后台资产</a>
+          <a href="#debug">测试台</a>
+          <a href="#value">价值</a>
+        </div>
+      </nav>
+
+      <header id="top" class="hero">
+        <div>
+          <span class="eyebrow">Design AI research application</span>
+          <h1>把视觉生产变成可复用的 AI 工作台</h1>
+          <p class="lead">
+            从一次性的生图尝试，升级为可配置、可测试、可沉淀的设计生产系统：前台插件负责生成体验，后台管理负责资产沉淀，测试台负责质量验证。
+          </p>
+          <div class="actions">
+            <a class="button" href="#plugin">查看演示</a>
+            <a class="button secondary" href="/admin.html">打开后台</a>
+            <a class="button secondary" href="/debug-prompt">打开测试台</a>
+          </div>
+        </div>
+
+        <div class="window">
+          <div class="bar">
+            <div class="topbar-title">AI 视觉生成流程</div>
+            <div class="dots"><span></span><span></span><span></span></div>
+          </div>
+          <div class="demo">
+            <aside class="demo-side">
+              <div class="field-card">
+                <div class="field-label">用户输入</div>
+                <div class="fake-input">教师节运营活动，IP 站在圆形舞台</div>
+              </div>
+              <div class="field-card">
+                <div class="field-label">场景 Skill</div>
+                <div class="chip-row">
+                  <span class="chip active">/单体舞台</span>
+                  <span class="chip">4:3</span>
+                  <span class="chip">2k</span>
+                </div>
+              </div>
+              <div class="field-card">
+                <div class="field-label">参考图</div>
+                <div class="fake-input">IP 参考图 + 品牌符号</div>
+              </div>
+            </aside>
+            <main class="demo-canvas">
+              <div class="canvas-frame">
+                <div class="visual-grid">
+                  <div class="visual-tile"></div>
+                  <div class="visual-tile"></div>
+                  <div class="visual-tile"></div>
+                  <div class="visual-tile"></div>
+                </div>
+              </div>
+            </main>
+            <aside class="demo-agent">
+              <div class="agent-card">
+                <h3>Skill 正在编排</h3>
+                <p>读取固定规则、案例参考、用户主题，生成可编辑中文 Prompt。</p>
+              </div>
+              <div class="agent-card">
+                <p>命中：单体舞台 Skill</p>
+                <div class="progress"><span></span></div>
+              </div>
+              <div class="agent-card">
+                <p>输出：固定正向规则 + 场景 Prompt + 固定负向规则</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </header>
+
+      <section id="plugin">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Frontend plugin</span>
+            <h2>前台插件：把复杂 Prompt 变成可操作流程</h2>
+          </div>
+          <p>设计师只需要输入业务主题、选择 Skill 和参考图，就能得到结构化 Prompt 和生成结果。</p>
+        </div>
+        <div class="flow">
+          <article class="step"><div class="step-number">1</div><h3>输入业务需求</h3><p class="muted">春节活动、教师节、金融权益、品牌图标等。</p></article>
+          <article class="step"><div class="step-number">2</div><h3>选择场景 Skill</h3><p class="muted">微缩世界、单体舞台、运营场景等可配置能力。</p></article>
+          <article class="step"><div class="step-number">3</div><h3>语言模型编排</h3><p class="muted">将用户主题转成更稳定的中文视觉 Prompt。</p></article>
+          <article class="step"><div class="step-number">4</div><h3>发送生图模型</h3><p class="muted">附带固定正负向规则，减少随机试错。</p></article>
+        </div>
+      </section>
+
+      <section id="admin">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Admin console</span>
+            <h2>后台管理：把经验沉淀成团队资产</h2>
+          </div>
+          <p>后台不是简单配置页，而是设计团队 AI 能力的资产库。</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card"><span class="tag">Model routing</span><h3>模型路由</h3><p>区分语言模型和生图模型，统一维护模型、版本、接口和密钥来源。</p></article>
+          <article class="card"><span class="tag">Prompt assets</span><h3>Prompt 资产</h3><p>风格套装、材质、配色、形状、运营场景都可以被前台复用。</p></article>
+          <article class="card"><span class="tag">Scenario Skill</span><h3>场景 Skill</h3><p>结构化规则、固定正负向 Prompt、案例参考策略都可在后台维护。</p></article>
+        </div>
+      </section>
+
+      <section id="debug">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Quality harness</span>
+            <h2>测试台：让 Prompt 规则可验证</h2>
+          </div>
+          <p>每次调整 Skill 或规则，都可以用测试台验证是否命中预期。</p>
+        </div>
+        <div class="window">
+          <div class="bar"><div class="topbar-title">Prompt 规则测试台</div><div class="dots"><span></span><span></span><span></span></div></div>
+          <div class="feature-grid" style="padding: 18px;">
+            <article class="card"><span class="tag">断言</span><h3>命中 Skill</h3><p>验证 /微缩世界、/单体舞台、@运营场景 是否按规则生效。</p></article>
+            <article class="card"><span class="tag">Prompt</span><h3>查看正负向</h3><p>展示最终正向 Prompt、负向 Prompt、被移除的低优先级片段。</p></article>
+            <article class="card"><span class="tag">Debug</span><h3>定位问题</h3><p>查看结构化 Skill、案例参考、模型 payload，减少黑盒调试。</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section id="value">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Business value</span>
+            <h2>提效、提质、降本</h2>
+          </div>
+          <p>这不是单次生几张图，而是把设计团队的风格经验和业务规则变成可复用的系统能力。</p>
+        </div>
+        <div class="metric-grid">
+          <article class="card metric"><strong>提效</strong><p>减少重复写 Prompt 和反复沟通，把常用场景变成一键调用。</p></article>
+          <article class="card metric"><strong>提质</strong><p>统一风格、规则、负向约束和成功案例，提升输出稳定性。</p></article>
+          <article class="card metric"><strong>降本</strong><p>减少无效生图次数和返工，把试错沉淀为下一次的经验。</p></article>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

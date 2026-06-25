@@ -129,7 +129,11 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
     return;
   }
 
-  const safePath = pathname === "/debug-prompt" ? "/debug-prompt.html" : pathname;
+  const routeAliases: Record<string, string> = {
+    "/debug-prompt": "/debug-prompt.html",
+    "/showcase": "/showcase.html",
+  };
+  const safePath = routeAliases[pathname] || pathname;
   const filePath = path.resolve(webDir, `.${safePath}`);
 
   if (!filePath.startsWith(webDir)) {

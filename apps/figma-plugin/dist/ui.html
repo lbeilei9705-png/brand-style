@@ -1784,7 +1784,6 @@
       }
 
       function clearSelectionsAfterGeneration() {
-        selectedAssets = [];
         materialPresetIds = [];
         colorPaletteId = "";
         shapeArchitectureId = "";
@@ -1797,8 +1796,12 @@
         renderAttachments();
         renderMaterialPanel();
         renderScenarioSuggestions();
-        selectionBar.textContent = "当前没有参考图。点击“添加选中图”可重新添加。";
-        selectionStatus.textContent = "生成完成，已清空本次参考图和搭配选择。";
+        selectionBar.textContent = selectedAssets.length
+          ? `已保留 ${selectedAssets.length} 张参考图`
+          : "当前没有参考图。点击“添加选中图”可添加。";
+        selectionStatus.textContent = selectedAssets.length
+          ? "生成完成，已清空本次搭配选择，参考图已保留。"
+          : "生成完成，已清空本次搭配选择。";
       }
 
       function clearStyleSelectionsForScenarioAgent() {

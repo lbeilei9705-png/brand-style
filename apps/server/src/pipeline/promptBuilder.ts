@@ -125,8 +125,8 @@ function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: b
 
   if (shouldRemapManualPalette) {
     return hasReferenceImage
-      ? `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。保留参考图的结构、图标数量、元素位置、明暗层级和色块面积关系，但不要保留参考图原有色相；将主体大面积色块、装饰色和局部强调色转译为当前配色方案中的色值。材质光影可以有自然明暗变化，但整体色相必须明显贴近当前配色方案。`
-      : `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行，主体大面积色块、装饰色和局部强调色都应来自当前配色方案。材质光影可以有自然明暗变化，但整体色相必须明显贴近当前配色方案。`;
+      ? `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。保留参考图的结构、图标数量、元素位置、明暗层级和色块面积关系，但不要保留参考图原有色相。`
+      : `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。`;
   }
 
   return `配色要求：${text}${colorValues}。`;

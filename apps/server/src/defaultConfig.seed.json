@@ -365,6 +365,33 @@
       "enabled": true,
       "createdAt": "2026-05-13T10:19:00.000Z",
       "updatedAt": "2026-05-13T10:19:00.000Z"
+    },
+    {
+      "id": "material_1782378787805",
+      "name": "软糖塑胶",
+      "description": "果冻涂层",
+      "prompt": "软糖塑胶/果冻涂层，厚实圆润，柔和高光，轻微黏润感，云状混色。",
+      "enabled": true,
+      "createdAt": "2026-06-25T09:13:07.805Z",
+      "updatedAt": "2026-06-25T09:13:07.805Z"
+    },
+    {
+      "id": "material_1782378823163",
+      "name": "泡棉橡胶/喷砂颗粒",
+      "description": "泡棉橡胶/喷砂颗粒涂层",
+      "prompt": "泡棉橡胶/喷砂颗粒涂层，哑光柔软，大量细小 speckle 颗粒。",
+      "enabled": true,
+      "createdAt": "2026-06-25T09:13:43.163Z",
+      "updatedAt": "2026-06-25T09:13:43.163Z"
+    },
+    {
+      "id": "material_1782378983652",
+      "name": "软包填充微褶皱",
+      "description": "柔软填充感",
+      "prompt": "软包填充结构，柔软填充感，微褶皱，轻微压缩变形。",
+      "enabled": true,
+      "createdAt": "2026-06-25T09:16:23.652Z",
+      "updatedAt": "2026-06-25T09:16:23.652Z"
     }
   ],
   "colorPalettes": [
@@ -550,7 +577,14 @@
       "version": "v1.0",
       "enabled": true,
       "createdAt": "2026-06-10T00:00:00.000Z",
-      "updatedAt": "2026-06-11T06:01:28.129Z"
+      "updatedAt": "2026-06-11T06:01:28.129Z",
+      "skillRole": "",
+      "coreRules": [],
+      "outputContract": "",
+      "positiveTemplate": "",
+      "forbiddenRules": [],
+      "memoryPolicy": "",
+      "caseReferencePolicy": ""
     },
     {
       "id": "single-stage",
@@ -565,7 +599,14 @@
       "version": "v1.0",
       "enabled": true,
       "createdAt": "2026-06-10T00:00:00.000Z",
-      "updatedAt": "2026-06-11T05:29:18.491Z"
+      "updatedAt": "2026-06-11T05:29:18.491Z",
+      "skillRole": "",
+      "coreRules": [],
+      "outputContract": "",
+      "positiveTemplate": "",
+      "forbiddenRules": [],
+      "memoryPolicy": "",
+      "caseReferencePolicy": ""
     }
   ],
   "scenarioAgentCases": [

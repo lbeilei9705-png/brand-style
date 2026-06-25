@@ -98,6 +98,23 @@ const scenarios = [
     ],
   },
   {
+    id: "shape-material-and-palette",
+    name: "选择形状 + 材质 + 配色",
+    content: "基于参考图生成目标图标",
+    referenceCount: 1,
+    pickShape: true,
+    pickMaterial: true,
+    pickPalette: "firstManual",
+    skipDefaultAgent: true,
+    usePromptOrchestrator: false,
+    expect: [
+      { label: "应该追加形状/结构要求", includes: "结构要求" },
+      { label: "应该追加材质要求", includes: "材质要求" },
+      { label: "应该追加配色要求", includes: "配色要求" },
+      { label: "应该追加基础3D渲染提示词", includes: "3D品牌视觉渲染，柔和均匀主光，商业产品光效，反射受控，不过曝高光，阴影柔和，AO极轻" },
+    ],
+  },
+  {
     id: "manual-shape",
     name: "手动选择形状",
     content: "基于参考图生成目标图标",

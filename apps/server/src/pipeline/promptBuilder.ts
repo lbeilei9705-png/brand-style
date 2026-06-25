@@ -169,8 +169,7 @@ export function buildPromptBundle(
     : "";
   const shouldUseLightweightStyleRenderingPrompt = Boolean(context.materialPrompt || context.colorPrompt)
     && !context.agentSystemPrompt
-    && !stylePreset
-    && !context.shapeArchitecturePrompt;
+    && !stylePreset;
   const outputRule = isSketchTo3d
     ? `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和体块关系可辨。`
     : `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和小元素可辨。`;

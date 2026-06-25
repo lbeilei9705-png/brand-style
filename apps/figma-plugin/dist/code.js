@@ -262,8 +262,8 @@ async function insertResult(imageUrl, width, height) {
 figma.ui.onmessage = async (message) => {
   if (message.type === "resize-ui") {
     figma.ui.resize(
-      clamp(Number(message.width) || 560, 360, 1200),
-      clamp(Number(message.height) || 780, 520, 1100),
+      clamp(Number(message.width) || 560, 72, 1200),
+      clamp(Number(message.height) || 780, 72, 1100),
     );
     return;
   }

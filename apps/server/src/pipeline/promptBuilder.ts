@@ -8,6 +8,8 @@ const templateIntro = {
   illustration_to_icon: "基于参考图生成目标视觉结果。",
 };
 
+const lightweightStyleRenderingPrompt = "渲染方式：3D品牌视觉渲染，柔和均匀主光，商业产品光效，反射受控，不过曝高光，阴影柔和，AO极轻。";
+
 function hasReferenceMaterialTransferIntent(message?: string): boolean {
   const text = message || "";
 
@@ -123,8 +125,8 @@ function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: b
 
   if (shouldRemapManualPalette) {
     return hasReferenceImage
-      ? `配色要求：当前选择的配色方案为 ${text}${colorValues}；在不改变参考图结构、图标数量、元素位置和色块关系的前提下，参考该配色方案进行色彩转译。材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`
-      : `配色要求：当前选择的配色方案为 ${text}${colorValues}；参考该配色方案进行色彩设计。材质光影可以有自然明暗变化，避免出现明显偏离配色方案的大面积色相。`;
+      ? `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。保留参考图的结构、图标数量、元素位置、明暗层级和色块面积关系，但不要保留参考图原有色相；将主体大面积色块、装饰色和局部强调色转译为当前配色方案中的色值。材质光影可以有自然明暗变化，但整体色相必须明显贴近当前配色方案。`
+      : `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行，主体大面积色块、装饰色和局部强调色都应来自当前配色方案。材质光影可以有自然明暗变化，但整体色相必须明显贴近当前配色方案。`;
   }
 
   return `配色要求：${text}${colorValues}。`;
@@ -165,6 +167,10 @@ export function buildPromptBundle(
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? "跨图参考规则：严格按用户本轮输入中的图号关系执行，不要混淆图1、图2、图3等参考图的职责。"
     : "";
+  const shouldUseLightweightStyleRenderingPrompt = Boolean(context.materialPrompt || context.colorPrompt)
+    && !context.agentSystemPrompt
+    && !stylePreset
+    && !context.shapeArchitecturePrompt;
   const outputRule = isSketchTo3d
     ? `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和体块关系可辨。`
     : `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和小元素可辨。`;
@@ -174,7 +180,11 @@ export function buildPromptBundle(
       "不要扭曲原始轮廓",
       "不要添加输入图之外的额外元素",
     ]),
-    ...(context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
+    ...(shouldRemapManualPalette ? [
+      "不要保留参考图原有配色",
+      "不要弱化当前选择的配色方案",
+      "不要让原图色相覆盖手动配色",
+    ] : context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
       "不要迁移材质来源图的颜色",
       "不要让材质来源图的颜色覆盖结构来源图",
       "不要复制材质来源图的物体形状",
@@ -193,6 +203,7 @@ export function buildPromptBundle(
   return {
     positive: [
       context.agentSystemPrompt ? `风格渲染方向：${context.agentSystemPrompt}` : "",
+      shouldUseLightweightStyleRenderingPrompt ? lightweightStyleRenderingPrompt : "",
       context.userMessage ? `用户本轮要求：${context.userMessage}` : "",
       structureRule,
       formatMaterialRule(context.materialPrompt),

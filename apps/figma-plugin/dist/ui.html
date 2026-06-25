@@ -782,6 +782,110 @@
         opacity: 1;
       }
 
+      .collapse-button {
+        position: fixed;
+        top: 10px;
+        right: 42px;
+        z-index: 40;
+        display: grid;
+        place-items: center;
+        width: 26px;
+        min-width: 26px;
+        height: 26px;
+        min-height: 26px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        padding: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+          rgba(15, 23, 42, 0.72);
+        color: rgba(226, 232, 240, 0.78);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.12),
+          0 10px 28px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(14px);
+      }
+
+      .collapse-button::before {
+        content: "";
+        width: 9px;
+        height: 1.6px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      .collapse-button::after {
+        content: "";
+        position: absolute;
+        inset: 7px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.04);
+        opacity: 0;
+        transition: opacity 140ms ease;
+      }
+
+      .collapse-button:hover {
+        border-color: rgba(255, 255, 255, 0.22);
+        color: #f8fafc;
+        transform: translateY(-1px);
+      }
+
+      .collapse-button:hover::after {
+        opacity: 1;
+      }
+
+      body.is-collapsed {
+        overflow: hidden;
+        background: transparent;
+      }
+
+      body.is-collapsed .app {
+        display: grid;
+        place-items: center;
+        width: 100vw;
+        height: 100vh;
+        background: transparent;
+      }
+
+      body.is-collapsed .chat,
+      body.is-collapsed .selection-bar,
+      body.is-collapsed .agent-console,
+      body.is-collapsed .resize-handle {
+        display: none;
+      }
+
+      body.is-collapsed .collapse-button {
+        position: static;
+        width: 52px;
+        min-width: 52px;
+        height: 52px;
+        min-height: 52px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background:
+          radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.18), transparent 34%),
+          linear-gradient(145deg, #111827, #0b0f17);
+        color: #f8fafc;
+      }
+
+      body.is-collapsed .collapse-button::before {
+        content: "B";
+        display: grid;
+        place-items: center;
+        width: auto;
+        height: auto;
+        background: transparent;
+        color: currentColor;
+        font-size: 13px;
+        font-weight: 850;
+        letter-spacing: -0.04em;
+        position: relative;
+        z-index: 1;
+      }
+
+      body.is-collapsed .collapse-button::after {
+        inset: 8px;
+      }
+
       body.resizing {
         cursor: nwse-resize;
         user-select: none;
@@ -1137,6 +1241,7 @@
   </head>
   <body>
     <main class="app">
+      <button id="collapse-button" class="collapse-button" type="button" title="收起插件" aria-label="收起插件"></button>
       <section id="chat" class="chat"></section>
 
       <div id="selection-bar" class="selection-bar">正在读取当前选区...</div>
@@ -1215,6 +1320,7 @@
       const messageInput = document.querySelector("#message-input");
       const sendButton = document.querySelector("#send-button");
       const resizeHandle = document.querySelector("#resize-handle");
+      const collapseButton = document.querySelector("#collapse-button");
       const scenarioPanel = document.querySelector("#scenario-panel");
       const scenarioAgentDraftStorageKey = "brand-style-scenario-agent-draft";
       let selectedAssets = [];
@@ -1234,6 +1340,11 @@
       let isLoadingConfig = false;
       let activeConversationId = null;
       let activeGenerationController = null;
+      let isCollapsed = false;
+      let expandedWindowSize = {
+        width: 320,
+        height: 780,
+      };
       const pendingInsertButtons = new Map();
       const defaultScenarioAgents = [
         {
@@ -1733,6 +1844,16 @@
         messageInput.style.overflowY = messageInput.scrollHeight > maxHeight ? "auto" : "hidden";
       }
 
+      function postResize(width, height) {
+        parent.postMessage({
+          pluginMessage: {
+            type: "resize-ui",
+            width,
+            height,
+          },
+        }, "*");
+      }
+
       function updateMaterialButton() {
         if (!materialPresetIds.length) {
           materialSelectButton.textContent = "未选择材质";
@@ -1784,14 +1905,6 @@
       }
 
       function clearSelectionsAfterGeneration() {
-        materialPresetIds = [];
-        colorPaletteId = "";
-        shapeArchitectureId = "";
-        selectedOperationScenarioId = "";
-        clearScenarioAgentDraft();
-        agentSelect.value = "";
-        colorPaletteSelect.value = "";
-        shapeArchitectureSelect.value = "";
         updateAspectRatioAutoLabel();
         renderAttachments();
         renderMaterialPanel();
@@ -1799,9 +1912,7 @@
         selectionBar.textContent = selectedAssets.length
           ? `已保留 ${selectedAssets.length} 张参考图`
           : "当前没有参考图。点击“添加选中图”可添加。";
-        selectionStatus.textContent = selectedAssets.length
-          ? "生成完成，已清空本次搭配选择，参考图已保留。"
-          : "生成完成，已清空本次搭配选择。";
+        selectionStatus.textContent = "生成完成，已保留本次参考图和配置选项。";
       }
 
       function clearStyleSelectionsForScenarioAgent() {
@@ -2542,16 +2653,6 @@
         let startWidth = 0;
         let startHeight = 0;
 
-        function postResize(width, height) {
-          parent.postMessage({
-            pluginMessage: {
-              type: "resize-ui",
-              width,
-              height,
-            },
-          }, "*");
-        }
-
         function handleMove(event) {
           if (!isResizing) {
             return;
@@ -2559,6 +2660,7 @@
 
           const width = clamp(startWidth + event.clientX - startX, 320, 1200);
           const height = clamp(startHeight + event.clientY - startY, 520, 1100);
+          expandedWindowSize = { width, height };
           postResize(width, height);
         }
 
@@ -2583,9 +2685,34 @@
 
         resizeHandle.addEventListener("dblclick", () => {
           const shouldExpand = window.innerWidth < 680;
-          postResize(shouldExpand ? 760 : 320, shouldExpand ? 860 : 780);
+          expandedWindowSize = {
+            width: shouldExpand ? 760 : 320,
+            height: shouldExpand ? 860 : 780,
+          };
+          postResize(expandedWindowSize.width, expandedWindowSize.height);
         });
       }
+
+      collapseButton.addEventListener("click", () => {
+        if (isCollapsed) {
+          isCollapsed = false;
+          document.body.classList.remove("is-collapsed");
+          collapseButton.title = "收起插件";
+          collapseButton.setAttribute("aria-label", "收起插件");
+          postResize(expandedWindowSize.width, expandedWindowSize.height);
+          return;
+        }
+
+        expandedWindowSize = {
+          width: clamp(window.innerWidth || 320, 320, 1200),
+          height: clamp(window.innerHeight || 780, 520, 1100),
+        };
+        isCollapsed = true;
+        document.body.classList.add("is-collapsed");
+        collapseButton.title = "展开插件";
+        collapseButton.setAttribute("aria-label", "展开插件");
+        postResize(72, 72);
+      });
 
       document.querySelector("#new-chat-button").addEventListener("click", async () => {
         await loadConfig();

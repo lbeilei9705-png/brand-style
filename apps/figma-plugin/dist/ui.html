@@ -2577,7 +2577,7 @@
           } catch (error) {
             pending.textContent = isAbortError(error)
               ? "已暂停场景智能体补全。"
-              : error.message;
+              : getReadableError(error);
           } finally {
             isSending = false;
             if (activeGenerationController === generationController) {
@@ -2624,7 +2624,7 @@
         } catch (error) {
           pending.textContent = isAbortError(error)
             ? "已暂停本次生成。"
-            : error.message;
+            : getReadableError(error);
         } finally {
           window.clearInterval(renderTimer);
           selectedOperationScenarioId = "";

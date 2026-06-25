@@ -178,6 +178,51 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+const maxReferenceExportSize = 1024;
+
+function getExportSize(node) {
+  const width = "width" in node ? Math.max(1, Math.round(Number(node.width))) : undefined;
+  const height = "height" in node ? Math.max(1, Math.round(Number(node.height))) : undefined;
+
+  if (!width || !height) {
+    return {
+      constraint: {
+        type: "SCALE",
+        value: 1,
+      },
+    };
+  }
+
+  const maxDimension = Math.max(width, height);
+
+  if (maxDimension <= maxReferenceExportSize) {
+    return {
+      width,
+      height,
+      constraint: {
+        type: "SCALE",
+        value: 1,
+      },
+    };
+  }
+
+  const scale = maxReferenceExportSize / maxDimension;
+
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+    constraint: width >= height
+      ? {
+        type: "WIDTH",
+        value: maxReferenceExportSize,
+      }
+      : {
+        type: "HEIGHT",
+        value: maxReferenceExportSize,
+      },
+  };
+}
+
 async function exportSelection() {
   const nodes = figma.currentPage.selection.filter((node) => "exportAsync" in node);
 
@@ -194,12 +239,10 @@ async function exportSelection() {
   }
 
   const assets = await Promise.all(nodes.map(async (node, index) => {
+    const exportSize = getExportSize(node);
     const bytes = await node.exportAsync({
       format: "PNG",
-      constraint: {
-        type: "SCALE",
-        value: 2,
-      },
+      constraint: exportSize.constraint,
     });
 
     return {
@@ -208,8 +251,8 @@ async function exportSelection() {
       filename: `${node.name || `figma-selection-${index + 1}`}.png`,
       mimeType: "image/png",
       sizeBytes: bytes.length,
-      width: "width" in node ? Math.max(1, Math.round(Number(node.width))) : undefined,
-      height: "height" in node ? Math.max(1, Math.round(Number(node.height))) : undefined,
+      width: exportSize.width,
+      height: exportSize.height,
       assetDataUrl: `data:image/png;base64,${bytesToBase64(bytes)}`,
     };
   }));

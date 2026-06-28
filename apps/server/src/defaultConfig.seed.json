@@ -405,10 +405,10 @@
         "#1B1B23",
         "#FFFFFF"
       ],
-      "prompt": "#C5FB00、#5338FF 为主色，#1B1B23、#FFFFFF 为辅助色。",
+      "prompt": "#5338FF 为主色，#C5FB00、#1B1B23、#FFFFFF 为辅助色。",
       "enabled": true,
       "createdAt": "2026-05-11T03:09:00.000Z",
-      "updatedAt": "2026-05-27T10:27:26.768Z"
+      "updatedAt": "2026-06-28T09:31:37.474Z"
     },
     {
       "id": "fresh-finance",
@@ -437,25 +437,25 @@
         "#F8FAFC",
         "#E8F3D8"
       ],
-      "prompt": "#8CC23A、#DEE8F1 为主色，#2B2A34、#F8FAFC、#E8F3D8 为辅助色。",
+      "prompt": "#8CC23A为主色，#DEE8F1、#2B2A34、#F8FAFC、#E8F3D8 为辅助色。",
       "enabled": true,
       "createdAt": "2026-05-12T15:10:50.496Z",
-      "updatedAt": "2026-05-27T10:26:36.006Z"
+      "updatedAt": "2026-06-28T09:30:52.528Z"
     },
     {
       "id": "palette_1778599033616",
       "name": "菲律宾",
       "description": "金融科技",
       "colors": [
-        "品牌色：#421FFF",
-        "辅助色：#00E6BB",
-        "辅助色：#EBF82B",
-        "辅助色：#FFFFFF"
+        "#684CFF",
+        "#BCD8FF",
+        "#EBF82B",
+        "#FFFFFF"
       ],
-      "prompt": "#421FFF 为主色，#00E6BB、#EBF82B、#FFFFFF 为辅助色。",
+      "prompt": "#684CFF为主色，#BCD8FF、#EBF82B、#FFFFFF 为辅助色。",
       "enabled": true,
       "createdAt": "2026-05-12T15:17:13.616Z",
-      "updatedAt": "2026-05-14T04:27:05.136Z"
+      "updatedAt": "2026-06-28T09:33:19.390Z"
     },
     {
       "id": "palette_1778727415845",

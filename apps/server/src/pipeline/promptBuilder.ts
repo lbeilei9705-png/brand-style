@@ -124,9 +124,7 @@ function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: b
   const colorValues = colors.length ? ` 色值：${colors.join("、")}` : "";
 
   if (shouldRemapManualPalette) {
-    return hasReferenceImage
-      ? `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。保留参考图的结构、图标数量、元素位置、明暗层级和色块面积关系，但不要保留参考图原有色相。`
-      : `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。`;
+    return `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。`;
   }
 
   return `配色要求：${text}${colorValues}。`;

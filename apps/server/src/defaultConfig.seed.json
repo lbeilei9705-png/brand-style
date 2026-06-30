@@ -483,6 +483,21 @@
       "enabled": true,
       "createdAt": "2026-05-29T06:56:31.702Z",
       "updatedAt": "2026-05-29T06:56:31.702Z"
+    },
+    {
+      "id": "palette_1782810851747",
+      "name": "easycash",
+      "description": "印尼",
+      "colors": [
+        "#FF7022",
+        "#3FCA58",
+        "#1B1B23",
+        "#FFFFFF"
+      ],
+      "prompt": "#3FCA58为大面积主色，#FF7022、#1B1B23、#FFFFFF为辅助色",
+      "enabled": true,
+      "createdAt": "2026-06-30T09:14:11.747Z",
+      "updatedAt": "2026-06-30T09:15:26.023Z"
     }
   ],
   "shapeArchitectures": [

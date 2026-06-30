@@ -55,14 +55,6 @@ function splitNegativeRules(rules: string[]): string[] {
   return result;
 }
 
-function uniqueValues(values: string[]): string[] {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
-}
-
-function extractHexColors(value: string): string[] {
-  return uniqueValues(value.match(/#[0-9a-fA-F]{3,8}\b/g) || []);
-}
-
 function stripConfigLabel(value: string): string {
   return value
     .replace(/^(形状|材质球|手动配色方案|风格套装默认配色)「[^」]+」[:：]\s*/, "")
@@ -104,30 +96,14 @@ function formatMaterialRule(prompt?: string): string {
   return text ? `材质要求：${text}` : "";
 }
 
-function splitColorPrompt(prompt: string): { text: string; colors: string[] } {
-  const colorValueMatch = prompt.match(/\s*色值[:：]\s*([\s\S]*)$/u);
-  const text = stripConfigLabel(colorValueMatch ? prompt.slice(0, colorValueMatch.index) : prompt);
-  const colors = uniqueValues([
-    ...extractHexColors(colorValueMatch?.[1] || ""),
-    ...extractHexColors(prompt),
-  ]);
-
-  return { text, colors };
-}
-
-function formatColorRule(prompt: string | undefined, shouldRemapManualPalette: boolean, hasReferenceImage: boolean): string {
+function formatColorRule(prompt: string | undefined): string {
   if (!prompt) {
     return "";
   }
 
-  const { text, colors } = splitColorPrompt(prompt);
-  const colorValues = colors.length ? ` 色值：${colors.join("、")}` : "";
+  const text = stripConfigLabel(prompt);
 
-  if (shouldRemapManualPalette) {
-    return `配色要求：当前选择的配色方案为 ${text}${colorValues}；必须将该配色方案作为画面主要可见配色执行。`;
-  }
-
-  return `配色要求：${text}${colorValues}。`;
+  return text ? `配色要求：${text}` : "";
 }
 
 export function buildPromptBundle(
@@ -153,15 +129,13 @@ export function buildPromptBundle(
   const structureRule = isSketchTo3d || shouldSkipDefaultStructureRule
     ? ""
     : formatStructureRule(context.shapeArchitecturePrompt, constraints.preserveStructure, hasReferenceImage);
-  const shouldRemapManualPalette = context.colorPrompt?.includes("手动配色方案")
-    && !context.colorPrompt.includes("原图色彩");
   const colorRule = context.colorPrompt
-    ? formatColorRule(context.colorPrompt, Boolean(shouldRemapManualPalette), hasReferenceImage)
+    ? formatColorRule(context.colorPrompt)
     : shouldTransferReferenceMaterial && shouldPreserveExplicitColors
       ? "跨图色彩规则：用户明确要求保持颜色时，按用户原文指定的目标图或结构图保留原有色彩关系；材质来源图只提供材质和质感，不覆盖颜色。"
     : shouldTransferReferenceMaterial && !shouldPreserveExplicitColors
       ? "跨图色彩规则：未选择配色方案时，优先按用户原文中指定的色彩来源执行；如果用户没有指定色彩来源，则结合参考图色彩关系、材质、光照和阴影自然转译。"
-    : formatColorRule(undefined, false, hasReferenceImage);
+    : formatColorRule(undefined);
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? "跨图参考规则：严格按用户本轮输入中的图号关系执行，不要混淆图1、图2、图3等参考图的职责。"
     : "";
@@ -177,11 +151,7 @@ export function buildPromptBundle(
       "不要扭曲原始轮廓",
       "不要添加输入图之外的额外元素",
     ]),
-    ...(shouldRemapManualPalette ? [
-      "不要保留参考图原有配色",
-      "不要弱化当前选择的配色方案",
-      "不要让原图色相覆盖手动配色",
-    ] : context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
+    ...(context.colorPrompt ? [] : shouldTransferReferenceMaterial && shouldPreserveExplicitColors ? [
       "不要迁移材质来源图的颜色",
       "不要让材质来源图的颜色覆盖结构来源图",
       "不要复制材质来源图的物体形状",

@@ -30,8 +30,7 @@ const scenarios = [
     expect: [
       { label: "应该追加配色要求", includes: "配色要求" },
       { label: "应该保留参考图结构约束", includes: "结构要求" },
-      { label: "应该强制执行手动配色", includes: "必须将该配色方案作为画面主要可见配色执行" },
-      { label: "负面词应该禁止保留原图配色", negativeIncludes: "不要保留参考图原有配色" },
+      { label: "不应重复追加色值字段", notIncludes: "色值：" },
     ],
   },
   {

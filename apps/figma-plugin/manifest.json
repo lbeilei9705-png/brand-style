@@ -7,6 +7,7 @@
   "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": [
+      "https://brand-style.fintopia-social-media-ads-tools.tech",
       "https://brand-style-api.onrender.com",
       "https://*.onrender.com",
       "https://yunwu.site",
@@ -15,6 +16,7 @@
     "reasoning": "The plugin calls the hosted Brand Style backend and configured model gateways to generate prompts and images.",
     "devAllowedDomains": [
       "http://localhost:5180",
+      "https://brand-style.fintopia-social-media-ads-tools.tech",
       "https://brand-style-api.onrender.com",
       "https://*.onrender.com",
       "https://yunwu.site",

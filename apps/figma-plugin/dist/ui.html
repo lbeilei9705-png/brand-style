@@ -516,9 +516,9 @@
       textarea {
         width: 100%;
         flex: 0 0 auto;
-        height: 72px;
-        min-height: 72px;
-        max-height: clamp(118px, 24vh, 210px);
+        height: 128px;
+        min-height: 128px;
+        max-height: clamp(160px, 30vh, 260px);
         overflow-y: hidden;
         resize: none;
         border: 0;
@@ -1237,6 +1237,237 @@
         background-color: #ffffff;
         box-shadow: none;
       }
+
+      .composer-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 0 18px;
+      }
+
+      .composer-footer .pill-select {
+        flex: 1 1 64px;
+        height: 30px;
+        min-width: 64px;
+      }
+
+      #model-select {
+        flex: 1 1 132px;
+        min-width: 118px;
+      }
+
+      #new-chat-button {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 30px;
+        min-width: 32px;
+        min-height: 30px;
+      }
+
+      .run-button {
+        flex: 1 1 92px;
+        height: 30px;
+        min-width: 88px;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      @media (max-width: 520px) {
+        .composer-footer {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 7px;
+          padding: 0 14px;
+        }
+
+        .composer-footer .pill-select,
+        #model-select,
+        #new-chat-button,
+        .run-button {
+          width: 100%;
+          min-width: 0;
+        }
+
+        #model-select {
+          grid-column: span 3;
+        }
+
+        #new-chat-button {
+          grid-column: span 1;
+          justify-self: stretch;
+        }
+
+        .run-button {
+          grid-column: span 2;
+        }
+      }
+
+      .agent-console {
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .control-strip {
+        gap: 8px;
+      }
+
+      .composer-card {
+        display: grid;
+        gap: 12px;
+        overflow: visible;
+        border-radius: 28px;
+        padding: 14px;
+      }
+
+      .selection-tools {
+        padding: 0;
+      }
+
+      .attachment-row {
+        padding: 0;
+      }
+
+      textarea {
+        height: 128px;
+        min-height: 128px;
+        max-height: clamp(160px, 30vh, 260px);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 16px 18px;
+        background: #fbfbfd;
+      }
+
+      .composer-footer {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 0;
+      }
+
+      .composer-footer .pill-select,
+      #model-select,
+      #new-chat-button,
+      .run-button {
+        width: 100%;
+        min-width: 0;
+        height: 34px;
+        min-height: 34px;
+      }
+
+      #model-select {
+        grid-column: 1 / -1;
+      }
+
+      #new-chat-button {
+        grid-column: 1;
+      }
+
+      .run-button {
+        grid-column: 2 / -1;
+      }
+
+      @media (max-width: 520px) {
+        .agent-console {
+          gap: 12px;
+          padding: 12px;
+        }
+
+        .composer-card {
+          padding: 12px;
+        }
+
+        .composer-footer {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          padding: 0;
+        }
+      }
+
+      button,
+      select {
+        font-size: 11px;
+      }
+
+      .message {
+        font-size: 13px;
+      }
+
+      .control-section-label,
+      .selection-status,
+      .scenario-option span,
+      .quantity-label {
+        font-size: 11px;
+      }
+
+      .tooltip-trigger {
+        font-size: 10px;
+      }
+
+      .tooltip-trigger::after {
+        font-size: 11px;
+      }
+
+      textarea {
+        font-size: 13px;
+      }
+
+      .composer-footer .pill-select,
+      #model-select,
+      #new-chat-button,
+      .run-button {
+        height: 36px;
+        min-height: 36px;
+      }
+
+      .control-select,
+      .multi-select-button,
+      .add-selection-button {
+        min-height: 32px;
+      }
+
+      .run-button {
+        font-size: 12px;
+      }
+
+      #new-chat-button {
+        font-size: 15px;
+      }
+
+      .app,
+      .agent-console,
+      .control-strip,
+      .composer-card,
+      .selection-tools,
+      .attachment-row,
+      .composer-footer {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .agent-console,
+      .composer-card {
+        overflow-x: hidden;
+      }
+
+      .selection-tools {
+        flex-wrap: wrap;
+      }
+
+      .selection-status {
+        flex: 1 1 150px;
+        white-space: normal;
+      }
+
+      .control-select,
+      .multi-select-wrap,
+      .multi-select-button,
+      .pill-select {
+        max-width: 100%;
+      }
     </style>
   </head>
   <body>
@@ -1291,6 +1522,11 @@
               <option value="2k" selected>2K</option>
               <option value="4k">4K</option>
             </select>
+            <select id="batch-size-select" class="pill-select" title="生成数量">
+              <option value="1" selected>1张</option>
+              <option value="2">2张</option>
+              <option value="4">4张</option>
+            </select>
             <select id="model-select" class="pill-select" title="选择模型"></select>
             <button id="new-chat-button" class="icon-button" type="button" title="清空当前面板" aria-label="清空当前面板">↺</button>
             <button id="send-button" class="run-button" type="button" disabled>没活</button>
@@ -1308,6 +1544,7 @@
       const agentSelect = document.querySelector("#agent-select");
       const aspectRatioSelect = document.querySelector("#aspect-ratio-select");
       const resolutionSelect = document.querySelector("#resolution-select");
+      const batchSizeSelect = document.querySelector("#batch-size-select");
       const materialSelectButton = document.querySelector("#material-select-button");
       const materialPanel = document.querySelector("#material-panel");
       const colorPaletteSelect = document.querySelector("#color-palette-select");
@@ -1341,9 +1578,11 @@
       let activeConversationId = null;
       let activeGenerationController = null;
       let isCollapsed = false;
+      const fixedWindowHeight = 780;
+      const fixedWindowWidth = 300;
       let expandedWindowSize = {
-        width: 320,
-        height: 780,
+        width: fixedWindowWidth,
+        height: fixedWindowHeight,
       };
       const pendingInsertButtons = new Map();
       const defaultScenarioAgents = [
@@ -1837,10 +2076,10 @@
       }
 
       function resizeMessageInput() {
-        messageInput.style.height = "72px";
+        messageInput.style.height = "128px";
         const maxHeight = Number.parseFloat(getComputedStyle(messageInput).maxHeight) || 210;
         const nextHeight = Math.min(messageInput.scrollHeight, maxHeight);
-        messageInput.style.height = `${Math.max(72, nextHeight)}px`;
+        messageInput.style.height = `${Math.max(128, nextHeight)}px`;
         messageInput.style.overflowY = messageInput.scrollHeight > maxHeight ? "auto" : "hidden";
       }
 
@@ -2588,7 +2827,9 @@
           return;
         }
 
-        const loadingText = "正在渲染一种‘甲方闭嘴’的高级感...";
+        const loadingText = batchSize > 1
+          ? `正在并发渲染 ${batchSize} 张候选图...`
+          : "正在渲染一种‘甲方闭嘴’的高级感...";
         let renderTimer;
         const generationController = new AbortController();
         activeGenerationController = generationController;
@@ -2658,7 +2899,7 @@
             return;
           }
 
-          const width = clamp(startWidth + event.clientX - startX, 320, 1200);
+          const width = clamp(startWidth + event.clientX - startX, fixedWindowWidth, 1200);
           const height = clamp(startHeight + event.clientY - startY, 520, 1100);
           expandedWindowSize = { width, height };
           postResize(width, height);
@@ -2686,8 +2927,8 @@
         resizeHandle.addEventListener("dblclick", () => {
           const shouldExpand = window.innerWidth < 680;
           expandedWindowSize = {
-            width: shouldExpand ? 760 : 320,
-            height: shouldExpand ? 860 : 780,
+            width: shouldExpand ? 760 : fixedWindowWidth,
+            height: shouldExpand ? 860 : fixedWindowHeight,
           };
           postResize(expandedWindowSize.width, expandedWindowSize.height);
         });
@@ -2704,8 +2945,8 @@
         }
 
         expandedWindowSize = {
-          width: clamp(window.innerWidth || 320, 320, 1200),
-          height: clamp(window.innerHeight || 780, 520, 1100),
+          width: clamp(window.innerWidth || fixedWindowWidth, fixedWindowWidth, 1200),
+          height: clamp(window.innerHeight || fixedWindowHeight, 520, 1100),
         };
         isCollapsed = true;
         document.body.classList.add("is-collapsed");
@@ -2720,10 +2961,12 @@
         agentSelect.value = "";
         aspectRatioSelect.value = "auto";
         resolutionSelect.value = "2k";
+        batchSizeSelect.value = "1";
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
         aspectRatio = "auto";
         resolution = "2k";
+        batchSize = 1;
         selectedAssets = [];
         materialPresetIds = [];
         colorPaletteId = "";
@@ -2755,6 +2998,10 @@
       });
       resolutionSelect.addEventListener("change", () => {
         resolution = resolutionSelect.value;
+      });
+      batchSizeSelect.addEventListener("change", () => {
+        batchSize = Math.min(4, Math.max(1, Number(batchSizeSelect.value) || 1));
+        batchSizeSelect.value = String(batchSize);
       });
       colorPaletteSelect.addEventListener("change", () => {
         colorPaletteId = colorPaletteSelect.value;

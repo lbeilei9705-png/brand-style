@@ -609,9 +609,7 @@ export class FintopiaImageProvider implements ImageProvider {
     const variantCount = attempts.some((attempt) => attempt.kind === "gemini-generate-content")
       ? Math.min(Math.max(request.constraints.batchSize, 1), 4)
       : 1;
-    const imageUrls: string[] = [];
-
-    for (let variantIndex = 0; variantIndex < variantCount; variantIndex += 1) {
+    const generateVariant = async (variantIndex: number): Promise<string[]> => {
       let response: Response | undefined;
       const failures: string[] = [];
 
@@ -669,8 +667,13 @@ export class FintopiaImageProvider implements ImageProvider {
         throw new Error(`${endpointLabel} 请求失败：${getErrorMessage(payload) || `HTTP 状态码 ${response.status}`}。`);
       }
 
-      imageUrls.push(...collectImageUrls(payload));
-    }
+      return collectImageUrls(payload);
+    };
+
+    const variantImageUrlGroups = await Promise.all(
+      Array.from({ length: variantCount }, (_, variantIndex) => generateVariant(variantIndex)),
+    );
+    const imageUrls = variantImageUrlGroups.flat();
 
     if (!imageUrls.length) {
       throw new Error("当前模型接口响应中没有解析到图片。如果你使用的是 /v1/chat/completions 中转站，请确认该模型会在 message.content 或 message.images 中返回图片 URL/base64。");

@@ -124,12 +124,8 @@ async function handleCreateTask(req: http.IncomingMessage, res: http.ServerRespo
 }
 
 function serveStatic(pathname: string, res: http.ServerResponse): void {
-  if (pathname === "/") {
-    send(res, 404, "Not found", "text/plain; charset=utf-8");
-    return;
-  }
-
   const routeAliases: Record<string, string> = {
+    "/": "/showcase.html",
     "/debug-prompt": "/debug-prompt.html",
     "/showcase": "/showcase.html",
   };

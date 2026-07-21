@@ -105,6 +105,18 @@ function readSeedConfig(): StoredConfig | undefined {
   return JSON.parse(fs.readFileSync(seedConfigPath, "utf8")) as StoredConfig;
 }
 
+function withBuiltInMaterials(materials: MaterialPresetConfig[]): MaterialPresetConfig[] {
+  const builtInMaterials = readSeedConfig()?.materials || [];
+
+  return builtInMaterials.reduce((items, builtInMaterial) => {
+    const hasBuiltInMaterial = items.some((material) => material.id === builtInMaterial.id);
+
+    return hasBuiltInMaterial
+      ? items.map((material) => (material.id === builtInMaterial.id ? { ...builtInMaterial, ...material } : material))
+      : [...items, builtInMaterial];
+  }, materials);
+}
+
 function getModelApiKey(model: ModelConfig): string | undefined {
   const isGoogleGeminiProxyModel = (model.apiUrl || "").includes("/functions/v1/gemini-proxy");
 
@@ -179,7 +191,7 @@ function hydrateConfig(config: StoredConfig): StoredConfig {
       };
     }),
     agents: config.agents.map((agent) => ({ ...agent })),
-    materials: config.materials.map((material) => ({ ...material })),
+    materials: withBuiltInMaterials(config.materials).map((material) => ({ ...material })),
     colorPalettes: config.colorPalettes.map((palette) => ({ ...palette })),
     shapeArchitectures: config.shapeArchitectures.map((architecture) => ({ ...architecture })),
     operationScenarios: config.operationScenarios.map((scenario) => ({ ...scenario })),

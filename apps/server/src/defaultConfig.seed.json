@@ -407,6 +407,246 @@
       "enabled": true,
       "createdAt": "2026-06-25T09:16:23.652Z",
       "updatedAt": "2026-06-25T09:16:23.652Z"
+    },
+    {
+      "id": "matte-sandblasted-rubber-paint",
+      "name": "哑光喷砂橡胶漆",
+      "description": "粉末涂层质感，粗糙度高，几乎无镜面高光，表面细腻砂感。",
+      "prompt": "哑光喷砂橡胶漆/粉末涂层，粗糙度高，几乎无镜面高光，表面细腻砂感；可带少量白色speckle颗粒点。",
+      "previewColor": "#D5D8DD",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "fine-fabric-mesh-texture",
+      "name": "细密织物/网格纹理",
+      "description": "规则点阵或菱格网格，哑光漫反射，纹理尺度小且均匀。",
+      "prompt": "细密织物网格纹理表面（规则点阵/菱格），哑光漫反射，纹理尺度很小且均匀，轻微受光层次，无强反光。",
+      "previewColor": "#B8C7D9",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "paper-fiber-cardboard-pulp-board",
+      "name": "纸纤维卡纸/纸浆板",
+      "description": "漫反射强，带微小纤维噪点和彩色小颗粒，边缘干爽。",
+      "prompt": "纸纤维卡纸/纸浆板材质，漫反射强，带微小纤维噪点与彩色小颗粒，几乎无高光，边缘略显干爽。",
+      "previewColor": "#E8DDCB",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "frosted-translucent-acrylic-glass",
+      "name": "半透明磨砂亚克力/玻璃",
+      "description": "透光带雾感，厚边有折射高光，内部柔散射。",
+      "prompt": "半透明磨砂亚克力/玻璃，透光但带雾感，厚边有一圈亮的折射高光，内部柔散射，不要清澈镜面。",
+      "previewColor": "#D8F2F4",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "directional-fine-stripe-emboss",
+      "name": "方向性细条纹压纹",
+      "description": "微沟槽条纹方向一致，哑光白或浅灰，细节克制。",
+      "prompt": "方向性细条纹压纹表面（微沟槽），条纹一致方向，哑光白或浅灰，提升细节但不抢高光。",
+      "previewColor": "#E5E7EA",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "fine-grain-matte-plastic",
+      "name": "细颗粒哑光塑料",
+      "description": "微砂纹漫反射，边缘倒角有柔亮薄高光。",
+      "prompt": "细颗粒哑光塑料，微砂纹，漫反射为主，边缘倒角处有柔亮薄高光，整体干净高级。",
+      "previewColor": "#D9DEE7",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "knitted-plush-soft-pack",
+      "name": "针织布料/毛绒软包",
+      "description": "细密织物纹理，蓬松鼓胀，带轻微褶皱压痕。",
+      "prompt": "针织布料/毛绒软包，细密织物纹理，蓬松鼓胀，轻微褶皱压痕。",
+      "previewColor": "#CFC4B8",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "glossy-composite-printed-skateboard",
+      "name": "亮面复合板/印花滑板",
+      "description": "清晰印刷层，透明亮面涂层，边缘有真实厚度。",
+      "prompt": "亮面复合板/印花滑板，清晰印刷层，透明亮面涂层，真实厚度。",
+      "previewColor": "#E7E0D1",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "printed-fabric-flexible-sticker",
+      "name": "布面印刷/柔性贴纸",
+      "description": "图案清晰服帖，带轻微织物纹理和柔性贴合感。",
+      "prompt": "布面印刷/柔性贴纸，图案清晰服帖，带轻微织物纹理。",
+      "previewColor": "#D9D0C3",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "smooth-resin-small-part",
+      "name": "光滑树脂小件",
+      "description": "圆润光滑，柔和反射，糖果感体积。",
+      "prompt": "光滑树脂小件，圆润光滑，柔和反射，糖果感体积。",
+      "previewColor": "#D7ECF7",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "inflatable-rubber",
+      "name": "充气橡胶",
+      "description": "圆鼓柔软，有弹性和拉伸感。",
+      "prompt": "充气橡胶，圆鼓柔软，有弹性和拉伸感。",
+      "previewColor": "#D8D5F2",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "sandblasted-plastic-fine-grain-coating",
+      "name": "喷砂塑胶/细颗粒涂层",
+      "description": "细密均匀砂感颗粒，粗糙度中高，反射克制，边缘柔亮。",
+      "prompt": "喷砂塑胶 / 细颗粒涂层材质：表面有细密均匀砂感颗粒，粗糙度中高，反射克制但边缘有柔和亮边。",
+      "previewColor": "#CDD2D8",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "translucent-resin-frosted-acrylic",
+      "name": "半透明树脂/磨砂亚克力",
+      "description": "真实厚度，边缘透光和折射亮线，内部轻微体积感。",
+      "prompt": "半透明树脂 / 磨砂亚克力材质：具有真实厚度，边缘有轻微透光和折射亮线，内部带轻微体积感，表面细腻，不完全透明。",
+      "previewColor": "#D8EEF1",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "fine-micro-sand-frosted-surface",
+      "name": "细腻微砂磨砂表面",
+      "description": "低反射，细腻微砂纹，字样可平整印刷或轻微浮雕。",
+      "prompt": "磨砂表面为细腻微砂纹，低反射，字样以平整印刷或轻微浮雕方式呈现。",
+      "previewColor": "#D0D2D5",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "satin-metal",
+      "name": "缎面金属",
+      "description": "拉丝或喷砂金属，受控反射，宽而柔的金属高光，倒角亮边清晰。",
+      "prompt": "缎面金属材质：拉丝金属或喷砂金属表面，受控反射，宽而柔的金属高光，倒角亮边清晰。",
+      "previewColor": "#C2C8D0",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "leather-micro-texture-rubber",
+      "name": "皮革/微纹理橡胶",
+      "description": "细密皮革纹或橡胶颗粒纹，哑光厚实，反射很弱。",
+      "prompt": "皮革 / 微纹理橡胶材质：表面有细密皮革纹或橡胶颗粒纹，哑光为主，触感厚实，反射很弱。",
+      "previewColor": "#8A7D70",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "precision-engraved-embossed-lines",
+      "name": "精密刻线/压印图形细节",
+      "description": "表面浅刻细线，清晰但不突兀。",
+      "prompt": "精密刻线 / 压印图形细节：在物体表面有细线刻痕，线条浅刻入材质中，清晰但不突兀。",
+      "previewColor": "#B9BDC4",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "inflatable-rubber-soft-pvc",
+      "name": "充气橡胶/软体PVC",
+      "description": "柔软有弹性，轻微膨胀张力，受压处有凹陷和褶皱。",
+      "prompt": "充气橡胶 / 软体PVC材质：表面柔软有弹性，轻微膨胀张力感，受压处有自然凹陷和褶皱，反射柔和，具有充气物的饱满触感。",
+      "previewColor": "#D8D5F2",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "soft-pack-fabric",
+      "name": "软包织物材质",
+      "description": "细密织物纹理，漫反射，柔软，受拉伸挤压有褶皱压痕。",
+      "prompt": "软包织物材质：表面有细密织物纹理，漫反射为主，触感柔软，受拉伸和挤压时会产生自然褶皱、压痕和布料张力变化。",
+      "previewColor": "#CFC4B8",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "pillow-cotton-fill",
+      "name": "枕头/填充棉材质",
+      "description": "柔软填充感，表面蓬松，受压后有凹陷鼓包和回弹。",
+      "prompt": "枕头 / 填充棉材质：内部有柔软填充感，表面蓬松，受压后出现自然凹陷、鼓包和回弹感，整体柔和、轻盈。",
+      "previewColor": "#E2D8CC",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "soft-rubber-coating",
+      "name": "软胶涂层材质",
+      "description": "平滑但不强镜面，带轻微弹性和柔和高光。",
+      "prompt": "软胶涂层材质：表面平滑但不强镜面，带轻微弹性和柔和高光，介于橡胶与软塑之间，适合更干净的软体表面。",
+      "previewColor": "#DDE1E6",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "translucent-inflatable-film",
+      "name": "半透明充气膜材质",
+      "description": "轻微透光，柔和折射和雾感，表面有柔软张力。",
+      "prompt": "半透明充气膜材质：轻微透光，带柔和折射和雾感，表面有柔软张力，受压处出现微弱形变，边缘可见透光层次。",
+      "previewColor": "#D7F4F2",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "stitching-pressed-edge-detail",
+      "name": "缝线/压边细节材质",
+      "description": "轻微缝合线、压边、折边或热压封边痕迹，细节克制。",
+      "prompt": "缝线 / 压边细节材质：表面有轻微缝合线、压边、折边或热压封边痕迹，细节克制，增强软体工业制品的真实感。",
+      "previewColor": "#C8BFB4",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
+    },
+    {
+      "id": "local-gloss-coating",
+      "name": "局部高光涂层材质",
+      "description": "柔软基材表面覆盖薄层清漆或光滑涂层，柔和高光，底层纹理可见。",
+      "prompt": "局部高光涂层材质：柔软基材表面覆盖薄层清漆或光滑涂层，产生受控柔和高光，底层纹理仍然可见，不要强镜面。",
+      "previewColor": "#E5E0D8",
+      "enabled": true,
+      "createdAt": "2026-07-21T08:05:00.000Z",
+      "updatedAt": "2026-07-21T08:05:00.000Z"
     }
   ],
   "colorPalettes": [

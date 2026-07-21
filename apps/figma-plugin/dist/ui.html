@@ -624,6 +624,11 @@
         min-width: 0;
       }
 
+      .palette-select-wrap {
+        position: relative;
+        min-width: 0;
+      }
+
       #model-select {
         width: 100%;
         min-width: 0;
@@ -1526,6 +1531,7 @@
       }
 
       .control-select,
+      .palette-select-wrap,
       .multi-select-wrap,
       .multi-select-button,
       .pill-select {
@@ -1604,13 +1610,28 @@
       }
 
       .palette-inline-editor {
-        grid-column: 1 / -1;
-        display: grid;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        z-index: 21;
+        display: none;
+        width: min(292px, calc(100vw - 20px));
+        max-width: calc(100vw - 20px);
+        max-height: 360px;
+        overflow-x: hidden;
+        overflow-y: auto;
         gap: 8px;
         border: 1px solid rgba(60, 60, 67, 0.1);
         border-radius: 16px;
         padding: 8px;
         background: rgba(255, 255, 255, 0.64);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(16px);
+        transform: translateX(-50%);
+      }
+
+      .palette-inline-editor.open {
+        display: grid;
       }
 
       .palette-inline-editor[hidden] {
@@ -1692,6 +1713,7 @@
         color: #6e6e73;
         font-size: 11px;
       }
+
     </style>
   </head>
   <body>
@@ -1708,17 +1730,18 @@
             <span class="tooltip-trigger" tabindex="0" data-tooltip="形状、配色、材质可以单独选择，像积木一样自由组合。">?</span>
           </div>
           <select id="shape-architecture-select" class="control-select" title="自由搭配：形状"></select>
-          <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
+          <div class="palette-select-wrap">
+            <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
+            <div id="palette-inline-editor" class="palette-inline-editor" hidden>
+              <div id="palette-swatch-row" class="palette-swatch-row"></div>
+              <div id="palette-editor-panel" class="palette-editor-panel">
+                <div id="plugin-palette-color-list" class="plugin-palette-color-list"></div>
+                <button id="plugin-add-palette-color-button" class="palette-editor-add" type="button">添加颜色</button>
+              </div>
+            </div>
+          </div>
           <div class="multi-select-wrap">
             <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">未选择材质</button>
-          </div>
-          <div id="palette-inline-editor" class="palette-inline-editor" hidden>
-            <div id="palette-swatch-row" class="palette-swatch-row"></div>
-            <button id="toggle-palette-editor-button" class="palette-editor-toggle" type="button">编辑颜色</button>
-            <div id="palette-editor-panel" class="palette-editor-panel" hidden>
-              <div id="plugin-palette-color-list" class="plugin-palette-color-list"></div>
-              <button id="plugin-add-palette-color-button" class="palette-editor-add" type="button">添加颜色</button>
-            </div>
           </div>
           <div id="material-panel" class="multi-select-panel"></div>
           <div class="control-section-label">
@@ -1779,10 +1802,10 @@
       const batchSizeSelect = document.querySelector("#batch-size-select");
       const materialSelectButton = document.querySelector("#material-select-button");
       const materialPanel = document.querySelector("#material-panel");
+      const paletteSelectWrap = document.querySelector(".palette-select-wrap");
       const colorPaletteSelect = document.querySelector("#color-palette-select");
       const paletteInlineEditor = document.querySelector("#palette-inline-editor");
       const paletteSwatchRow = document.querySelector("#palette-swatch-row");
-      const togglePaletteEditorButton = document.querySelector("#toggle-palette-editor-button");
       const paletteEditorPanel = document.querySelector("#palette-editor-panel");
       const pluginPaletteColorList = document.querySelector("#plugin-palette-color-list");
       const pluginAddPaletteColorButton = document.querySelector("#plugin-add-palette-color-button");
@@ -1811,7 +1834,6 @@
       let selectedOperationScenarioId = "";
       let colorPaletteId = "";
       let customPaletteColors = [];
-      let isPaletteEditorOpen = false;
       let shapeArchitectureId = "";
       let scenarioAgentDraft = null;
       let isSending = false;
@@ -1820,6 +1842,7 @@
       let activeGenerationController = null;
       let isCollapsed = false;
       let materialPanelCloseTimer = null;
+      let palettePanelCloseTimer = null;
       const fixedWindowHeight = 780;
       const fixedWindowWidth = 300;
       let expandedWindowSize = {
@@ -2408,6 +2431,51 @@
         }, 220);
       }
 
+      function openMaterialPanel() {
+        if (!materialPresetIds.length) {
+          return;
+        }
+
+        cancelMaterialPanelAutoClose();
+        closePalettePanel();
+        materialPanel.classList.add("open");
+      }
+
+      function cancelPalettePanelAutoClose() {
+        if (palettePanelCloseTimer) {
+          clearTimeout(palettePanelCloseTimer);
+          palettePanelCloseTimer = null;
+        }
+      }
+
+      function openPalettePanel() {
+        if (!getSelectedColorPalette()) {
+          return;
+        }
+
+        cancelPalettePanelAutoClose();
+        materialPanel.classList.remove("open");
+        paletteInlineEditor.classList.add("open");
+      }
+
+      function closePalettePanel() {
+        cancelPalettePanelAutoClose();
+        paletteInlineEditor.classList.remove("open");
+      }
+
+      function schedulePalettePanelAutoClose() {
+        cancelPalettePanelAutoClose();
+        palettePanelCloseTimer = setTimeout(() => {
+          if (paletteInlineEditor.contains(document.activeElement)) {
+            palettePanelCloseTimer = null;
+            return;
+          }
+
+          closePalettePanel();
+          palettePanelCloseTimer = null;
+        }, 220);
+      }
+
       function resolveMaterialPreviewUrl(url) {
         const value = String(url || "").trim();
 
@@ -2522,8 +2590,8 @@
 
         if (!palette) {
           paletteInlineEditor.hidden = true;
+          paletteInlineEditor.classList.remove("open");
           paletteEditorPanel.hidden = true;
-          isPaletteEditorOpen = false;
           customPaletteColors = [];
           return;
         }
@@ -2533,8 +2601,7 @@
         }
 
         paletteInlineEditor.hidden = false;
-        paletteEditorPanel.hidden = !isPaletteEditorOpen;
-        togglePaletteEditorButton.textContent = isPaletteEditorOpen ? "收起颜色" : "编辑颜色";
+        paletteEditorPanel.hidden = false;
         renderPaletteSwatches();
         renderPluginPaletteColorRows();
       }
@@ -2635,7 +2702,6 @@
         materialPresetIds = [];
         colorPaletteId = "";
         customPaletteColors = [];
-        isPaletteEditorOpen = false;
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
         clearScenarioAgentDraft();
@@ -2643,6 +2709,7 @@
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
         materialPanel.classList.remove("open");
+        closePalettePanel();
         renderPaletteInlineEditor({ resetColors: true });
         renderMaterialPanel();
         updateRunState();
@@ -3455,7 +3522,6 @@
         materialPresetIds = [];
         colorPaletteId = "";
         customPaletteColors = [];
-        isPaletteEditorOpen = false;
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
         clearScenarioAgentDraft();
@@ -3464,6 +3530,7 @@
         selectionBar.textContent = "正在读取当前选区...";
         selectionStatus.textContent = "打开插件不会自动读取选区。";
         updateAspectRatioAutoLabel();
+        closePalettePanel();
         renderPaletteInlineEditor({ resetColors: true });
         renderMaterialPanel();
         renderAttachments();
@@ -3478,9 +3545,10 @@
       materialSelectButton.addEventListener("click", async () => {
         await loadConfig();
         cancelMaterialPanelAutoClose();
+        closePalettePanel();
         materialPanel.classList.toggle("open");
       });
-      materialSelectButton.addEventListener("mouseenter", cancelMaterialPanelAutoClose);
+      materialSelectButton.addEventListener("mouseenter", openMaterialPanel);
       materialSelectButton.addEventListener("mouseleave", () => {
         if (materialPanel.classList.contains("open")) {
           scheduleMaterialPanelAutoClose();
@@ -3488,7 +3556,19 @@
       });
       materialPanel.addEventListener("mouseenter", cancelMaterialPanelAutoClose);
       materialPanel.addEventListener("mouseleave", scheduleMaterialPanelAutoClose);
-      colorPaletteSelect.addEventListener("focus", loadConfig);
+      colorPaletteSelect.addEventListener("focus", async () => {
+        await loadConfig();
+        openPalettePanel();
+      });
+      paletteSelectWrap.addEventListener("mouseenter", () => {
+        cancelPalettePanelAutoClose();
+        openPalettePanel();
+      });
+      paletteSelectWrap.addEventListener("mouseleave", () => {
+        if (paletteInlineEditor.classList.contains("open")) {
+          schedulePalettePanelAutoClose();
+        }
+      });
       aspectRatioSelect.addEventListener("change", () => {
         aspectRatio = aspectRatioSelect.value;
       });
@@ -3502,17 +3582,16 @@
       colorPaletteSelect.addEventListener("change", () => {
         colorPaletteId = colorPaletteSelect.value;
         customPaletteColors = [];
-        isPaletteEditorOpen = false;
         renderPaletteInlineEditor({ resetColors: true });
+        openPalettePanel();
         updateRunState();
       });
-      togglePaletteEditorButton.addEventListener("click", () => {
-        isPaletteEditorOpen = !isPaletteEditorOpen;
-        renderPaletteInlineEditor();
-      });
       pluginAddPaletteColorButton.addEventListener("click", () => {
+        cancelPalettePanelAutoClose();
         addPluginPaletteColorRow();
       });
+      paletteInlineEditor.addEventListener("mouseenter", cancelPalettePanelAutoClose);
+      paletteInlineEditor.addEventListener("mouseleave", schedulePalettePanelAutoClose);
       shapeArchitectureSelect.addEventListener("focus", loadConfig);
       shapeArchitectureSelect.addEventListener("change", () => {
         shapeArchitectureId = shapeArchitectureSelect.value;
@@ -3520,6 +3599,10 @@
       document.addEventListener("click", (event) => {
         if (!materialPanel.contains(event.target) && event.target !== materialSelectButton) {
           materialPanel.classList.remove("open");
+        }
+
+        if (!paletteInlineEditor.contains(event.target) && event.target !== colorPaletteSelect) {
+          closePalettePanel();
         }
 
         if (!scenarioPanel.contains(event.target) && event.target !== messageInput) {

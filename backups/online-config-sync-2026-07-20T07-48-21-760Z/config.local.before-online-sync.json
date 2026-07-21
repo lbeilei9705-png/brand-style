@@ -1,0 +1,581 @@
+{
+  "models": [
+    {
+      "apiStyle": "azure",
+      "quality": "auto",
+      "enabled": true,
+      "id": "mock-preview",
+      "name": "Mock 预览模型",
+      "provider": "mock",
+      "model": "mock-image-provider",
+      "purpose": "image",
+      "createdAt": "2026-05-08T16:27:18.677Z",
+      "updatedAt": "2026-05-08T16:27:18.677Z"
+    },
+    {
+      "apiStyle": "azure",
+      "quality": "auto",
+      "enabled": true,
+      "id": "fintopia-gpt-image-2",
+      "name": "Fintopia GPT Image 2",
+      "provider": "fintopia",
+      "model": "gpt-image-2",
+      "purpose": "image",
+      "apiUrl": "https://all-in-one-ai.fintopia.tech/",
+      "apiKey": "eTd5VgsKXURABFsGQ3lkRgILB3lTeHlHFQ5bSSN6RRB/CBEyS3MUeQJPS2BbSX9FfhUPZl0=",
+      "apiVersion": "2024-02-01",
+      "createdAt": "2026-05-08T16:27:18.677Z",
+      "updatedAt": "2026-05-11T04:39:00.000Z"
+    },
+    {
+      "apiStyle": "azure",
+      "quality": "auto",
+      "enabled": true,
+      "id": "fintopia-gpt-5-5",
+      "name": "Fintopia GPT 5.5",
+      "provider": "fintopia",
+      "model": "gpt-5.5",
+      "purpose": "language",
+      "apiUrl": "https://all-in-one-ai.fintopia.tech/",
+      "apiKey": "eTd5VgsKXURABFsGQ3lkRgILB3lTeHlHFQ5bSSN6RRB/CBEyS3MUeQJPS2BbSX9FfhUPZl0=",
+      "apiVersion": "2025-03-01-preview",
+      "createdAt": "2026-05-11T08:08:00.000Z",
+      "updatedAt": "2026-05-11T08:08:00.000Z"
+    },
+    {
+      "apiStyle": "custom",
+      "id": "model_1778388177536",
+      "name": " nano- banana-2",
+      "provider": "fintopia",
+      "model": "gemini-3.1-flash-image-preview",
+      "apiUrl": "https://yunwu.site",
+      "apiKey": "sk-kgx5RlmSuDPvNaHlyxR3Vza2muzDB0qkR12zSCJtr62yjIKm",
+      "apiVersion": "",
+      "apiPath": "/v1beta/models/{model}:generateContent",
+      "purpose": "image",
+      "quality": "auto",
+      "enabled": true,
+      "createdAt": "2026-05-10T04:42:57.536Z",
+      "updatedAt": "2026-05-12T05:41:00.000Z"
+    },
+    {
+      "apiStyle": "custom",
+      "id": "nano-banana-pro",
+      "name": "Nano Banana Pro",
+      "provider": "fintopia",
+      "model": "gemini-3-pro-image-preview",
+      "apiUrl": "https://yunwu.site",
+      "apiKey": "sk-kgx5RlmSuDPvNaHlyxR3Vza2muzDB0qkR12zSCJtr62yjIKm",
+      "apiVersion": "",
+      "apiPath": "/v1beta/models/{model}:generateContent",
+      "purpose": "image",
+      "quality": "auto",
+      "enabled": true,
+      "createdAt": "2026-05-12T05:18:00.000Z",
+      "updatedAt": "2026-05-12T05:41:00.000Z"
+    }
+  ],
+  "agents": [
+    {
+      "driverModelId": "nano-banana-pro",
+      "id": "brand-3d-director",
+      "name": "3-品牌C-软糖针织充气",
+      "description": "金融营销柔和",
+      "systemPrompt": "渲染：\n3D商业渲染，柔和均匀主光，商业产品光效，反射受控，阴影柔和，AO轻；圆润软体造型，三分之四视角，构图饱满有层次，高分辨率，边缘清晰，微纹理可见，画面干净，高级亲和\n\n材质：\nA. 软糖塑胶/果冻涂层，厚实圆润，柔和高光，轻微黏润感，云状混色；\nB. 泡棉橡胶/喷砂颗粒涂层，哑光柔软，大量细小 speckle 颗粒；\nC. 针织布料/毛绒软包，细密织物纹理，蓬松鼓胀，轻微褶皱压痕；\nD. 亮面复合板/印花滑板，清晰印刷层，透明亮面涂层，真实厚度；\nE. 布面印刷/柔性贴纸，图案清晰服帖，带轻微织物纹理；\nF. 光滑树脂小件，圆润光滑，柔和反射，糖果感体积；\nG. 充气橡胶，圆鼓柔软，有弹性和拉伸感；\nH. 软包填充结构，柔软填充感，微褶皱，轻微压缩变形。",
+      "defaultStylePresetId": "",
+      "defaultNegativeRules": [
+        "不要硬朗工业金属感、不要冷冰冰科技感、不要镜面电镀铬、不要廉价塑料感、不要低清晰度、不要模糊、不要糊边、不要柔焦、不要景深过重、不要粗糙大颗粒、不要脏污划痕、不要材质混乱、不要过曝高光、不要死黑阴影、不要强硬投影、不要复杂杂乱背景、不要人物手脸、不要错误文字、不要水印、不要可见灯具、不要摄影棚设备、不要背景灯板。"
+      ],
+      "enabled": true,
+      "createdAt": "2026-05-08T16:27:18.677Z",
+      "updatedAt": "2026-05-13T13:11:00.272Z"
+    },
+    {
+      "driverModelId": "nano-banana-pro",
+      "id": "finance-soft-agent",
+      "name": "1-品牌A-哑光喷砂",
+      "description": "偏金融哑光材质风格 Skill。",
+      "systemPrompt": "3D工业渲染、柔光棚拍主光（大面积软箱）、反射受控、不过曝高光、阴影柔和、AO极轻、统一倒角与厚度、轮廓干净、超高分辨率、细节极清晰、边缘锐利不糊、微纹理可见但尺度很细（细颗粒喷砂/细密网格/微条纹压纹）、表面无噪点、无脏污、无涂抹感、材质分层清楚（金属/哑光/半透明各自区别明显）、极简背景、三分之四视角（3/4）、构图克制、留白充足、高清4K。\n\n\n材质库\nA. 缎面拉丝金属\n缎面拉丝金属材质，受控反射，宽而柔的高光条带，冷灰色金属调，清晰倒角亮边，不要镜面电镀铬\n\nB. 哑光喷砂橡胶漆\n哑光喷砂橡胶漆/粉末涂层，粗糙度高，几乎无镜面高光，表面细腻砂感；可带少量白色speckle颗粒点\n\nC.细密织物/网格纹理\n细密织物网格纹理表面（规则点阵/菱格），哑光漫反射，纹理尺度很小且均匀，轻微受光层次，无强反光\n\nD.纸纤维卡纸/纸浆板\n纸纤维卡纸/纸浆板材质，漫反射强，带微小纤维噪点与彩色小颗粒，几乎无高光，边缘略显干爽\n\nE.半透明磨砂亚克力/玻璃\n半透明磨砂亚克力/玻璃，透光但带雾感，厚边有一圈亮的折射高光，内部柔散射，不要清澈镜面\n\nF.方向性细条纹压纹\n方向性细条纹压纹表面（微沟槽），条纹一致方向，哑光白或浅灰，提升细节但不抢高光\n\nG.细颗粒哑光塑料\n细颗粒哑光塑料，微砂纹，漫反射为主，边缘倒角处有柔亮薄高光，整体干净高级\n\n\n品牌色\n1.#C5FB00\n2.#5338FF\n3.#1B1B23\n4.#FFFFFF\n",
+      "defaultStylePresetId": "finance_soft_3d",
+      "defaultNegativeRules": [
+        "负面提示词：",
+        "不要低清晰度、不要模糊、不要糊边、不要柔焦、不要景深虚化、不要运动模糊、不要低模、不要粗糙大纹理、不要杂乱构图、不要复杂背景、不要多余元素、不要脏污划痕、不要噪点、不要颗粒过重、不要廉价塑料感、不要过度卡通玩具风、不要镜面电镀铬、不要过曝高光、不要死黑阴影、不要长段文字、不要水印、不要logo错误、不要人物、不要手、不要脸、不要可见灯具、不要摄影棚设备、不要背景灯板。"
+      ],
+      "enabled": true,
+      "createdAt": "2026-05-08T16:27:18.677Z",
+      "updatedAt": "2026-05-13T13:10:35.015Z"
+    },
+    {
+      "driverModelId": "nano-banana-pro",
+      "id": "style-skill-2",
+      "name": "2-品牌B-闪点亚克力",
+      "description": "金融清透高级",
+      "systemPrompt": "品牌色：\n1.#C5FB00。2.#5338FF。3.银色。4.#FFFFFF\n\n渲染方式：\n3D品牌渲染，柔和均匀主光，商业产品光效，反射受控，不过曝高光，阴影柔和，AO极轻；三分之四视角（3/4），构图简洁克制，主体突出，留白充足；统一倒角与厚度，轮廓干净利落；高分辨率，细节清晰，画面超干净，无噪点，极简白色背景，高清4K。\n\n材质：\nA. 半透明树脂/亚克力，厚边、轻折射、表面细密glitter闪点。\nB. 白色水磨石/人造石，哑光平整表面，少量微speckle颗粒。\nC. 细腻哑光喷砂塑料，中性白灰结构体块，反射柔和。\nD. 缎面拉丝金属，银灰色，柔亮边缘高光，受控反射。\n",
+      "defaultStylePresetId": "",
+      "defaultNegativeRules": [
+        "不要低清晰度、不要模糊、不要糊边、不要柔焦、不要景深虚化、不要运动模糊、不要低模、不要粗糙大纹理、不要杂乱构图、不要复杂背景、不要多余元素、不要脏污划痕、不要噪点、不要颗粒过重、不要廉价塑料感、不要过度卡通玩具风、不要镜面电镀铬、不要过曝高光、不要死黑阴影、不要长段文字、不要水印、不要logo错误、不要人物、不要手、不要脸、不要可见灯具、不要摄影棚设备、不要背景灯板。"
+      ],
+      "enabled": true,
+      "createdAt": "2026-05-10T07:07:00.000Z",
+      "updatedAt": "2026-05-13T13:10:48.166Z"
+    },
+    {
+      "driverModelId": "nano-banana-pro",
+      "id": "agent_1778483147683",
+      "name": "4-品牌D-皮革金属树脂",
+      "description": "金融科技",
+      "systemPrompt": "渲染：\n金融科技品牌视觉渲染，高级商业广告质感；柔和均匀主光，商业产品光效，反射受控，不过曝高光；阴影柔和但有体积深度，AO轻微；三分之四视角，轻微俯视，构图紧凑有张力，主体突出，层次清晰；统一圆角倒角，硬件边缘干净利落；高分辨率，细节清晰，微纹理可见，画面干净，极简白色背景。\n\n材质\nA. 喷砂塑胶 / 细颗粒涂层材质：表面有细密均匀砂感颗粒，粗糙度中高，反射克制但边缘有柔和亮边。\n\nB. 半透明树脂 / 磨砂亚克力材质：具有真实厚度，边缘有轻微透光和折射亮线，内部带轻微体积感，表面细腻，不完全透明。\n\nC. 磨砂表面为细腻微砂纹，低反射，字样以平整印刷或轻微浮雕方式呈现。\n\nD. 缎面金属材质：拉丝金属或喷砂金属表面，受控反射，宽而柔的金属高光，倒角亮边清晰。\n\nE. 皮革 / 微纹理橡胶材质：表面有细密皮革纹或橡胶颗粒纹，哑光为主，触感厚实，反射很弱。\n\nF. 精密刻线 / 压印图形细节：在物体表面有细线刻痕，线条浅刻入材质中，清晰但不突兀。\n",
+      "defaultStylePresetId": "",
+      "defaultNegativeRules": [
+        "负面词",
+        "不要低清晰度、不要模糊、不要糊边、不要柔焦、不要景深虚化过重、不要运动模糊、不要低模、不要粗糙大颗粒、不要脏污划痕、不要廉价塑料感、不要过度卡通玩具风、不要复杂背景、不要杂乱构图、不要多余元素、不要过曝高光、不要死黑阴影、不要镜面电镀铬、不要材质混乱、不要错误银行卡结构、不要错误支付符号、不要长段文字、不要不可读文字、不要水印、不要人物、不要手、不要脸、不要可见灯具、不要摄影棚设备、不要背景灯板。"
+      ],
+      "enabled": true,
+      "createdAt": "2026-05-11T07:05:47.683Z",
+      "updatedAt": "2026-05-13T13:11:11.625Z"
+    },
+    {
+      "driverModelId": "nano-banana-pro",
+      "id": "agent_1778483273931",
+      "name": "5-品牌E-充气软体",
+      "description": "金融膨胀艺术",
+      "systemPrompt": "渲染方式：\n3D品牌图标化商业渲染，充气软体物件视觉，柔软、弹性、轻盈、玩具化但高级；柔和均匀主光，商业产品光效，反射受控，不过曝高光；主体强调触觉材质与物体之间的挤压、贴合、包裹、碰撞和互动关系；三分之四视角或近景特写视角，构图饱满有节奏，阴影柔和，AO轻，接触处有自然压痕、褶皱和柔软遮蔽；高分辨率，细节清晰，微纹理可见，画面干净，整体生动、鲜活、有弹性。极简白色背景。\n\n材质：\nA. 充气橡胶 / 软体PVC材质：表面柔软有弹性，轻微膨胀张力感，受压处有自然凹陷和褶皱，反射柔和，具有充气物的饱满触感。\nB. 软包织物材质：表面有细密织物纹理，漫反射为主，触感柔软，受拉伸和挤压时会产生自然褶皱、压痕和布料张力变化。\nC. 细密针织材质：可见规则经纬编织结构，纤维感清晰，粗糙度中高，反射克制，适合表现柔软、亲和、可触摸的表面。\nD. 枕头 / 填充棉材质：内部有柔软填充感，表面蓬松，受压后出现自然凹陷、鼓包和回弹感，整体柔和、轻盈。\nE. 软胶涂层材质：表面平滑但不强镜面，带轻微弹性和柔和高光，介于橡胶与软塑之间，适合更干净的软体表面。\nF. 半透明充气膜材质：轻微透光，带柔和折射和雾感，表面有柔软张力，受压处出现微弱形变，边缘可见透光层次。\nG. 缝线 / 压边细节材质：表面有轻微缝合线、压边、折边或热压封边痕迹，细节克制，增强软体工业制品的真实感。\nH. 局部高光涂层材质：柔软基材表面覆盖薄层清漆或光滑涂层，产生受控柔和高光，底层纹理仍然可见，不要强镜面。\n",
+      "defaultStylePresetId": "",
+      "defaultNegativeRules": [
+        "负面提示词：",
+        "不要低清晰度、不要模糊、不要糊边、不要柔焦、不要景深虚化过重、不要运动模糊、不要低模、不要硬朗工业金属感、不要刚性石材感、不要镜面电镀铬、不要廉价塑料感、不要粗糙大颗粒、不要脏污划痕、不要材质混乱、不要过曝高光、不要死黑阴影、不要强硬投影、不要复杂杂乱背景、不要人物手脸、不要错误文字、不要水印、不要可见灯具、不要摄影棚设备、不要背景灯板。"
+      ],
+      "enabled": true,
+      "createdAt": "2026-05-11T07:07:53.931Z",
+      "updatedAt": "2026-05-13T13:11:27.048Z"
+    },
+    {
+      "driverModelId": "nano-banana-pro",
+      "id": "agent_1778600144400",
+      "name": "6-品牌F-扁平矢量插画",
+      "description": "适合品牌功能图标、社交媒体贴纸、App引导页小插画等",
+      "systemPrompt": "扁平矢量插画风格，适合品牌功能图标、社交媒体贴纸、App引导页小插画；造型高度概括，几何化、模块化、符号化，强调图形组合与视觉节奏；色块大而干净，边缘锐利，无真实材质纹理；整体偏趣味、年轻、轻松、社交感强；构图以小型图标簇为主，多个元素围绕中心组合，留白充足；线条少量使用，细线有手绘涂鸦感，作为装饰性的动势线、绕线、表情线；背景简洁，整体高对比、活泼、现代。",
+      "defaultStylePresetId": "",
+      "defaultNegativeRules": [
+        "不要3D渲染、不要写实、不要照片感、不要复杂光影、不要真实材质纹理、不要渐变厚涂、不要低清晰度、不要模糊、不要脏污颗粒、不要复杂背景、不要过度细节、不要真实人物比例、不要厚重阴影、不要水印、不要长段文字"
+      ],
+      "enabled": true,
+      "createdAt": "2026-05-12T15:35:44.400Z",
+      "updatedAt": "2026-05-13T13:12:29.743Z"
+    }
+  ],
+  "materials": [
+    {
+      "id": "translucent-resin-acrylic",
+      "name": "半透明树脂 / 亚克力",
+      "description": "厚边、轻折射、细密闪点，适合高级透明质感图标。",
+      "prompt": "半透明树脂/亚克力，厚边、轻折射、柔和透光，内部有细密闪点，边缘厚度明确，反射受控。",
+      "previewColor": "#DFF7FF",
+      "enabled": true,
+      "createdAt": "2026-05-11T03:09:00.000Z",
+      "updatedAt": "2026-05-11T03:09:00.000Z"
+    },
+    {
+      "id": "white-terrazzo-stone",
+      "name": "白色水磨石 / 人造石",
+      "description": "哑光平整表面，少量微 speckle 颗粒。",
+      "prompt": "白色水磨石/人造石，哑光平整表面，少量微speckle颗粒，质感干净克制，不粗糙。",
+      "previewColor": "#F4F1EA",
+      "enabled": true,
+      "createdAt": "2026-05-11T03:09:00.000Z",
+      "updatedAt": "2026-05-11T03:09:00.000Z"
+    },
+    {
+      "id": "matte-sandblasted-plastic",
+      "name": "哑光喷砂塑料",
+      "description": "中性白灰结构体块，反射柔和。",
+      "prompt": "细腻哑光喷砂塑料，中性白灰结构体块，表面细腻，反射柔和，低噪点。",
+      "previewColor": "#D9DEE7",
+      "enabled": true,
+      "createdAt": "2026-05-11T03:09:00.000Z",
+      "updatedAt": "2026-05-11T03:09:00.000Z"
+    },
+    {
+      "id": "satin-brushed-metal",
+      "name": "缎面拉丝金属",
+      "description": "银灰色，柔亮边缘高光，受控反射。",
+      "prompt": "缎面拉丝金属，银灰色，细腻拉丝纹理，柔亮边缘高光，反射受控，不要镜面电镀铬。",
+      "previewColor": "#C9D0D8",
+      "enabled": true,
+      "createdAt": "2026-05-11T03:09:00.000Z",
+      "updatedAt": "2026-05-11T03:09:00.000Z"
+    },
+    {
+      "id": "fine-mesh-fabric",
+      "name": "细密网格织物材质",
+      "description": "规则孔洞或编织网格，轻微半透明，可见交织结构和局部透光层次。",
+      "prompt": "细密网格织物材质，由规则孔洞或编织网格构成，具有轻微半透明感，可见细密交织结构和局部透光层次。",
+      "previewColor": "#B8C7D9",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "soft-foam",
+      "name": "软质泡棉材质",
+      "description": "哑光细腻、轻微颗粒感，带柔软填充和受压凹陷。",
+      "prompt": "软质泡棉材质，表面哑光、细腻，有轻微颗粒感，带柔软填充质感，受压区域会产生轻微凹陷和自然起伏。",
+      "previewColor": "#D7D2C8",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "embossed-paper",
+      "name": "纸质压纹材质",
+      "description": "规则凸点、凹凸纹或压印纹理，漫反射强且干净。",
+      "prompt": "纸质压纹材质，表面带规则凸点、凹凸纹或压印纹理，漫反射强，质感干净，有轻微厚度感。",
+      "previewColor": "#F1E8D8",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "satin-plastic",
+      "name": "缎面塑胶材质",
+      "description": "平滑但不强镜面，柔和反射，倒角处有细腻亮边。",
+      "prompt": "缎面塑胶材质，表面平滑但不强镜面，反射柔和，倒角处有细腻亮边，整体干净现代。",
+      "previewColor": "#DCE3EA",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "translucent-film",
+      "name": "半透明薄膜材质",
+      "description": "轻微透光和折射，边缘柔和亮线，表面可带雾感。",
+      "prompt": "半透明薄膜材质，轻微透光和折射，边缘有柔和亮线，表面可带雾感。",
+      "previewColor": "#D7F4F2",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-13T10:11:37.495Z"
+    },
+    {
+      "id": "flexible-band",
+      "name": "柔性带状材质",
+      "description": "细腻平滑或轻微织物纹理，柔韧弹性，反射克制。",
+      "prompt": "柔性带状材质，表面细腻平滑或带轻微织物纹理，具有柔韧弹性感，反射克制。",
+      "previewColor": "#BFC7D1",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "clear-hard-acrylic",
+      "name": "透明硬质亚克力材质",
+      "description": "真实厚度、明显边缘折射，局部高光清晰。",
+      "prompt": "透明硬质亚克力材质，具有真实厚度感，边缘折射明显，局部高光清晰，通透但不过度镜面。",
+      "previewColor": "#CFEAFF",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "smooth-cable",
+      "name": "线缆材质",
+      "description": "表面光滑、柔和高光，柔韧感和清晰边缘。",
+      "prompt": "线缆材质，表面光滑，有柔和高光，材质具有柔韧感，边缘清晰。",
+      "previewColor": "#202633",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "frosted-coating",
+      "name": "磨砂涂层材质",
+      "description": "低反射、细颗粒、柔雾感明显，干净克制现代。",
+      "prompt": "磨砂涂层材质，表面低反射、细颗粒、柔雾感明显，整体干净、克制、现代。",
+      "previewColor": "#C9CDD3",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "composite-sheet",
+      "name": "复合片材材质",
+      "description": "纸质、塑胶或织物纹理，边缘可见厚度，轻薄但有支撑性。",
+      "prompt": "复合片材材质，表面可呈现纸质、塑胶或织物纹理，边缘可见厚度，质感轻薄但有支撑性。",
+      "previewColor": "#E1D8C8",
+      "enabled": true,
+      "createdAt": "2026-05-12T06:18:00.000Z",
+      "updatedAt": "2026-05-12T06:18:00.000Z"
+    },
+    {
+      "id": "fine-knit-fabric",
+      "name": "细密针织布料材质",
+      "description": "规则织物经纬纹理，纤维感清晰，柔软漫反射，带轻微拉伸与压缩褶皱。",
+      "prompt": "细密针织布料材质，表面有规则织物经纬纹理，纤维感清晰，漫反射为主，触感柔软，局部有轻微拉伸与压缩褶皱。",
+      "previewColor": "#C9C1B4",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:19:00.000Z",
+      "updatedAt": "2026-05-13T10:19:00.000Z"
+    },
+    {
+      "id": "padded-soft-fill",
+      "name": "软包填充材质",
+      "description": "填充棉支撑、鼓胀柔软、边缘圆滑，带压痕凹陷和布料张力变化。",
+      "prompt": "软包填充材质，内部像填充棉支撑，表面鼓胀柔软，边缘自然圆滑，有轻微压痕、凹陷和布料张力变化。",
+      "previewColor": "#D8D0C6",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:19:00.000Z",
+      "updatedAt": "2026-05-13T10:19:00.000Z"
+    },
+    {
+      "id": "translucent-fabric-film",
+      "name": "半透明织物覆膜材质",
+      "description": "轻微透光，保留织物纹理，内部柔和体积感，弱反射和边缘透光层次。",
+      "prompt": "半透明织物覆膜材质，具有轻微透光感，表面仍保留织物纹理，内部有柔和体积感，反射弱，边缘有淡淡透光层次。",
+      "previewColor": "#D8ECE7",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:19:00.000Z",
+      "updatedAt": "2026-05-13T10:19:00.000Z"
+    },
+    {
+      "id": "striped-embossed-patch",
+      "name": "条纹压纹贴片材质",
+      "description": "方向一致的细密条纹或微沟槽，略带浮雕厚度，边缘清晰且反射柔和。",
+      "prompt": "条纹压纹贴片材质，表面有方向一致的细密条纹或微沟槽，略带浮雕厚度，边缘清晰，反射柔和。",
+      "previewColor": "#C8CDD4",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:19:00.000Z",
+      "updatedAt": "2026-05-13T10:19:00.000Z"
+    },
+    {
+      "id": "suede-matte-fabric",
+      "name": "绒面/磨砂布料材质",
+      "description": "细腻柔雾、短绒感明显，粗糙度较高，无强反光，柔软亲和。",
+      "prompt": "绒面/磨砂布料材质，表面细腻柔雾，短绒感明显，粗糙度较高，无强反光，适合表现柔软亲和的触感。",
+      "previewColor": "#BDB5AA",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:19:00.000Z",
+      "updatedAt": "2026-05-13T10:19:00.000Z"
+    },
+    {
+      "id": "brand-a-satin-brushed-metal",
+      "name": "A. 缎面拉丝金属",
+      "description": "受控反射，宽而柔的高光条带，冷灰色金属调，清晰倒角亮边。",
+      "prompt": "缎面拉丝金属材质，受控反射，宽而柔的高光条带，冷灰色金属调，清晰倒角亮边，不要镜面电镀铬。",
+      "previewColor": "#BFC5CC",
+      "enabled": true,
+      "createdAt": "2026-07-20T07:44:08.688Z",
+      "updatedAt": "2026-07-20T07:44:08.688Z"
+    },
+    {
+      "id": "brand-a-matte-sandblasted-rubber",
+      "name": "B. 哑光喷砂橡胶漆",
+      "description": "高粗糙度粉末涂层，几乎无镜面高光，细腻砂感。",
+      "prompt": "哑光喷砂橡胶漆/粉末涂层，粗糙度高，几乎无镜面高光，表面细腻砂感；可带少量白色speckle颗粒点。",
+      "previewColor": "#D6D9DD",
+      "enabled": true,
+      "createdAt": "2026-07-20T07:44:08.688Z",
+      "updatedAt": "2026-07-20T07:44:08.688Z"
+    },
+    {
+      "id": "brand-a-fine-fabric-mesh",
+      "name": "C. 细密织物 / 网格纹理",
+      "description": "规则点阵或菱格纹理，哑光漫反射，尺度小且均匀。",
+      "prompt": "细密织物网格纹理表面（规则点阵/菱格），哑光漫反射，纹理尺度很小且均匀，轻微受光层次，无强反光。",
+      "previewColor": "#C7CCD3",
+      "enabled": true,
+      "createdAt": "2026-07-20T07:44:08.688Z",
+      "updatedAt": "2026-07-20T07:44:08.688Z"
+    },
+    {
+      "id": "brand-a-paper-fiber-cardboard",
+      "name": "D. 纸纤维卡纸 / 纸浆板",
+      "description": "漫反射强，微小纤维噪点和彩色小颗粒，边缘干爽。",
+      "prompt": "纸纤维卡纸/纸浆板材质，漫反射强，带微小纤维噪点与彩色小颗粒，几乎无高光，边缘略显干爽。",
+      "previewColor": "#E7DECF",
+      "enabled": true,
+      "createdAt": "2026-07-20T07:44:08.688Z",
+      "updatedAt": "2026-07-20T07:44:08.688Z"
+    },
+    {
+      "id": "brand-a-frosted-translucent-acrylic",
+      "name": "E. 半透明磨砂亚克力 / 玻璃",
+      "description": "透光雾感，厚边折射高光，内部柔散射。",
+      "prompt": "半透明磨砂亚克力/玻璃，透光但带雾感，厚边有一圈亮的折射高光，内部柔散射，不要清澈镜面。",
+      "previewColor": "#DCEFF2",
+      "enabled": true,
+      "createdAt": "2026-07-20T07:44:08.688Z",
+      "updatedAt": "2026-07-20T07:44:08.688Z"
+    },
+    {
+      "id": "brand-a-directional-fine-stripe-emboss",
+      "name": "F. 方向性细条纹压纹",
+      "description": "一致方向微沟槽，哑光白或浅灰，增加细节但不抢高光。",
+      "prompt": "方向性细条纹压纹表面（微沟槽），条纹一致方向，哑光白或浅灰，提升细节但不抢高光。",
+      "previewColor": "#E6E8EA",
+      "enabled": true,
+      "createdAt": "2026-07-20T07:44:08.688Z",
+      "updatedAt": "2026-07-20T07:44:08.688Z"
+    },
+    {
+      "id": "brand-a-fine-grain-matte-plastic",
+      "name": "G. 细颗粒哑光塑料",
+      "description": "微砂纹，漫反射为主，倒角处柔亮薄高光，干净高级。",
+      "prompt": "细颗粒哑光塑料，微砂纹，漫反射为主，边缘倒角处有柔亮薄高光，整体干净高级。",
+      "previewColor": "#D7DCE2",
+      "enabled": true,
+      "createdAt": "2026-07-20T07:44:08.688Z",
+      "updatedAt": "2026-07-20T07:44:08.688Z"
+    }
+  ],
+  "colorPalettes": [
+    {
+      "id": "brand-blue-violet",
+      "name": "credmex-1",
+      "description": "紫色+绿色+黑色+白色",
+      "colors": [
+        "1.#C5FB00",
+        "2.#5338FF",
+        "3.#1B1B23",
+        "4.#FFFFFF"
+      ],
+      "prompt": "配色以品牌紫或者绿色为主，辅以白色、黑色、银色。",
+      "enabled": true,
+      "createdAt": "2026-05-11T03:09:00.000Z",
+      "updatedAt": "2026-05-11T07:09:33.462Z"
+    },
+    {
+      "id": "fresh-finance",
+      "name": "crdemex-2",
+      "description": "紫色+绿色+粉色+银色+白色",
+      "colors": [
+        "1.#C5FB00",
+        "2.#5338FF",
+        "3.#FFFFFF",
+        "4.#FF639A",
+        "5.银色"
+      ],
+      "prompt": "配色以一个为主色，色彩克制高级",
+      "enabled": true,
+      "createdAt": "2026-05-11T03:09:00.000Z",
+      "updatedAt": "2026-05-11T07:29:05.054Z"
+    },
+    {
+      "id": "palette_1778598650496",
+      "name": "instacash",
+      "description": "主色",
+      "colors": [
+        "Steady Green：#8CC23A",
+        "Melancholy blue：#DEE8F1",
+        "Classic Black：#2B2A34"
+      ],
+      "prompt": "主色是Steady Green，辅助色是Melancholy blue Classic Black",
+      "enabled": true,
+      "createdAt": "2026-05-12T15:10:50.496Z",
+      "updatedAt": "2026-05-12T15:13:29.384Z"
+    },
+    {
+      "id": "palette_1778599033616",
+      "name": "菲律宾",
+      "description": "金融科技",
+      "colors": [
+        "品牌色：#421FFF",
+        "辅助色：#00E6BB",
+        "辅助色：#EBF82B",
+        "辅助色：ffffff"
+      ],
+      "prompt": "品牌色为主",
+      "enabled": true,
+      "createdAt": "2026-05-12T15:17:13.616Z",
+      "updatedAt": "2026-05-14T04:27:05.136Z"
+    },
+    {
+      "id": "palette_1778727415845",
+      "name": "洋钱罐",
+      "description": "国内业务",
+      "colors": [
+        "Yellow01：#FFDD00 Blue01：#242533 Blue02：#E3E6F3 white：#FFFFFF"
+      ],
+      "prompt": "品牌主色是Yellow01：#FFDD00",
+      "enabled": true,
+      "createdAt": "2026-05-14T02:56:55.845Z",
+      "updatedAt": "2026-05-14T03:24:27.721Z"
+    }
+  ],
+  "shapeArchitectures": [
+    {
+      "id": "preserve-original-form",
+      "name": "1-原图结构",
+      "description": "严格保留参考图主体轮廓、元素位置和视觉层级。",
+      "prompt": "形体架构以原图为准，严格保留主体轮廓、元素相对位置、图形数量、视觉层级和整体构图，只做材质、体积、光影或风格转译。",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:54:00.000Z",
+      "updatedAt": "2026-05-13T10:54:00.000Z"
+    },
+    {
+      "id": "rounded-volume-blocks",
+      "name": "2-圆润体块",
+      "description": "将图形概括为圆润、厚实、可触摸的体块结构。",
+      "prompt": "形体架构采用圆润体块结构，把平面图形转译为厚实、饱满、边缘圆滑的 3D 块面，保持识别特征清楚，不增加无关元素。",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:54:00.000Z",
+      "updatedAt": "2026-05-13T10:54:00.000Z"
+    },
+    {
+      "id": "layered-patch",
+      "name": "3-层叠贴片",
+      "description": "以多层贴片、叠片和卡片化结构组织图形。",
+      "prompt": "形体架构采用层叠贴片结构，将元素拆分为清晰的多层贴片、叠片或卡片化部件，边缘有厚度，层级关系明确，整体仍保持原图语义。",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:54:00.000Z",
+      "updatedAt": "2026-05-13T10:54:00.000Z"
+    },
+    {
+      "id": "soft-inflated-form",
+      "name": "4-软体鼓包",
+      "description": "强调柔软鼓胀、轻微挤压和自然压痕的软体结构。",
+      "prompt": "形体架构采用软体鼓包结构，主体具有柔软膨胀感、自然圆角、轻微挤压、压痕和回弹体积，适合软包、充气、泡棉或织物材质。",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:54:00.000Z",
+      "updatedAt": "2026-05-13T10:54:00.000Z"
+    },
+    {
+      "id": "modular-geometric",
+      "name": "5-模块几何",
+      "description": "用清晰几何模块和秩序化部件重组图形。",
+      "prompt": "形体架构采用模块化几何结构，用清晰的几何部件、秩序化分块和稳定比例重组图形，轮廓干净，结构理性，不改变核心识别语义。",
+      "enabled": true,
+      "createdAt": "2026-05-13T10:54:00.000Z",
+      "updatedAt": "2026-05-13T10:54:00.000Z"
+    },
+    {
+      "id": "shape_architecture_1778736789674",
+      "name": "6-蓓蕾测试",
+      "description": "棒",
+      "prompt": "结构：\n主体结构完整明确，\n避免碎片化结构，\n大形优先于小细节，\n\n比例：\n统一厚实体比例，\n避免薄片化与尖锐结构，\n线条与边框粗细统一，\n\n圆角：\n统一连续曲率与圆角语言，\n避免机械硬折线，\n边缘过渡柔和流畅，\n\n空间：\n轻悬浮空间关系，\n元素间留有呼吸感，\n整体空间感轻盈克制，\n\n构图：\n构图焦点明确，\n主次关系清晰，\n避免平均化排布，\n留白大于填满，\n\n节奏：\n复杂度克制，\n减少装饰性噪点，\n大面积完整表面优先，\n强调秩序感与可信赖感。\n",
+      "enabled": true,
+      "createdAt": "2026-05-14T05:33:09.674Z",
+      "updatedAt": "2026-05-14T05:33:09.674Z"
+    }
+  ],
+  "operationScenarios": [
+    {
+      "id": "new-user-growth",
+      "name": "微缩场景系统",
+      "description": "用于生成「世界级、叙事型、空间复杂」的微缩模型视觉场景",
+      "fixedPrompt": "【世界观与尺度规则】\n角色始终作为微缩模型世界中的居民存在，体量明显小于整体场景，仅作为场景中的活动成员出现。\n超级符号造型即为微缩世界的地形或容器本体，体量远大于角色，并自然包裹或遮挡角色身体，形成稳定、可信的尺度对比关系。\n画面关注整体微缩场景结构，而非单一角色特写。\n\n【材质与渲染风格】\n整体为工业级玩具风格 3D 渲染，偏设计师潮玩 / 软胶玩具质感。\n●主要材质：注塑成型塑料与软胶。\n●表面质感：光滑细腻，边缘微倒角。\n●涂层：整体半哑光，高光克制不过曝。\n金属部件为电镀塑料金属色质感，\n 非真实物理金属，反射柔和、干净。水体表现为果冻感半透明液态塑料，\n 具有体积感与柔和折射，\n 不呈现真实自然水面。整体画面材质干净、简化、无噪点，\n 避免写实纹理与真实物理质感。\n\n【灯光 · 镜头 · 构图】\n灯光采用电影级定向灯光方案：\n●单一明确主光源\n●辅光抬亮暗部\n●阴影柔和，光比高级\n●不使用多主光或复杂光效\n镜头视角为俯视约 35° 的微缩沙盘视角，\n 镜头关注整体场景结构而非角色面部。构图为 3:4 竖版海报构图：\n●主体整体偏下\n●上下保留明确留白\n●画面稳定、居中、不过度倾斜\n不使用广角夸张透视，不使用仰视视角。\n\n【禁止项（硬规则）】\n画面中不出现：\n●真实人类或真人形象\n●写实摄影风格\n●文字 Logo 或可识别品牌文字\n●复杂叙事或剧情表达\n避免使用任何可能引导写实或真实尺度的描述。",
+      "variablePrompt": "【IP 角色定义】\n3D 原创 Q 版 IP 角色「小罐」，大头短身比例，黄色罐盖和Y金币不可缺失，红色圆鼻子、黑色椭圆眼睛，温和治愈表情。IP只换动作和换装，禁止改动头部造型。\n\n【场景:春节】\n超级符号造型的地板作为微缩场景主体，超级符号的地板摆放在书法桌面上，桌面上有一张宣纸，宣纸上是超级符号地板，超级符号地板上有挂起来的灯笼、福字装饰、符号为¥的金币堆、梅花、中国结等。IP角色穿着春节主题简化服饰（红色中式外套、金色点缀），IP角色站在地板上正在挂灯笼，动作幅度小且稳定。\n",
+      "enabled": true,
+      "createdAt": "2026-05-11T07:46:05.063Z",
+      "updatedAt": "2026-05-14T05:53:42.403Z"
+    },
+    {
+      "id": "scenario_1778675357306",
+      "name": "舞台单体场景",
+      "description": "用于生成「单主体、强聚焦、商业表达清晰」的舞台式视觉场景",
+      "fixedPrompt": "镜头语言：正视视角，俯视角度固定不因角色站姿或坐姿而改变。\n\n设计师潮玩/软胶玩具质感（vinyl toy），轻微磨砂+细腻高光，商业级3D插画渲染，柔和棚拍光（正前上方主光+轻微轮廓光），低对比干净无杂乱反射，1:1比例海报构图，ip主体居中偏前，背景纯白色，高一致性高完成度。\n\n舞台单体式场景，ip主体站在舞台中央。道具围绕主体分布左右各1-2件+前景1件，比例夸张可爱但不杂乱。单一主色调背景：主色纯白色，点缀2-4个扁平图形白色描边贴纸。\n",
+      "variablePrompt": "场景主题1：[金秋钱袋丰收]\n角色动作：[双手抱着红色钱袋，身穿浅米色背心，浅棕色裤子带腰带，简化披风]\n主道具：[自然鼓起的大号钱袋]\n辅助道具：[元宝]、[符号为¥的金币]、[宝石]、[麦穗]、[果实]、[田地]、[元宝贴纸]。金币堆满脚下，果实放在篮子中。\n氛围词：[丰收稳定财富]",
+      "enabled": true,
+      "createdAt": "2026-05-13T12:29:17.306Z",
+      "updatedAt": "2026-05-13T12:29:17.306Z"
+    }
+  ]
+}

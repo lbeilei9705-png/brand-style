@@ -38,6 +38,7 @@ export interface MaterialPresetConfig {
   description: string;
   prompt: string;
   previewColor?: string;
+  previewImageUrl?: string;
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -110,6 +111,8 @@ export interface ScenarioAgentCaseConfig {
   userInput: string;
   positivePrompt: string;
   negativePrompt?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
   tags: string[];
   rating: ScenarioAgentCaseRating;
   notes?: string;
@@ -409,6 +412,12 @@ export interface AddConversationMessageRequest {
   materialPresetId?: string;
   materialPresetIds?: string[];
   colorPaletteId?: string;
+  customColorPalette?: {
+    name: string;
+    description?: string;
+    colors: string[];
+    prompt: string;
+  };
   shapeArchitectureId?: string;
   operationScenarioId?: string;
   directPrompt?: PromptBundle;

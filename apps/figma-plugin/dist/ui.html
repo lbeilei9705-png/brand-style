@@ -29,7 +29,7 @@
       .app {
         position: relative;
         display: grid;
-        grid-template-rows: minmax(0, 1fr) auto;
+        grid-template-rows: minmax(220px, 1fr) minmax(0, auto);
         height: 100vh;
         background: radial-gradient(circle at 50% 0%, #172238 0%, #0b0f17 48%, #070a0f 100%);
       }
@@ -219,6 +219,11 @@
       .result-card img {
         display: block;
         width: 100%;
+        cursor: grab;
+      }
+
+      .result-card img:active {
+        cursor: grabbing;
       }
 
       .result-card div {
@@ -283,6 +288,8 @@
         display: grid;
         gap: 10px;
         min-width: 0;
+        max-height: calc(100vh - 220px);
+        overflow-y: auto;
         padding: clamp(8px, 1.8vw, 12px);
         border-top: 1px solid #161e2c;
         background: rgba(7, 10, 15, 0.96);
@@ -338,19 +345,19 @@
 
       .tooltip-trigger::before {
         left: 10px;
-        bottom: calc(100% - 2px);
+        top: calc(100% - 2px);
         width: 18px;
         height: 14px;
-        background-image: url("data:image/svg+xml,%3Csvg width='18' height='14' viewBox='0 0 18 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0H18L3.4 13.4C2.1 14.6 0 13.7 0 11.9V0Z' fill='%23111827'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg width='18' height='14' viewBox='0 0 18 14' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 14H18L3.4 0.6C2.1 -0.6 0 0.3 0 2.1V14Z' fill='%23111827'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-size: 18px 14px;
         content: "";
-        transform: translateY(3px);
+        transform: translateY(-3px);
       }
 
       .tooltip-trigger::after {
         left: 0;
-        bottom: calc(100% + 7px);
+        top: calc(100% + 7px);
         width: min(218px, calc(100vw - 28px));
         border: 1px solid #1f2937;
         border-radius: 12px;
@@ -361,7 +368,7 @@
         font-size: 10px;
         font-weight: 600;
         line-height: 1.5;
-        transform: translateY(3px);
+        transform: translateY(-3px);
         white-space: normal;
       }
 
@@ -583,15 +590,15 @@
         flex: 0 0 auto;
         align-items: center;
         overflow: visible;
-        gap: 8px;
+        gap: 6px;
         width: 100%;
         min-width: 0;
         padding: 0 10px;
       }
 
       .pill-select {
-        min-height: 26px;
-        border-radius: 20px;
+        min-height: 24px;
+        border-radius: 16px;
         background: #0b1220;
       }
 
@@ -649,9 +656,9 @@
         left: auto;
         z-index: 20;
         display: none;
-        width: min(240px, calc(100vw - 20px));
+        width: min(292px, calc(100vw - 20px));
         max-width: calc(100vw - 20px);
-        max-height: 220px;
+        max-height: 360px;
         overflow-x: hidden;
         overflow-y: auto;
         border: 1px solid #334155;
@@ -690,13 +697,17 @@
       }
 
       .material-option {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        border-radius: 14px;
-        padding: 7px 8px;
+        position: relative;
+        display: grid;
+        gap: 6px;
+        min-height: 118px;
+        overflow: hidden;
+        border: 1px solid transparent;
+        border-radius: 16px;
+        padding: 8px;
         color: #f8fafc;
-        font-size: 12px;
+        background: rgba(15, 23, 42, 0.48);
+        font-size: 11px;
         cursor: pointer;
         white-space: normal;
       }
@@ -706,17 +717,64 @@
       }
 
       .material-option input {
-        flex: 0 0 auto;
-        width: 14px;
-        height: 14px;
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
       }
 
       .material-option span {
         min-width: 0;
-        overflow: visible;
+        overflow: hidden;
         line-height: 1.35;
-        text-overflow: clip;
-        white-space: normal;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .material-option.selected {
+        border-color: #1d1d1f;
+        box-shadow: 0 0 0 2px rgba(29, 29, 31, 0.12);
+      }
+
+      .material-option.selected::before {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
+        background: #1d1d1f;
+        color: #ffffff;
+        content: "✓";
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1;
+      }
+
+      .material-preview {
+        display: grid;
+        place-items: center;
+        width: 100%;
+        aspect-ratio: 1;
+        overflow: hidden;
+        border-radius: 14px;
+        background: #f5f5f7;
+      }
+
+      .material-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .material-preview-fallback {
+        width: 66%;
+        height: 66%;
+        border-radius: 999px;
+        background: var(--material-preview-color, #d7dce2);
+        box-shadow: inset -14px -16px 24px rgba(0, 0, 0, 0.16), inset 10px 10px 18px rgba(255, 255, 255, 0.68), 0 12px 24px rgba(15, 23, 42, 0.18);
       }
 
       .quantity-label {
@@ -728,9 +786,9 @@
       .run-button {
         width: 100%;
         min-width: 0;
-        min-height: 26px;
+        min-height: 24px;
         border: 0;
-        border-radius: 20px;
+        border-radius: 16px;
         background: #1f2937;
         color: #64748b;
         font-size: 9px;
@@ -855,16 +913,20 @@
       }
 
       body.is-collapsed .collapse-button {
-        position: static;
-        width: 52px;
-        min-width: 52px;
-        height: 52px;
-        min-height: 52px;
+        position: fixed;
+        top: 76px;
+        left: 50%;
+        right: auto;
+        width: 46px;
+        min-width: 46px;
+        height: 46px;
+        min-height: 46px;
         border: 1px solid rgba(255, 255, 255, 0.18);
         background:
           radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.18), transparent 34%),
           linear-gradient(145deg, #111827, #0b0f17);
         color: #f8fafc;
+        transform: translate(-50%, -50%);
       }
 
       body.is-collapsed .collapse-button::before {
@@ -875,7 +937,7 @@
         height: auto;
         background: transparent;
         color: currentColor;
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 850;
         letter-spacing: -0.04em;
         position: relative;
@@ -1316,10 +1378,10 @@
 
       .composer-card {
         display: grid;
-        gap: 12px;
+        gap: 10px;
         overflow: visible;
         border-radius: 28px;
-        padding: 14px;
+        padding: 12px;
       }
 
       .selection-tools {
@@ -1343,7 +1405,7 @@
       .composer-footer {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 8px;
+        gap: 6px;
         padding: 0;
       }
 
@@ -1353,8 +1415,9 @@
       .run-button {
         width: 100%;
         min-width: 0;
-        height: 34px;
-        min-height: 34px;
+        height: 30px;
+        min-height: 30px;
+        border-radius: 18px;
       }
 
       #model-select {
@@ -1418,8 +1481,8 @@
       #model-select,
       #new-chat-button,
       .run-button {
-        height: 36px;
-        min-height: 36px;
+        height: 30px;
+        min-height: 30px;
       }
 
       .control-select,
@@ -1429,11 +1492,11 @@
       }
 
       .run-button {
-        font-size: 12px;
+        font-size: 11px;
       }
 
       #new-chat-button {
-        font-size: 15px;
+        font-size: 14px;
       }
 
       .app,
@@ -1468,6 +1531,167 @@
       .pill-select {
         max-width: 100%;
       }
+
+      #material-panel.open {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      #material-panel .multi-select-panel-header {
+        grid-column: 1 / -1;
+      }
+
+      #material-panel .material-option {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        align-items: stretch;
+        gap: 6px;
+        border: 1px solid rgba(60, 60, 67, 0.12);
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.76);
+      }
+
+      #material-panel .material-option:hover {
+        border-color: rgba(29, 29, 31, 0.22);
+        background: #ffffff;
+      }
+
+      #material-panel .material-option.selected {
+        border-color: #1d1d1f;
+        background: rgba(29, 29, 31, 0.06);
+      }
+
+      #material-panel .material-option span {
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      #material-panel {
+        grid-column: 1 / -1;
+        position: static;
+        width: 100%;
+        max-width: 100%;
+        max-height: 248px;
+        margin-top: 8px;
+        border-color: rgba(60, 60, 67, 0.12);
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: none;
+      }
+
+      #material-panel .material-option {
+        min-height: 124px;
+        border-radius: 14px;
+      }
+
+      #material-panel .material-preview {
+        justify-self: center;
+        width: 84px;
+        height: 84px;
+        aspect-ratio: auto;
+        border-radius: 12px;
+      }
+
+      #material-panel .material-preview-fallback {
+        width: 58px;
+        height: 58px;
+      }
+
+      #material-panel .material-option.selected::before {
+        width: 20px;
+        height: 20px;
+        border-radius: 7px;
+        font-size: 13px;
+      }
+
+      .palette-inline-editor {
+        grid-column: 1 / -1;
+        display: grid;
+        gap: 8px;
+        border: 1px solid rgba(60, 60, 67, 0.1);
+        border-radius: 16px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.64);
+      }
+
+      .palette-inline-editor[hidden] {
+        display: none;
+      }
+
+      .palette-swatch-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .palette-swatch {
+        width: 22px;
+        height: 22px;
+        border: 1px solid rgba(60, 60, 67, 0.16);
+        border-radius: 999px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+      }
+
+      .palette-editor-toggle,
+      .palette-editor-add {
+        min-height: 28px;
+        border: 1px solid rgba(60, 60, 67, 0.16);
+        border-radius: 999px;
+        background: #ffffff;
+        color: #1d1d1f;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .palette-editor-panel {
+        display: grid;
+        gap: 8px;
+      }
+
+      .palette-editor-panel[hidden] {
+        display: none;
+      }
+
+      .plugin-palette-color-list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .plugin-palette-color-row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) 44px;
+        gap: 7px;
+        align-items: center;
+      }
+
+      .plugin-palette-color-row input[type="color"] {
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 10px;
+        padding: 0;
+        background: transparent;
+      }
+
+      .plugin-palette-color-row input[type="text"] {
+        min-width: 0;
+        height: 32px;
+        border: 1px solid rgba(60, 60, 67, 0.14);
+        border-radius: 10px;
+        padding: 0 9px;
+        background: #ffffff;
+        color: #1d1d1f;
+        font-size: 12px;
+      }
+
+      .plugin-palette-color-remove {
+        min-height: 30px;
+        border: 1px solid rgba(60, 60, 67, 0.14);
+        border-radius: 10px;
+        background: #f5f5f7;
+        color: #6e6e73;
+        font-size: 11px;
+      }
     </style>
   </head>
   <body>
@@ -1487,8 +1711,16 @@
           <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
           <div class="multi-select-wrap">
             <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">未选择材质</button>
-            <div id="material-panel" class="multi-select-panel"></div>
           </div>
+          <div id="palette-inline-editor" class="palette-inline-editor" hidden>
+            <div id="palette-swatch-row" class="palette-swatch-row"></div>
+            <button id="toggle-palette-editor-button" class="palette-editor-toggle" type="button">编辑颜色</button>
+            <div id="palette-editor-panel" class="palette-editor-panel" hidden>
+              <div id="plugin-palette-color-list" class="plugin-palette-color-list"></div>
+              <button id="plugin-add-palette-color-button" class="palette-editor-add" type="button">添加颜色</button>
+            </div>
+          </div>
+          <div id="material-panel" class="multi-select-panel"></div>
           <div class="control-section-label">
             <span>风格套装</span>
             <span class="tooltip-trigger" tabindex="0" data-tooltip="风格套装是已经搭好的整体视觉方案，可直接套用，也可以再用上方选项微调。">?</span>
@@ -1537,7 +1769,7 @@
     </main>
 
     <script>
-      const apiBase = "https://brand-style.fintopia-social-media-ads-tools.tech";
+      const apiBase = "http://localhost:5180";
       const accessToken = "brand-style-internal-test-2026";
       const defaultModelId = "nano-banana-pro";
       const modelSelect = document.querySelector("#model-select");
@@ -1548,6 +1780,12 @@
       const materialSelectButton = document.querySelector("#material-select-button");
       const materialPanel = document.querySelector("#material-panel");
       const colorPaletteSelect = document.querySelector("#color-palette-select");
+      const paletteInlineEditor = document.querySelector("#palette-inline-editor");
+      const paletteSwatchRow = document.querySelector("#palette-swatch-row");
+      const togglePaletteEditorButton = document.querySelector("#toggle-palette-editor-button");
+      const paletteEditorPanel = document.querySelector("#palette-editor-panel");
+      const pluginPaletteColorList = document.querySelector("#plugin-palette-color-list");
+      const pluginAddPaletteColorButton = document.querySelector("#plugin-add-palette-color-button");
       const shapeArchitectureSelect = document.querySelector("#shape-architecture-select");
       const selectionBar = document.querySelector("#selection-bar");
       const addSelectionButton = document.querySelector("#add-selection-button");
@@ -1566,11 +1804,14 @@
       let resolution = "2k";
       let materials = [];
       let materialPresetIds = [];
+      let colorPalettes = [];
       let operationScenarios = [];
       let scenarioAgents = [];
       let activeScenarioSuggestions = [];
       let selectedOperationScenarioId = "";
       let colorPaletteId = "";
+      let customPaletteColors = [];
+      let isPaletteEditorOpen = false;
       let shapeArchitectureId = "";
       let scenarioAgentDraft = null;
       let isSending = false;
@@ -1578,6 +1819,7 @@
       let activeConversationId = null;
       let activeGenerationController = null;
       let isCollapsed = false;
+      let materialPanelCloseTimer = null;
       const fixedWindowHeight = 780;
       const fixedWindowWidth = 300;
       let expandedWindowSize = {
@@ -1761,6 +2003,53 @@
         }
       }
 
+      function setupResultDrag(image, result) {
+        image.draggable = true;
+        image.title = "拖拽到 Figma 画布插入";
+        image.addEventListener("dragstart", (event) => {
+          if (!event.dataTransfer) {
+            return;
+          }
+
+          event.dataTransfer.effectAllowed = "copy";
+          event.dataTransfer.setData("text/plain", `generated-result-${result.rank}`);
+        });
+        image.addEventListener("dragend", async (event) => {
+          const endedInsidePlugin = event.clientX >= 0
+            && event.clientX <= window.innerWidth
+            && event.clientY >= 0
+            && event.clientY <= window.innerHeight;
+
+          if (endedInsidePlugin) {
+            return;
+          }
+
+          try {
+            const prepared = await prepareImageForFigma(result);
+            parent.postMessage({
+              pluginDrop: {
+                clientX: event.clientX,
+                clientY: event.clientY,
+                items: [
+                  {
+                    type: "text/plain",
+                    data: `generated-result-${result.rank}`,
+                  },
+                ],
+                dropMetadata: {
+                  type: "generated-result",
+                  imageUrl: prepared.imageUrl,
+                  width: prepared.width || result.width,
+                  height: prepared.height || result.height,
+                },
+              },
+            }, "*");
+          } catch (error) {
+            addMessage("system", getReadableError(error));
+          }
+        });
+      }
+
       function addMessage(role, content, attachments = []) {
         const node = document.createElement("article");
         const contentNode = document.createElement("div");
@@ -1816,7 +2105,7 @@
 
       function getReadableError(error) {
         if (error instanceof TypeError && error.message === "Failed to fetch") {
-          return "无法连接后端服务，请确认网络可访问 https://brand-style.fintopia-social-media-ads-tools.tech，并重新打开插件后重试。";
+          return "无法连接本地后端服务，请确认 http://localhost:5180 已启动，并重新打开插件后重试。";
         }
 
         return error?.message || "发生未知错误，请稍后重试。";
@@ -2104,6 +2393,167 @@
           : `材质 ${materialPresetIds.length}`;
       }
 
+      function cancelMaterialPanelAutoClose() {
+        if (materialPanelCloseTimer) {
+          clearTimeout(materialPanelCloseTimer);
+          materialPanelCloseTimer = null;
+        }
+      }
+
+      function scheduleMaterialPanelAutoClose() {
+        cancelMaterialPanelAutoClose();
+        materialPanelCloseTimer = setTimeout(() => {
+          materialPanel.classList.remove("open");
+          materialPanelCloseTimer = null;
+        }, 220);
+      }
+
+      function resolveMaterialPreviewUrl(url) {
+        const value = String(url || "").trim();
+
+        if (!value) {
+          return "";
+        }
+
+        if (/^(https?:|data:|blob:)/i.test(value)) {
+          return value;
+        }
+
+        return `${apiBase}${value.startsWith("/") ? value : `/${value}`}`;
+      }
+
+      function normalizeHexColor(value) {
+        const trimmed = String(value || "").trim();
+        const withHash = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+        const shortMatch = withHash.match(/^#([0-9a-fA-F]{3})$/);
+
+        if (shortMatch) {
+          return `#${shortMatch[1].split("").map((char) => char + char).join("")}`.toUpperCase();
+        }
+
+        return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toUpperCase() : "";
+      }
+
+      function getSelectedColorPalette() {
+        return colorPalettes.find((palette) => palette.id === colorPaletteId);
+      }
+
+      function getSafePaletteColors(palette) {
+        return (palette?.colors || []).map(normalizeHexColor).filter(Boolean);
+      }
+
+      function havePaletteColorsChanged(palette) {
+        const original = getSafePaletteColors(palette);
+
+        if (!original.length || original.length !== customPaletteColors.length) {
+          return Boolean(customPaletteColors.length);
+        }
+
+        return original.some((color, index) => color !== customPaletteColors[index]);
+      }
+
+      function renderPaletteSwatches() {
+        paletteSwatchRow.innerHTML = "";
+
+        for (const color of customPaletteColors) {
+          const swatch = document.createElement("span");
+          swatch.className = "palette-swatch";
+          swatch.title = color;
+          swatch.style.background = color;
+          paletteSwatchRow.appendChild(swatch);
+        }
+      }
+
+      function syncCustomPaletteColorsFromRows() {
+        customPaletteColors = [...pluginPaletteColorList.querySelectorAll("[data-plugin-palette-color]")]
+          .map((input) => normalizeHexColor(input.value))
+          .filter(Boolean);
+        renderPaletteSwatches();
+      }
+
+      function addPluginPaletteColorRow(color = "#D9D9D9") {
+        const normalized = normalizeHexColor(color) || "#D9D9D9";
+        const row = document.createElement("div");
+        row.className = "plugin-palette-color-row";
+        row.innerHTML = `
+          <input type="color" value="${normalized}" aria-label="选择颜色" />
+          <input data-plugin-palette-color type="text" value="${normalized}" placeholder="#D9D9D9" />
+          <button class="plugin-palette-color-remove" type="button">删除</button>
+        `;
+        const colorInput = row.querySelector('input[type="color"]');
+        const textInput = row.querySelector("[data-plugin-palette-color]");
+        const removeButton = row.querySelector(".plugin-palette-color-remove");
+        colorInput.addEventListener("input", () => {
+          textInput.value = normalizeHexColor(colorInput.value) || colorInput.value.toUpperCase();
+          syncCustomPaletteColorsFromRows();
+        });
+        textInput.addEventListener("input", () => {
+          const nextColor = normalizeHexColor(textInput.value);
+
+          if (nextColor) {
+            colorInput.value = nextColor;
+          }
+
+          syncCustomPaletteColorsFromRows();
+        });
+        textInput.addEventListener("blur", () => {
+          textInput.value = normalizeHexColor(textInput.value) || normalized;
+          colorInput.value = textInput.value;
+          syncCustomPaletteColorsFromRows();
+        });
+        removeButton.addEventListener("click", () => {
+          row.remove();
+          syncCustomPaletteColorsFromRows();
+        });
+        pluginPaletteColorList.appendChild(row);
+        syncCustomPaletteColorsFromRows();
+      }
+
+      function renderPluginPaletteColorRows() {
+        pluginPaletteColorList.innerHTML = "";
+
+        for (const color of customPaletteColors.length ? customPaletteColors : ["#D9D9D9"]) {
+          addPluginPaletteColorRow(color);
+        }
+      }
+
+      function renderPaletteInlineEditor({ resetColors = false } = {}) {
+        const palette = getSelectedColorPalette();
+
+        if (!palette) {
+          paletteInlineEditor.hidden = true;
+          paletteEditorPanel.hidden = true;
+          isPaletteEditorOpen = false;
+          customPaletteColors = [];
+          return;
+        }
+
+        if (resetColors || !customPaletteColors.length) {
+          customPaletteColors = getSafePaletteColors(palette);
+        }
+
+        paletteInlineEditor.hidden = false;
+        paletteEditorPanel.hidden = !isPaletteEditorOpen;
+        togglePaletteEditorButton.textContent = isPaletteEditorOpen ? "收起颜色" : "编辑颜色";
+        renderPaletteSwatches();
+        renderPluginPaletteColorRows();
+      }
+
+      function getCustomColorPalettePayload() {
+        const palette = getSelectedColorPalette();
+
+        if (!palette || !havePaletteColorsChanged(palette)) {
+          return undefined;
+        }
+
+        return {
+          name: `${palette.name}（本次微调）`,
+          description: "来自插件前台临时调色",
+          colors: customPaletteColors,
+          prompt: `本次自定义配色：${customPaletteColors.join("、")}。必须将这些颜色作为画面主要可见配色执行。`,
+        };
+      }
+
       function renderMaterialPanel() {
         materialPanel.innerHTML = "";
         const header = document.createElement("div");
@@ -2123,20 +2573,47 @@
 
         for (const material of materials) {
           const label = document.createElement("label");
-          label.className = "material-option";
+          const isSelected = materialPresetIds.includes(material.id);
+          label.className = `material-option${isSelected ? " selected" : ""}`;
+          label.title = material.prompt || material.name;
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
           checkbox.value = material.id;
-          checkbox.checked = materialPresetIds.includes(material.id);
+          checkbox.checked = isSelected;
           checkbox.addEventListener("change", () => {
             materialPresetIds = checkbox.checked
               ? [...materialPresetIds, material.id]
               : materialPresetIds.filter((id) => id !== material.id);
+            label.classList.toggle("selected", checkbox.checked);
             updateMaterialButton();
           });
+          const preview = document.createElement("div");
+          const previewImageUrl = resolveMaterialPreviewUrl(material.previewImageUrl);
+          preview.className = "material-preview";
+
+          if (previewImageUrl) {
+            const image = document.createElement("img");
+            image.src = previewImageUrl;
+            image.alt = material.name;
+            image.loading = "lazy";
+            image.addEventListener("error", () => {
+              preview.innerHTML = "";
+              const fallback = document.createElement("span");
+              fallback.className = "material-preview-fallback";
+              fallback.style.setProperty("--material-preview-color", material.previewColor || "#d7dce2");
+              preview.appendChild(fallback);
+            });
+            preview.appendChild(image);
+          } else {
+            const fallback = document.createElement("span");
+            fallback.className = "material-preview-fallback";
+            fallback.style.setProperty("--material-preview-color", material.previewColor || "#d7dce2");
+            preview.appendChild(fallback);
+          }
+
           const text = document.createElement("span");
           text.textContent = material.name;
-          label.append(checkbox, text);
+          label.append(checkbox, preview, text);
           materialPanel.appendChild(label);
         }
 
@@ -2157,6 +2634,8 @@
       function clearStyleSelectionsForScenarioAgent() {
         materialPresetIds = [];
         colorPaletteId = "";
+        customPaletteColors = [];
+        isPaletteEditorOpen = false;
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
         clearScenarioAgentDraft();
@@ -2164,6 +2643,7 @@
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
         materialPanel.classList.remove("open");
+        renderPaletteInlineEditor({ resetColors: true });
         renderMaterialPanel();
         updateRunState();
       }
@@ -2518,16 +2998,17 @@
           card.className = "result-card";
           const sizeLabel = result.width && result.height ? `${result.width} × ${result.height}` : "按原始尺寸";
           card.innerHTML = `
-            <img src="${result.imageUrl}" alt="候选 ${result.rank}" />
+            <img src="${result.imageUrl}" alt="候选 ${result.rank}" draggable="true" title="拖拽到 Figma 画布插入" />
             <div>
               <strong>图片 ${result.rank}</strong>
-              <span>${sizeLabel}</span>
+              <span>${sizeLabel} · 可拖拽到画布</span>
               <section class="result-actions">
                 <button class="insert-result-button" type="button">插入 Figma</button>
                 <button class="download-result-button" type="button">下载原图</button>
               </section>
             </div>
           `;
+          setupResultDrag(card.querySelector("img"), result);
           card.querySelector(".insert-result-button").addEventListener("click", async (event) => {
             await insertGeneratedResult(event.currentTarget, result);
           });
@@ -2597,6 +3078,7 @@
           }
 
           materials = (materialsData.materials || []).filter((item) => item.enabled);
+          colorPalettes = (colorPalettesData.colorPalettes || []).filter((item) => item.enabled);
           operationScenarios = (scenariosData.operationScenarios || []).filter((item) => item.enabled);
           scenarioAgents = (scenarioAgentsData.scenarioAgents || defaultScenarioAgents).filter((item) => item.enabled !== false);
 
@@ -2605,7 +3087,7 @@
           emptyPaletteOption.textContent = "未选择配色";
           colorPaletteSelect.appendChild(emptyPaletteOption);
 
-          for (const palette of (colorPalettesData.colorPalettes || []).filter((item) => item.enabled)) {
+          for (const palette of colorPalettes) {
             const option = document.createElement("option");
             option.value = palette.id;
             option.textContent = palette.name;
@@ -2647,6 +3129,7 @@
 
           colorPaletteId = colorPaletteSelect.value;
           shapeArchitectureId = shapeArchitectureSelect.value;
+          renderPaletteInlineEditor();
           renderMaterialPanel();
           updateRunState();
         } finally {
@@ -2697,6 +3180,7 @@
             resolution,
             materialPresetIds,
             colorPaletteId,
+            customColorPalette: getCustomColorPalettePayload(),
             shapeArchitectureId,
             operationScenarioId: selectedOperationScenarioId || undefined,
             directPrompt,
@@ -2952,7 +3436,7 @@
         document.body.classList.add("is-collapsed");
         collapseButton.title = "展开插件";
         collapseButton.setAttribute("aria-label", "展开插件");
-        postResize(72, 72);
+        postResize(96, 116);
       });
 
       document.querySelector("#new-chat-button").addEventListener("click", async () => {
@@ -2970,6 +3454,8 @@
         selectedAssets = [];
         materialPresetIds = [];
         colorPaletteId = "";
+        customPaletteColors = [];
+        isPaletteEditorOpen = false;
         shapeArchitectureId = "";
         selectedOperationScenarioId = "";
         clearScenarioAgentDraft();
@@ -2978,6 +3464,7 @@
         selectionBar.textContent = "正在读取当前选区...";
         selectionStatus.textContent = "打开插件不会自动读取选区。";
         updateAspectRatioAutoLabel();
+        renderPaletteInlineEditor({ resetColors: true });
         renderMaterialPanel();
         renderAttachments();
         chat.innerHTML = "";
@@ -2990,8 +3477,17 @@
       agentSelect.addEventListener("change", updateRunState);
       materialSelectButton.addEventListener("click", async () => {
         await loadConfig();
+        cancelMaterialPanelAutoClose();
         materialPanel.classList.toggle("open");
       });
+      materialSelectButton.addEventListener("mouseenter", cancelMaterialPanelAutoClose);
+      materialSelectButton.addEventListener("mouseleave", () => {
+        if (materialPanel.classList.contains("open")) {
+          scheduleMaterialPanelAutoClose();
+        }
+      });
+      materialPanel.addEventListener("mouseenter", cancelMaterialPanelAutoClose);
+      materialPanel.addEventListener("mouseleave", scheduleMaterialPanelAutoClose);
       colorPaletteSelect.addEventListener("focus", loadConfig);
       aspectRatioSelect.addEventListener("change", () => {
         aspectRatio = aspectRatioSelect.value;
@@ -3005,6 +3501,17 @@
       });
       colorPaletteSelect.addEventListener("change", () => {
         colorPaletteId = colorPaletteSelect.value;
+        customPaletteColors = [];
+        isPaletteEditorOpen = false;
+        renderPaletteInlineEditor({ resetColors: true });
+        updateRunState();
+      });
+      togglePaletteEditorButton.addEventListener("click", () => {
+        isPaletteEditorOpen = !isPaletteEditorOpen;
+        renderPaletteInlineEditor();
+      });
+      pluginAddPaletteColorButton.addEventListener("click", () => {
+        addPluginPaletteColorRow();
       });
       shapeArchitectureSelect.addEventListener("focus", loadConfig);
       shapeArchitectureSelect.addEventListener("change", () => {

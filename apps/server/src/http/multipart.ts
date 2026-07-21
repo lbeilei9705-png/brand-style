@@ -2,6 +2,7 @@ export interface MultipartFile {
   filename: string;
   mimeType: string;
   sizeBytes: number;
+  buffer: Buffer;
   dataUrl?: string;
 }
 
@@ -64,6 +65,7 @@ export function parseMultipart(bodyBuffer: Buffer, contentType: string): Multipa
         filename,
         mimeType,
         sizeBytes,
+        buffer: Buffer.from(rawValue, "latin1"),
         dataUrl: filename ? `data:${mimeType};base64,${base64}` : undefined,
       };
     } else {

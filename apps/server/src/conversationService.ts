@@ -304,9 +304,22 @@ export class ConversationService {
         : [];
     const materials = this.configStore.listMaterials()
       .filter((item) => materialPresetIds.includes(item.id) && item.enabled);
-    const colorPalette = request.colorPaletteId
+    const configuredColorPalette = request.colorPaletteId
       ? this.configStore.listColorPalettes().find((item) => item.id === request.colorPaletteId && item.enabled)
       : undefined;
+    const customColorPalette = request.customColorPalette?.colors?.length
+      ? {
+        id: "custom-color-palette",
+        name: request.customColorPalette.name || "本次自定义配色",
+        description: request.customColorPalette.description || "来自插件前台临时调色",
+        colors: request.customColorPalette.colors,
+        prompt: request.customColorPalette.prompt,
+        enabled: true,
+        createdAt: "",
+        updatedAt: "",
+      }
+      : undefined;
+    const colorPalette = customColorPalette || configuredColorPalette;
     const isOriginalColorPalette = Boolean(colorPalette?.name.includes("原图色彩"));
     const activeColorPrompt = colorPalette
       ? isOriginalColorPalette
@@ -543,9 +556,22 @@ export class ConversationService {
         : [];
     const materials = this.configStore.listMaterials()
       .filter((item) => materialPresetIds.includes(item.id) && item.enabled);
-    const colorPalette = request.colorPaletteId
+    const configuredColorPalette = request.colorPaletteId
       ? this.configStore.listColorPalettes().find((item) => item.id === request.colorPaletteId && item.enabled)
       : undefined;
+    const customColorPalette = request.customColorPalette?.colors?.length
+      ? {
+        id: "custom-color-palette",
+        name: request.customColorPalette.name || "本次自定义配色",
+        description: request.customColorPalette.description || "来自插件前台临时调色",
+        colors: request.customColorPalette.colors,
+        prompt: request.customColorPalette.prompt,
+        enabled: true,
+        createdAt: "",
+        updatedAt: "",
+      }
+      : undefined;
+    const colorPalette = customColorPalette || configuredColorPalette;
     const isOriginalColorPalette = Boolean(colorPalette?.name.includes("原图色彩"));
     const activeColorPrompt = colorPalette
       ? isOriginalColorPalette

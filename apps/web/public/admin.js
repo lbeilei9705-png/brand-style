@@ -62,6 +62,18 @@ async function requestJson(url, options = {}, hasRetried = false) {
   return data;
 }
 
+async function uploadAsset(file, category) {
+  const formData = new FormData();
+  formData.append("category", category);
+  formData.append("asset", file);
+  const data = await requestJson("/api/assets", {
+    method: "POST",
+    body: formData,
+  });
+
+  return data.asset?.url || "";
+}
+
 function boolValue(value) {
   return value === true || value === "true";
 }
@@ -162,11 +174,19 @@ function renderMaterials() {
   table.innerHTML = "";
 
   for (const material of state.materials) {
+    const preview = material.previewImageUrl
+      ? `<img src="${material.previewImageUrl}" alt="${material.name}" loading="lazy" />`
+      : `<span class="material-thumb-fallback"></span>`;
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>
-        <strong>${material.name}</strong>
-        <span class="muted">${material.description}</span>
+        <div class="material-cell">
+          <span class="material-thumb">${preview}</span>
+          <div>
+            <strong>${material.name}</strong>
+            <span class="muted">${material.previewImageUrl ? "已配置预览图" : "未配置预览图"}</span>
+          </div>
+        </div>
       </td>
       <td>${material.prompt}</td>
       <td>${renderStatus(material.enabled)}</td>
@@ -321,8 +341,17 @@ function renderScenarioAgentCases() {
     const rows = group.items.map((item) => `
       <tr>
         <td>
-          <strong>${item.title}</strong>
-          <span class="muted">${item.userInput}</span>
+          <div class="material-cell">
+            <span class="material-thumb">${
+              item.thumbnailUrl || item.imageUrl
+                ? `<img src="${item.thumbnailUrl || item.imageUrl}" alt="${item.title}" loading="lazy" />`
+                : '<span class="material-thumb-fallback"></span>'
+            }</span>
+            <div>
+              <strong>${item.title}</strong>
+              <span class="muted">${item.userInput}</span>
+            </div>
+          </div>
         </td>
         <td>
           <strong>${ratingText[item.rating] || item.rating}</strong>
@@ -541,20 +570,22 @@ function resetMaterialForm() {
   qs("#material-form").reset();
   qs("#material-id").value = "";
   qs("#material-enabled").value = "true";
+  qs("#material-preview-image-file").value = "";
 }
 
 function fillMaterialForm(material) {
   qs("#material-modal-title").textContent = "编辑材质";
   qs("#material-id").value = material.id;
   qs("#material-name").value = material.name;
-  qs("#material-description").value = material.description;
   qs("#material-prompt").value = material.prompt;
-  qs("#material-preview-color").value = material.previewColor || "";
+  qs("#material-preview-image-url").value = material.previewImageUrl || "";
   qs("#material-enabled").value = String(material.enabled);
 }
 
 async function saveMaterial(event) {
   event.preventDefault();
+  const uploadFile = qs("#material-preview-image-file").files[0];
+  const uploadedUrl = uploadFile ? await uploadAsset(uploadFile, "material-thumbnails") : "";
   await requestJson("/api/config/materials", {
     method: "POST",
     headers: {
@@ -563,9 +594,9 @@ async function saveMaterial(event) {
     body: JSON.stringify({
       id: qs("#material-id").value || undefined,
       name: qs("#material-name").value,
-      description: qs("#material-description").value,
+      description: qs("#material-name").value,
       prompt: qs("#material-prompt").value,
-      previewColor: qs("#material-preview-color").value || undefined,
+      previewImageUrl: uploadedUrl || qs("#material-preview-image-url").value.trim(),
       enabled: boolValue(qs("#material-enabled").value),
     }),
   });
@@ -590,11 +621,82 @@ function parseColors(value) {
   return value.split(/[\n,，]/).map((item) => item.trim()).filter(Boolean);
 }
 
+function normalizeHexColor(value) {
+  const trimmed = String(value || "").trim();
+  const withHash = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+  const shortMatch = withHash.match(/^#([0-9a-fA-F]{3})$/);
+
+  if (shortMatch) {
+    return `#${shortMatch[1].split("").map((char) => char + char).join("")}`.toUpperCase();
+  }
+
+  return /^#[0-9a-fA-F]{6}$/.test(withHash) ? withHash.toUpperCase() : "";
+}
+
+function getPaletteEditorColors() {
+  return [...document.querySelectorAll("[data-palette-color-value]")]
+    .map((input) => normalizeHexColor(input.value))
+    .filter(Boolean);
+}
+
+function syncPaletteColorsInput() {
+  qs("#palette-colors").value = getPaletteEditorColors().join("\n");
+}
+
+function addPaletteColorRow(color = "#D9D9D9") {
+  const normalized = normalizeHexColor(color) || "#D9D9D9";
+  const editor = qs("#palette-color-editor");
+  const row = document.createElement("div");
+  row.className = "palette-color-row";
+  row.innerHTML = `
+    <input type="color" value="${normalized}" aria-label="选择颜色" />
+    <input data-palette-color-value type="text" value="${normalized}" placeholder="#D9D9D9" />
+    <button class="secondary-button palette-color-remove" type="button">删除</button>
+  `;
+  const colorInput = row.querySelector('input[type="color"]');
+  const textInput = row.querySelector("[data-palette-color-value]");
+  const removeButton = row.querySelector(".palette-color-remove");
+  colorInput.addEventListener("input", () => {
+    textInput.value = normalizeHexColor(colorInput.value) || colorInput.value.toUpperCase();
+    syncPaletteColorsInput();
+  });
+  textInput.addEventListener("input", () => {
+    const nextColor = normalizeHexColor(textInput.value);
+
+    if (nextColor) {
+      colorInput.value = nextColor;
+    }
+
+    syncPaletteColorsInput();
+  });
+  textInput.addEventListener("blur", () => {
+    textInput.value = normalizeHexColor(textInput.value) || normalized;
+    colorInput.value = textInput.value;
+    syncPaletteColorsInput();
+  });
+  removeButton.addEventListener("click", () => {
+    row.remove();
+    syncPaletteColorsInput();
+  });
+  editor.appendChild(row);
+  syncPaletteColorsInput();
+}
+
+function renderPaletteColorEditor(colors = []) {
+  qs("#palette-color-editor").innerHTML = "";
+  const safeColors = colors.map(normalizeHexColor).filter(Boolean);
+
+  for (const color of safeColors.length ? safeColors : ["#D9D9D9"]) {
+    addPaletteColorRow(color);
+  }
+}
+
 function resetPaletteForm() {
   qs("#palette-modal-title").textContent = "新建配色";
   qs("#palette-form").reset();
   qs("#palette-id").value = "";
   qs("#palette-enabled").value = "true";
+  renderPaletteColorEditor(["#D9D9D9"]);
 }
 
 function fillPaletteForm(palette) {
@@ -602,13 +704,20 @@ function fillPaletteForm(palette) {
   qs("#palette-id").value = palette.id;
   qs("#palette-name").value = palette.name;
   qs("#palette-description").value = palette.description;
-  qs("#palette-colors").value = palette.colors.join("\n");
+  renderPaletteColorEditor(palette.colors);
   qs("#palette-prompt").value = palette.prompt;
   qs("#palette-enabled").value = String(palette.enabled);
 }
 
 async function savePalette(event) {
   event.preventDefault();
+  const colors = getPaletteEditorColors();
+
+  if (!colors.length) {
+    alert("请至少配置一个有效的 Hex 色值。");
+    return;
+  }
+
   await requestJson("/api/config/color-palettes", {
     method: "POST",
     headers: {
@@ -618,7 +727,7 @@ async function savePalette(event) {
       id: qs("#palette-id").value || undefined,
       name: qs("#palette-name").value,
       description: qs("#palette-description").value,
-      colors: parseColors(qs("#palette-colors").value),
+      colors,
       prompt: qs("#palette-prompt").value,
       enabled: boolValue(qs("#palette-enabled").value),
     }),
@@ -827,6 +936,7 @@ function resetScenarioAgentCaseForm() {
   qs("#scenario-agent-case-agent").value = state.scenarioAgents[0]?.id || "";
   qs("#scenario-agent-case-rating").value = "excellent";
   qs("#scenario-agent-case-enabled").value = "true";
+  qs("#scenario-agent-case-image-file").value = "";
 }
 
 function fillScenarioAgentCaseForm(item) {
@@ -839,12 +949,17 @@ function fillScenarioAgentCaseForm(item) {
   qs("#scenario-agent-case-user-input").value = item.userInput;
   qs("#scenario-agent-case-positive-prompt").value = item.positivePrompt;
   qs("#scenario-agent-case-negative-prompt").value = item.negativePrompt || "";
+  qs("#scenario-agent-case-image-url").value = item.imageUrl || item.thumbnailUrl || "";
+  qs("#scenario-agent-case-image-file").value = "";
   qs("#scenario-agent-case-tags").value = (item.tags || []).join("\n");
   qs("#scenario-agent-case-notes").value = item.notes || "";
 }
 
 async function saveScenarioAgentCase(event) {
   event.preventDefault();
+  const uploadFile = qs("#scenario-agent-case-image-file").files[0];
+  const uploadedUrl = uploadFile ? await uploadAsset(uploadFile, "scenario-agent-cases") : "";
+  const imageUrl = uploadedUrl || qs("#scenario-agent-case-image-url").value.trim();
   await requestJson("/api/config/scenario-agent-cases", {
     method: "POST",
     headers: {
@@ -857,6 +972,8 @@ async function saveScenarioAgentCase(event) {
       userInput: qs("#scenario-agent-case-user-input").value,
       positivePrompt: qs("#scenario-agent-case-positive-prompt").value,
       negativePrompt: qs("#scenario-agent-case-negative-prompt").value,
+      imageUrl,
+      thumbnailUrl: imageUrl,
       tags: parseTags(qs("#scenario-agent-case-tags").value),
       rating: qs("#scenario-agent-case-rating").value,
       notes: qs("#scenario-agent-case-notes").value,
@@ -1048,6 +1165,7 @@ qs("#model-form").addEventListener("submit", saveModel);
 qs("#agent-form").addEventListener("submit", saveAgent);
 qs("#material-form").addEventListener("submit", saveMaterial);
 qs("#palette-form").addEventListener("submit", savePalette);
+qs("#add-palette-color-button").addEventListener("click", () => addPaletteColorRow());
 qs("#shape-architecture-form").addEventListener("submit", saveShapeArchitecture);
 qs("#scenario-form").addEventListener("submit", saveScenario);
 qs("#scenario-agent-form").addEventListener("submit", saveScenarioAgent);

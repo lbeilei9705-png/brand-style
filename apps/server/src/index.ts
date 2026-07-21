@@ -6,13 +6,15 @@ import { stylePresets } from "../../../packages/shared/src/index.ts";
 import type { CreateTaskRequest, InputType, OutputTarget } from "../../../packages/shared/src/index.ts";
 import { importAgentFromMarkdown } from "./agentMarkdownImporter.ts";
 import { getAppConfig, loadDotEnv } from "./config.ts";
-import { ConfigStore } from "./configStore.ts";
+import { ConfigStore, type StoredConfig } from "./configStore.ts";
 import { ConversationService } from "./conversationService.ts";
 import { ConversationStore } from "./conversationStore.ts";
 import { parseMultipart, readRequestBody } from "./http/multipart.ts";
 import { send, sendJson } from "./http/response.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
+import { OssAssetStorage } from "./storage/ossAssetStorage.ts";
+import { SupabaseConfigStore } from "./storage/supabaseConfigStore.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
 
@@ -25,9 +27,30 @@ const port = Number(process.env.PORT || 5180);
 const accessToken = process.env.BRAND_STYLE_ACCESS_TOKEN || "";
 const webDir = path.resolve(__dirname, "../../web/public");
 const dataDir = path.resolve(projectRoot, "data");
-const configStore = new ConfigStore(dataDir);
+const remoteConfigStore = appConfig.supabase
+  ? new SupabaseConfigStore<StoredConfig>({
+    url: appConfig.supabase.url,
+    serviceRoleKey: appConfig.supabase.serviceRoleKey,
+    tableName: appConfig.supabase.tableName,
+  })
+  : undefined;
+const configStore = new ConfigStore(dataDir, remoteConfigStore);
+await configStore.syncFromRemote().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+});
 const conversationStore = new ConversationStore(dataDir);
 const store = new TaskStore();
+const assetStorage = new OssAssetStorage({
+  enabled: appConfig.oss?.enabled ?? false,
+  accessKeyId: appConfig.oss?.accessKeyId || "",
+  accessKeySecret: appConfig.oss?.accessKeySecret || "",
+  region: appConfig.oss?.region || "cn-hangzhou",
+  endpoint: appConfig.oss?.endpoint,
+  bucketName: appConfig.oss?.bucketName || "",
+  basePath: appConfig.oss?.basePath,
+  customDomain: appConfig.oss?.customDomain,
+  signedUrlExpiresSec: appConfig.oss?.signedUrlExpiresSec,
+});
 const imageProvider = appConfig.imageProvider === "fintopia" && appConfig.fintopia
   ? new FintopiaImageProvider(appConfig.fintopia)
   : new MockImageProvider();
@@ -123,6 +146,49 @@ async function handleCreateTask(req: http.IncomingMessage, res: http.ServerRespo
   sendJson(res, 201, response);
 }
 
+async function handleAssetUpload(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  const parsed = parseMultipart(await readRequestBody(req), req.headers["content-type"] || "");
+  const asset = parsed.files.asset;
+
+  if (!asset) {
+    sendJson(res, 400, { error: "缺少 asset 文件字段。" });
+    return;
+  }
+
+  const uploaded = await assetStorage.upload({
+    category: parsed.fields.category || "admin",
+    filename: asset.filename || "asset.png",
+    mimeType: asset.mimeType || "application/octet-stream",
+    buffer: asset.buffer,
+  });
+
+  sendJson(res, 201, { asset: uploaded });
+}
+
+function redirectOssAsset(pathname: string, res: http.ServerResponse): boolean {
+  const prefix = "/assets/oss/";
+
+  if (!pathname.startsWith(prefix)) {
+    return false;
+  }
+
+  const objectKey = decodeURIComponent(pathname.slice(prefix.length));
+
+  try {
+    res.writeHead(302, {
+      Location: assetStorage.getSignedUrl(objectKey),
+      "Cache-Control": "private, max-age=300",
+    });
+    res.end();
+  } catch (error) {
+    sendJson(res, 500, {
+      error: error instanceof Error ? error.message : "生成 OSS 访问地址失败。",
+    });
+  }
+
+  return true;
+}
+
 function serveStatic(pathname: string, res: http.ServerResponse): void {
   const routeAliases: Record<string, string> = {
     "/": "/showcase.html",
@@ -178,12 +244,25 @@ const server = http.createServer(async (req, res) => {
         name: "3D Icon Style Engine",
         provider: appConfig.imageProvider,
         model: appConfig.imageProvider === "fintopia" ? appConfig.fintopia?.model : undefined,
+        storage: {
+          supabase: Boolean(remoteConfigStore?.enabled),
+          oss: assetStorage.enabled,
+        },
       });
+      return;
+    }
+
+    if (req.method === "GET" && redirectOssAsset(pathname, res)) {
       return;
     }
 
     if (pathname.startsWith("/api/") && !isAuthorizedRequest(req)) {
       sendJson(res, 401, { error: "Unauthorized." });
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/api/assets") {
+      await handleAssetUpload(req, res);
       return;
     }
 

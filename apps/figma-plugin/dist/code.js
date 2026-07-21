@@ -269,7 +269,7 @@ async function exportSelection() {
   });
 }
 
-async function insertResult(imageUrl, width, height) {
+async function insertResult(imageUrl, width, height, position, shouldScroll = true) {
   figma.notify("正在插入生成图片...");
   const bytes = await imageUrlToBytes(imageUrl);
   const imageSize = getImageSize(bytes, width, height);
@@ -288,7 +288,10 @@ async function insertResult(imageUrl, width, height) {
 
   const selection = figma.currentPage.selection[0];
 
-  if (selection) {
+  if (position) {
+    rect.x = position.x;
+    rect.y = position.y;
+  } else if (selection) {
     rect.x = selection.x + selection.width + 32;
     rect.y = selection.y;
   } else {
@@ -298,9 +301,32 @@ async function insertResult(imageUrl, width, height) {
 
   figma.currentPage.appendChild(rect);
   figma.currentPage.selection = [rect];
-  figma.viewport.scrollAndZoomIntoView([rect]);
+  if (shouldScroll) {
+    figma.viewport.scrollAndZoomIntoView([rect]);
+  }
   figma.notify(`已按原始尺寸插入生成图片：${imageSize.width} × ${imageSize.height}`);
 }
+
+figma.on("drop", (event) => {
+  const metadata = event.dropMetadata;
+
+  if (metadata?.type !== "generated-result" || !metadata.imageUrl) {
+    return true;
+  }
+
+  insertResult(
+    metadata.imageUrl,
+    metadata.width,
+    metadata.height,
+    { x: event.absoluteX, y: event.absoluteY },
+    false,
+  ).catch((error) => {
+    const errorMessage = error instanceof Error ? error.message : "拖拽插入 Figma 失败。";
+    figma.notify(errorMessage, { error: true });
+  });
+
+  return false;
+});
 
 figma.ui.onmessage = async (message) => {
   if (message.type === "resize-ui") {

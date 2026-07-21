@@ -3,8 +3,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import type { AgentConfig, ColorPaletteConfig, MaterialPresetConfig, ModelConfig, OperationScenarioConfig, ScenarioAgentCaseConfig, ScenarioAgentConfig, ShapeArchitectureConfig, StyleSkillConfig } from "../../../packages/shared/src/index.ts";
 import { defaultScenarioAgents } from "./pipeline/scenarioAgentService.ts";
+import type { RemoteConfigStore } from "./storage/supabaseConfigStore.ts";
 
-interface StoredConfig {
+export interface StoredConfig {
   models: ModelConfig[];
   agents: AgentConfig[];
   materials: MaterialPresetConfig[];
@@ -383,10 +384,27 @@ function defaultConfig(): StoredConfig {
 
 export class ConfigStore {
   private readonly filePath: string;
+  private readonly remoteStore?: RemoteConfigStore<StoredConfig>;
 
-  constructor(dataDir: string) {
+  constructor(dataDir: string, remoteStore?: RemoteConfigStore<StoredConfig>) {
     this.filePath = path.join(dataDir, "config.json");
+    this.remoteStore = remoteStore;
     fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  async syncFromRemote(): Promise<void> {
+    if (!this.remoteStore?.enabled) {
+      return;
+    }
+
+    const remoteConfig = await this.remoteStore.read();
+
+    if (remoteConfig) {
+      this.writeLocal(hydrateConfig(remoteConfig));
+      return;
+    }
+
+    await this.remoteStore.write(this.read());
   }
 
   read(): StoredConfig {
@@ -429,8 +447,8 @@ export class ConfigStore {
         variablePrompt: scenario.variablePrompt || "",
         enabled: scenario.enabled ?? true,
       })),
-      scenarioAgents: (config.scenarioAgents || defaults.scenarioAgents).map((agent) => {
-        const defaultAgent = defaults.scenarioAgents.find((item) => item.id === agent.id);
+      scenarioAgents: (config.scenarioAgents || defaults.scenarioAgents || []).map((agent) => {
+        const defaultAgent = (defaults.scenarioAgents || []).find((item) => item.id === agent.id);
 
         return {
           ...agent,
@@ -448,6 +466,8 @@ export class ConfigStore {
       }),
       scenarioAgentCases: (config.scenarioAgentCases || defaults.scenarioAgentCases || []).map((item) => ({
         ...item,
+        imageUrl: item.imageUrl || "",
+        thumbnailUrl: item.thumbnailUrl || item.imageUrl || "",
         tags: item.tags || [],
         rating: item.rating || "excellent",
         enabled: item.enabled ?? true,
@@ -456,6 +476,13 @@ export class ConfigStore {
   }
 
   write(config: StoredConfig): void {
+    this.writeLocal(config);
+    this.remoteStore?.write(config).catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+    });
+  }
+
+  private writeLocal(config: StoredConfig): void {
     fs.writeFileSync(this.filePath, `${JSON.stringify(config, null, 2)}\n`);
   }
 
@@ -553,7 +580,7 @@ export class ConfigStore {
     return this.read().materials;
   }
 
-  upsertMaterial(material: Partial<MaterialPresetConfig> & Pick<MaterialPresetConfig, "name" | "description" | "prompt">): MaterialPresetConfig {
+  upsertMaterial(material: Partial<MaterialPresetConfig> & Pick<MaterialPresetConfig, "name" | "prompt">): MaterialPresetConfig {
     const config = this.read();
     const timestamp = now();
     const id = material.id || `material_${Date.now()}`;
@@ -561,9 +588,10 @@ export class ConfigStore {
     const next: MaterialPresetConfig = {
       id,
       name: material.name,
-      description: material.description,
+      description: material.description ?? existing?.description ?? material.name,
       prompt: material.prompt,
       previewColor: material.previewColor || existing?.previewColor,
+      previewImageUrl: material.previewImageUrl !== undefined ? material.previewImageUrl : existing?.previewImageUrl,
       enabled: material.enabled ?? true,
       createdAt: existing?.createdAt || timestamp,
       updatedAt: timestamp,
@@ -758,6 +786,8 @@ export class ConfigStore {
       userInput: item.userInput,
       positivePrompt: item.positivePrompt,
       negativePrompt: item.negativePrompt || "",
+      imageUrl: item.imageUrl || existing?.imageUrl || "",
+      thumbnailUrl: item.thumbnailUrl || item.imageUrl || existing?.thumbnailUrl || existing?.imageUrl || "",
       tags: item.tags || existing?.tags || [],
       rating: item.rating || existing?.rating || "excellent",
       notes: item.notes || "",

@@ -48,13 +48,36 @@ export interface FintopiaConfig {
   apiPath?: string;
 }
 
+export interface SupabaseConfig {
+  url: string;
+  serviceRoleKey: string;
+  tableName: string;
+}
+
+export interface OssConfig {
+  enabled: boolean;
+  accessKeyId: string;
+  accessKeySecret: string;
+  region: string;
+  endpoint?: string;
+  bucketName: string;
+  basePath: string;
+  customDomain?: string;
+  signedUrlExpiresSec: number;
+}
+
 export interface AppConfig {
   imageProvider: "mock" | "fintopia";
   fintopia?: FintopiaConfig;
+  supabase?: SupabaseConfig;
+  oss?: OssConfig;
 }
 
 export function getAppConfig(): AppConfig {
   const imageProvider = process.env.IMAGE_PROVIDER === "fintopia" ? "fintopia" : "mock";
+  const supabaseUrl = process.env.SUPABASE_URL || "";
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  const ossEnabled = process.env.OSS_ENABLED === "true";
 
   return {
     imageProvider,
@@ -65,6 +88,24 @@ export function getAppConfig(): AppConfig {
       version: process.env.FINTOPIA_API_VERSION || "",
       apiStyle: (process.env.FINTOPIA_API_STYLE as FintopiaConfig["apiStyle"]) || "azure",
       apiPath: process.env.FINTOPIA_API_PATH || "",
+    },
+    supabase: supabaseUrl && supabaseServiceRoleKey
+      ? {
+        url: supabaseUrl,
+        serviceRoleKey: supabaseServiceRoleKey,
+        tableName: process.env.SUPABASE_CONFIG_TABLE || "brand_style_config",
+      }
+      : undefined,
+    oss: {
+      enabled: ossEnabled,
+      accessKeyId: process.env.OSS_ACCESS_KEY_ID || "",
+      accessKeySecret: process.env.OSS_ACCESS_KEY_SECRET || "",
+      region: process.env.OSS_REGION || "cn-hangzhou",
+      endpoint: process.env.OSS_ENDPOINT || undefined,
+      bucketName: process.env.OSS_BUCKET_NAME || "",
+      basePath: process.env.OSS_INSPIRATION_BASE_PATH || "brand-style",
+      customDomain: process.env.OSS_CUSTOM_DOMAIN || undefined,
+      signedUrlExpiresSec: Number(process.env.OSS_SIGNED_URL_EXPIRES_SEC || 1800),
     },
   };
 }

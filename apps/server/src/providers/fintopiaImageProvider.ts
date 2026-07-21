@@ -38,14 +38,14 @@ interface EndpointAttempt {
   bearerToken?: string;
   /** GA model id for Google proxy (preview ids are mapped). */
   modelId?: string;
-  /** Build Google Vertex-compatible generateContent payload. */
+  /** Build Google Vertex-compatible generateContent payload. Preferred channel for Nano2/Pro. */
   googleProxy?: boolean;
   label?: string;
 }
 
 const DEFAULT_GEMINI_PROXY_BASE = "https://zbhvoeakhrvzahmmades.supabase.co/functions/v1/gemini-proxy";
 
-/** Preview image model IDs retired on Vertex; map to GA ids for Google fallback. */
+/** Preview image model IDs retired on Vertex; map to GA ids for Google proxy. */
 const GOOGLE_IMAGE_MODEL_ALIASES: Record<string, string> = {
   "gemini-3.1-flash-image-preview": "gemini-3.1-flash-image",
   "gemini-3-pro-image-preview": "gemini-3-pro-image",
@@ -83,12 +83,15 @@ function normalizeGoogleImageModelId(model: string): string | undefined {
   return GOOGLE_IMAGE_MODEL_ALIASES[(model || "").trim()];
 }
 
+function isYunwuNanoImageModel(config: FintopiaConfig): boolean {
+  return (config.apiUrl || "").includes("yunwu.site") && Boolean(normalizeGoogleImageModelId(config.model));
+}
+
 function buildGoogleProxyAttempt(config: FintopiaConfig): EndpointAttempt | undefined {
-  const isYunwu = (config.apiUrl || "").includes("yunwu.site");
   const googleModel = normalizeGoogleImageModelId(config.model);
   const googleToken = (process.env.GOOGLE_API_TOKEN || "").trim();
 
-  if (!isYunwu || !googleModel || !googleToken) {
+  if (!isYunwuNanoImageModel(config) || !googleModel || !googleToken) {
     return undefined;
   }
 
@@ -109,7 +112,7 @@ function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
   const base = trimTrailingSlash(config.apiUrl);
   const encodedModel = encodeURIComponent(config.model);
   const apiStyle = config.apiStyle || "azure";
-  const attempts: EndpointAttempt[] = [];
+  const configuredAttempts: EndpointAttempt[] = [];
 
   if (config.apiPath) {
     const endpoint = joinUrl(base, config.apiPath.replace("{model}", encodedModel));
@@ -118,14 +121,14 @@ function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
       : config.apiPath.includes("/chat/completions")
         ? "chat-completions"
         : "openai-images";
-    attempts.push({
+    configuredAttempts.push({
       endpoint: config.version ? `${endpoint}${endpoint.includes("?") ? "&" : "?"}api-version=${encodeURIComponent(config.version)}` : endpoint,
       kind,
       timeoutMs: kind === "chat-completions" || kind === "gemini-generate-content" ? 300000 : 180000,
-      label: "primary",
+      label: isYunwuNanoImageModel(config) ? "yunwu-fallback" : "primary",
     });
   } else if (apiStyle === "openai" || apiStyle === "custom") {
-    attempts.push({
+    configuredAttempts.push({
       endpoint: joinUrl(base, "/v1/images/generations"),
       kind: "openai-images",
       timeoutMs: 180000,
@@ -135,7 +138,7 @@ function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
     const endpoint = `${base}/openai/deployments/${encodedModel}/images/generations`;
     const azureEndpoint = config.version ? `${endpoint}?api-version=${encodeURIComponent(config.version)}` : endpoint;
 
-    attempts.push({
+    configuredAttempts.push({
       endpoint: azureEndpoint,
       kind: "azure-images",
       timeoutMs: 180000,
@@ -143,13 +146,14 @@ function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
     });
   }
 
-  const googleFallback = buildGoogleProxyAttempt(config);
+  const googlePrimary = buildGoogleProxyAttempt(config);
 
-  if (googleFallback) {
-    attempts.push(googleFallback);
+  // Nano2 / Nano Pro: Google gemini-proxy first, Yunwu as fallback.
+  if (googlePrimary) {
+    return [googlePrimary, ...configuredAttempts];
   }
 
-  return attempts;
+  return configuredAttempts;
 }
 
 function getEndpointLabel(endpoint: string): string {
@@ -736,16 +740,16 @@ export class FintopiaImageProvider implements ImageProvider {
 
   async generate(request: GenerateImageRequest): Promise<GeneratedImage[]> {
     const attempts = buildEndpointAttempts(this.config);
-    const hasPrimaryCredentials = Boolean(this.config.apiUrl && this.config.apiKey);
-    const hasGoogleFallback = attempts.some((attempt) => attempt.googleProxy && attempt.bearerToken);
+    const hasYunwuCredentials = Boolean(this.config.apiUrl && this.config.apiKey);
+    const hasGoogleProxy = attempts.some((attempt) => attempt.googleProxy && attempt.bearerToken);
 
-    if (!hasPrimaryCredentials && !hasGoogleFallback) {
-      throw new Error("当前模型缺少 API URL 或 API Key。请在模型管理中补齐配置，或为 Nano 模型配置 GOOGLE_API_TOKEN 兜底。");
+    if (!hasYunwuCredentials && !hasGoogleProxy) {
+      throw new Error("当前模型缺少 API URL 或 API Key。请在模型管理中补齐配置，或为 Nano 模型配置 GOOGLE_API_TOKEN。");
     }
 
-    const usableAttempts = hasPrimaryCredentials
-      ? attempts
-      : attempts.filter((attempt) => attempt.googleProxy && attempt.bearerToken);
+    const usableAttempts = attempts.filter((attempt) => (
+      attempt.googleProxy ? Boolean(attempt.bearerToken) : hasYunwuCredentials
+    ));
 
     const variantCount = usableAttempts.some((attempt) => attempt.kind === "gemini-generate-content")
       ? Math.min(Math.max(request.constraints.batchSize, 1), 4)
@@ -831,7 +835,7 @@ export class FintopiaImageProvider implements ImageProvider {
               // Some gateways return empty/non-JSON errors; keep the HTTP status.
             }
 
-            logProviderError("model response rejected, trying fallback", {
+            logProviderError("model response rejected, trying next channel", {
               taskId: request.taskId,
               model: requestModel,
               endpoint: endpointLabel,

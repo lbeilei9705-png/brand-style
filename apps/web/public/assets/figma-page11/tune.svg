@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="icon">
+<path id="Vector" d="M5 9H39" stroke="var(--stroke-0, white)" stroke-width="2.5" stroke-linecap="round"/>
+<path id="Vector_2" d="M15 14C17.7614 14 20 11.7614 20 9C20 6.23858 17.7614 4 15 4C12.2386 4 10 6.23858 10 9C10 11.7614 12.2386 14 15 14Z" fill="var(--fill-0, #1E1E1E)" stroke="var(--stroke-0, white)" stroke-width="2.5"/>
+<path id="Vector_3" d="M5 22H39" stroke="var(--stroke-0, white)" stroke-width="2.5" stroke-linecap="round"/>
+<path id="Vector_4" d="M28 27C30.7614 27 33 24.7614 33 22C33 19.2386 30.7614 17 28 17C25.2386 17 23 19.2386 23 22C23 24.7614 25.2386 27 28 27Z" fill="var(--fill-0, #1E1E1E)" stroke="var(--stroke-0, white)" stroke-width="2.5"/>
+<path id="Vector_5" d="M5 35H39" stroke="var(--stroke-0, white)" stroke-width="2.5" stroke-linecap="round"/>
+<path id="Vector_6" d="M19 40C21.7614 40 24 37.7614 24 35C24 32.2386 21.7614 30 19 30C16.2386 30 14 32.2386 14 35C14 37.7614 16.2386 40 19 40Z" fill="var(--fill-0, #1E1E1E)" stroke="var(--stroke-0, white)" stroke-width="2.5"/>
+</g>
+</svg>

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>新旧流程对比</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #000;
+        font-family:
+          "PingFang SC", "PingFangSC", Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-width: 320px; min-height: 100%; margin: 0; background: #000; }
+      body { display: flex; justify-content: center; }
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg { position: absolute; width: 902px; height: 559px; overflow: hidden; pointer-events: none; }
+      .dot-bg img { position: absolute; top: -5.37px; left: -131.94px; width: 1033.94px; height: 564.69px; max-width: none; }
+      .dot-bg-top { top: 0; left: 0; }
+      .dot-bg-bottom { right: 0; bottom: 0; transform: rotate(180deg); }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 480px;
+        z-index: 5;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font: 400 14px/normal Inter, sans-serif;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active { color: #fff; font-weight: 500; }
+      .ppt-nav .spacer { width: 100%; height: 14px; }
+      .ppt-nav .indicator { width: 100%; height: 2px; border-radius: 2px; background: #eaff4e; }
+
+      .header {
+        position: absolute;
+        top: 92px;
+        left: 80px;
+        width: 1280px;
+        height: 96px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 24px;
+        background: rgba(11, 11, 11, 0.8);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 40px;
+        font-weight: 300;
+        line-height: 1.2;
+      }
+
+      .comparison {
+        position: absolute;
+        top: 211px;
+        left: 50px;
+        width: 1340px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 140px 577px 577px;
+        gap: 17px;
+        align-items: center;
+        min-height: 51px;
+        border-bottom: 1.744px solid #333;
+      }
+
+      .head {
+        height: 46px;
+        min-height: 46px;
+      }
+
+      .dim {
+        color: #fff;
+        font-size: 16.569px;
+        font-weight: 600;
+        letter-spacing: 0.331px;
+      }
+
+      .head .dim {
+        color: #aaa;
+        font-size: 15.697px;
+        letter-spacing: 0.942px;
+      }
+
+      .column-title {
+        display: flex;
+        align-items: center;
+        gap: 8.72px;
+        color: #888;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .column-title strong {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .legend-dot {
+        width: 10.464px;
+        height: 10.464px;
+        border-radius: 999px;
+        background: #ccc;
+      }
+
+      .legend-dot.green {
+        background: #eaff4e;
+      }
+
+      .cell {
+        display: flex;
+        align-items: center;
+        gap: 10.464px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 16.569px;
+        line-height: 24.853px;
+        white-space: nowrap;
+      }
+
+      .cell.good {
+        color: #fff;
+        font-weight: 500;
+      }
+
+      .cell img {
+        width: 17.441px;
+        height: 17.441px;
+        flex: 0 0 auto;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p { margin: 0; white-space: nowrap; }
+      .footer-brand { font-family: Inter, sans-serif; font-size: 20px; }
+      .footer-links { display: flex; gap: 40px; color: #999; font-size: 15px; }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="新旧流程对比">
+      <div class="dot-bg dot-bg-top" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target"><span>目标</span><span class="spacer"></span></a>
+        <a href="./figma-page7" data-slide-key="solution"><span>方案</span><span class="spacer"></span></a>
+        <a class="active" href="./figma-page12" data-slide-key="result"><span>成果</span><span class="spacer"></span><span class="indicator"></span></a>
+        <a href="./figma-page2" data-slide-key="roadmap"><span>规划</span><span class="spacer"></span></a>
+      </nav>
+
+      <section class="header">
+        <h1>新旧流程对比</h1>
+      </section>
+
+      <section class="comparison">
+        <div class="row head">
+          <div class="dim">维度</div>
+          <div class="column-title"><span class="legend-dot"></span><span>普通AI生图流程</span></div>
+          <div class="column-title"><span class="legend-dot green"></span><strong>品牌视觉工作流</strong></div>
+        </div>
+        <div class="row">
+          <div class="dim">输入方式</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />手写 Prompt</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />选图 / 参考图 / 风格 / 材质 / 配色 / 场景skill</div>
+        </div>
+        <div class="row">
+          <div class="dim">Prompt 生产</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />个人经验，质量不稳定</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />规则 + Skill + 自动编排完整 Prompt</div>
+        </div>
+        <div class="row">
+          <div class="dim">场景理解</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />需求直接丢给生图模型</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />语言模型层先理解意图 → 生成结构化 Prompt</div>
+        </div>
+        <div class="row">
+          <div class="dim">稳定性</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />临时发挥，人工检修，风格漂移</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />固定规则 + 负向规则 + 参考图</div>
+        </div>
+        <div class="row">
+          <div class="dim">资产沉淀</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />生成即结束，仅留图片</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />沉淀规则 / skill / 案例库 / 品牌视觉经验</div>
+        </div>
+        <div class="row">
+          <div class="dim">迭代方式</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />靠人记经验，下次重新写</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />后台持续优化规则 · 模型 · 智能体 · 案例</div>
+        </div>
+        <div class="row">
+          <div class="dim">协作方式</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />个人工具，难以共享</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />后台管理 + 配置同步，设计/运营/研发共用</div>
+        </div>
+        <div class="row">
+          <div class="dim">工作闭环</div>
+          <div class="cell"><img src="./assets/figma-page18/minus.svg" alt="" />输入 → 出图 → 结束</div>
+          <div class="cell good"><img src="./assets/figma-page18/check.svg" alt="" />输入 → 编排 → 生图 → 复盘 → 沉淀 → 再优化</div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

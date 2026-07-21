@@ -226,12 +226,19 @@ function serveStatic(pathname, res) {
       return;
     }
 
-    const ext = path.extname(filePath);
-    const contentType = ext === ".css"
-      ? "text/css; charset=utf-8"
-      : ext === ".js"
-        ? "application/javascript; charset=utf-8"
-        : "text/html; charset=utf-8";
+    const ext = path.extname(filePath).toLowerCase();
+    const contentTypes = {
+      ".css": "text/css; charset=utf-8",
+      ".gif": "image/gif",
+      ".html": "text/html; charset=utf-8",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".js": "application/javascript; charset=utf-8",
+      ".png": "image/png",
+      ".svg": "image/svg+xml; charset=utf-8",
+      ".webp": "image/webp",
+    };
+    const contentType = contentTypes[ext] || "application/octet-stream";
 
     send(res, 200, content, contentType);
   });

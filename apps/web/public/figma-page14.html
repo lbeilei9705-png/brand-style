@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图片预告 - 图标墙</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg {
+        position: absolute;
+        width: 902px;
+        height: 559px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .dot-bg img {
+        position: absolute;
+        top: -5.37px;
+        left: -131.94px;
+        width: 1033.94px;
+        height: 564.69px;
+        max-width: none;
+      }
+
+      .dot-bg-top {
+        top: 0;
+        left: 0;
+      }
+
+      .dot-bg-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 450px;
+        z-index: 8;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font: 400 14px/normal Inter, ui-sans-serif, system-ui, sans-serif;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active {
+        color: #fff;
+        font-weight: 500;
+      }
+
+      .ppt-nav .spacer {
+        width: 100%;
+        height: 14px;
+      }
+
+      .ppt-nav .indicator {
+        width: 100%;
+        height: 2px;
+        border-radius: 2px;
+        background: #eaff4e;
+      }
+
+      .strip-shell {
+        position: absolute;
+        top: 82px;
+        left: 0;
+        width: 1440px;
+        height: 600px;
+        overflow: hidden;
+        cursor: grab;
+        perspective: 1400px;
+        touch-action: pan-y;
+        user-select: none;
+      }
+
+      .circular-gallery {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        cursor: grab;
+      }
+
+      .circular-gallery:active {
+        cursor: grabbing;
+      }
+
+      .circular-gallery:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 4px;
+      }
+
+      .strip-shell.dragging {
+        cursor: grabbing;
+      }
+
+      .strip-shell::before,
+      .strip-shell::after {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        z-index: 3;
+        width: 180px;
+        content: "";
+        pointer-events: none;
+      }
+
+      .strip-shell::before {
+        left: 0;
+        background: linear-gradient(90deg, #000 0%, rgba(0, 0, 0, 0) 100%);
+      }
+
+      .strip-shell::after {
+        right: 0;
+        background: linear-gradient(270deg, #000 0%, rgba(0, 0, 0, 0) 100%);
+      }
+
+      .strip-track {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        display: flex;
+        gap: 80px;
+        align-items: center;
+        width: max-content;
+        height: 620px;
+        max-width: none;
+        transform: translate3d(-520px, -50%, 0);
+        will-change: transform;
+      }
+
+      .strip-track img {
+        display: block;
+        height: 620px;
+        width: auto;
+        object-fit: contain;
+        flex: 0 0 auto;
+        pointer-events: none;
+        user-select: none;
+        transform-origin: center center;
+        transition:
+          opacity 260ms ease,
+          filter 260ms ease;
+        will-change: transform, opacity, filter;
+      }
+
+      .drag-hint {
+        position: absolute;
+        left: 50%;
+        bottom: 158px;
+        z-index: 5;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        padding: 8px 14px;
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 14px;
+        transform: translateX(-50%);
+      }
+
+      .drag-hint span {
+        color: #eaff4e;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p {
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .footer-brand {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 20px;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 40px;
+        color: #999;
+        font: 400 15px/1.2 Inter, "PingFang SC", sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="图片预告 - 图标墙">
+      <div class="dot-bg dot-bg-top" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target">
+          <span>目标</span>
+          <span class="spacer"></span>
+        </a>
+        <a href="./figma-page7" data-slide-key="solution">
+          <span>方案</span>
+          <span class="spacer"></span>
+        </a>
+        <a class="active" href="./figma-page12" data-slide-key="result">
+          <span>成果</span>
+          <span class="spacer"></span>
+          <span class="indicator"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="roadmap">
+          <span>规划</span>
+          <span class="spacer"></span>
+        </a>
+      </nav>
+
+      <section class="strip-shell circular-gallery" tabindex="0" aria-label="可左右滑动查看的图标墙">
+        <div class="strip-track">
+          <img src="./assets/figma-page14/strip/01.png" alt="图标墙预览 1" />
+          <img src="./assets/figma-page14/strip/02.png" alt="图标墙预览 2" />
+          <img src="./assets/figma-page14/strip/03.png" alt="图标墙预览 3" />
+          <img src="./assets/figma-page14/strip/04.png" alt="图标墙预览 4" />
+          <img src="./assets/figma-page14/strip/05.png" alt="图标墙预览 5" />
+          <img src="./assets/figma-page14/strip/06.png" alt="图标墙预览 6" />
+          <img src="./assets/figma-page14/strip/07.png" alt="图标墙预览 7" />
+        </div>
+      </section>
+
+      <div class="drag-hint">双指/鼠标 <span>左右滑动</span> 查看更多</div>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links" aria-label="工作流原则">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      const shell = document.querySelector(".strip-shell");
+      const track = document.querySelector(".strip-track");
+      const images = [...track.querySelectorAll("img")];
+      let position = -640;
+      let targetPosition = -640;
+      let startX = 0;
+      let startPosition = 0;
+      let dragging = false;
+      let animationFrame = 0;
+
+      function clamp(value) {
+        const min = Math.min(0, shell.clientWidth - track.clientWidth);
+        return Math.max(min, Math.min(0, value));
+      }
+
+      function render() {
+        track.style.transform = `translate3d(${position}px, -50%, 0)`;
+        updateImageTransforms();
+      }
+
+      function updateImageTransforms() {
+        const viewportCenter = shell.clientWidth / 2;
+
+        images.forEach((image) => {
+          const imageCenter = position + image.offsetLeft + image.offsetWidth / 2;
+          const distance = (imageCenter - viewportCenter) / viewportCenter;
+          const clamped = Math.max(-1.2, Math.min(1.2, distance));
+          const abs = Math.abs(clamped);
+          const scale = 1.08 - abs * 0.22;
+          const rotate = clamped * -12;
+          const lift = (1 - abs) * -18;
+          const opacity = Math.max(0.42, 1 - abs * 0.42);
+          const brightness = Math.max(0.55, 1 - abs * 0.3);
+
+          image.style.transform = `translateY(${lift}px) scale(${scale}) rotateY(${rotate}deg)`;
+          image.style.opacity = opacity;
+          image.style.filter = `brightness(${brightness})`;
+        });
+      }
+
+      function animate() {
+        position += (targetPosition - position) * 0.16;
+
+        if (Math.abs(targetPosition - position) < 0.4) {
+          position = targetPosition;
+        }
+
+        render();
+
+        if (position !== targetPosition) {
+          animationFrame = window.requestAnimationFrame(animate);
+        } else {
+          animationFrame = 0;
+        }
+      }
+
+      function setTarget(nextPosition) {
+        targetPosition = clamp(nextPosition);
+
+        if (!animationFrame) {
+          animationFrame = window.requestAnimationFrame(animate);
+        }
+      }
+
+      shell.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        startX = event.clientX;
+        startPosition = targetPosition;
+        shell.classList.add("dragging");
+        shell.setPointerCapture(event.pointerId);
+      });
+
+      shell.addEventListener("pointermove", (event) => {
+        if (!dragging) {
+          return;
+        }
+
+        setTarget(startPosition + event.clientX - startX);
+      });
+
+      shell.addEventListener("pointerup", () => {
+        dragging = false;
+        shell.classList.remove("dragging");
+      });
+
+      shell.addEventListener("pointercancel", () => {
+        dragging = false;
+        shell.classList.remove("dragging");
+      });
+
+      shell.addEventListener(
+        "wheel",
+        (event) => {
+          if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+          setTarget(targetPosition - event.deltaX);
+        },
+        { passive: false },
+      );
+
+      window.addEventListener("resize", () => {
+        setTarget(targetPosition);
+      });
+
+      render();
+    </script>
+  </body>
+</html>

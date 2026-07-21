@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>下一步规划</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #000;
+        font-family:
+          "PingFang SC", "PingFangSC", "Noto Sans SC", Inter, ui-sans-serif, system-ui,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-width: 320px; min-height: 100%; margin: 0; background: #000; }
+      body { display: flex; justify-content: center; }
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg { position: absolute; width: 902px; height: 559px; overflow: hidden; pointer-events: none; }
+      .dot-bg img { position: absolute; top: -5.37px; left: -131.94px; width: 1033.94px; height: 564.69px; max-width: none; }
+      .dot-bg-top { top: 0; left: 0; }
+      .dot-bg-bottom { right: 0; bottom: 0; transform: rotate(180deg); }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 480px;
+        z-index: 5;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font: 400 14px/normal Inter, sans-serif;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active { color: #fff; font-weight: 500; }
+      .ppt-nav .spacer { width: 100%; height: 14px; }
+      .ppt-nav .indicator { width: 100%; height: 2px; border-radius: 2px; background: #eaff4e; }
+
+      .header {
+        position: absolute;
+        top: 112px;
+        left: 80px;
+        width: 1280px;
+        height: 96px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 24px;
+        background: rgba(11, 11, 11, 0.45);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 40px;
+        font-weight: 300;
+        line-height: 1.2;
+      }
+
+      .cards {
+        position: absolute;
+        top: 250.5px;
+        left: 80px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        width: 1280px;
+        height: 480px;
+      }
+
+      .card {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 41px 27px;
+        background: #0b0b0b;
+        cursor: pointer;
+        transition:
+          border-color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .card:nth-child(2) {
+        border-radius: 10.663px;
+      }
+
+      .card:hover,
+      .card:focus,
+      .card:focus-visible,
+      .card.is-highlighted {
+        border-color: #eaff4e;
+        outline: none;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        height: 34px;
+        border: 0.6px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: #333;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 500;
+        transition:
+          border-color 180ms ease,
+          color 180ms ease;
+      }
+
+      .card:hover .pill,
+      .card:focus .pill,
+      .card:focus-visible .pill,
+      .card.is-highlighted .pill {
+        border-color: #eaff4e;
+        color: #eaff4e;
+      }
+
+      .card h2 {
+        margin: 24px 0;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.5;
+      }
+
+      .card ul {
+        margin: 0;
+        padding-left: 27px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 18px;
+        line-height: 2.21;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p { margin: 0; white-space: nowrap; }
+      .footer-brand { font-family: Inter, sans-serif; font-size: 20px; }
+      .footer-links { display: flex; gap: 40px; color: #999; font-size: 15px; }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="下一步规划">
+      <div class="dot-bg dot-bg-top" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target"><span>目标</span><span class="spacer"></span></a>
+        <a href="./figma-page7" data-slide-key="solution"><span>方案</span><span class="spacer"></span></a>
+        <a href="./figma-page12" data-slide-key="result"><span>成果</span><span class="spacer"></span></a>
+        <a class="active" href="./figma-page21" data-slide-key="roadmap"><span>规划</span><span class="spacer"></span><span class="indicator"></span></a>
+      </nav>
+
+      <section class="header">
+        <h1>下一步规划</h1>
+      </section>
+
+      <section class="cards">
+        <article class="card" tabindex="0">
+          <span class="pill">扩展skill</span>
+          <h2>完整设计生产</h2>
+          <ul>
+            <li>figma自动排版skill</li>
+            <li>超级符号转译skill</li>
+            <li>风格迁移skill</li>
+            <li>ip换装skill</li>
+          </ul>
+        </article>
+        <article class="card" tabindex="0">
+          <span class="pill">强化案例库</span>
+          <h2>让每一次成功和失败都反哺系统</h2>
+          <ul>
+            <li>案例支持图片结果</li>
+            <li>案例支持失败原因</li>
+            <li>案例支持“适用场景”标签</li>
+            <li>生成后可一键收藏为案例</li>
+            <li>通过案例反推规则优化建议</li>
+            <li>后续接向量检索，提高命中准确度</li>
+          </ul>
+        </article>
+        <article class="card" tabindex="0">
+          <span class="pill">提高质量&稳定性</span>
+          <h2>不靠人工反复猜问题</h2>
+          <ul>
+            <li>视觉质检 Skill：检查 IP 是否变形、构图是否跑偏、是否有多余文字、画幅是否正确</li>
+            <li>Prompt 修复 Skill：如果输出不符合要求，自动改 Prompt，再生成</li>
+            <li>测试集 Harness：沉淀一批固定测试题，每次改规则都跑一遍，防止旧能力变差</li>
+          </ul>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

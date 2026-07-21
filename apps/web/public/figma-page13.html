@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图片预告</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg {
+        position: absolute;
+        width: 902px;
+        height: 559px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .dot-bg img {
+        position: absolute;
+        top: -5.37px;
+        left: -131.94px;
+        width: 1033.94px;
+        height: 564.69px;
+        max-width: none;
+      }
+
+      .dot-bg-top {
+        top: 0;
+        left: 0;
+      }
+
+      .dot-bg-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 450px;
+        z-index: 8;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font: 400 14px/normal Inter, ui-sans-serif, system-ui, sans-serif;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active {
+        color: #fff;
+        font-weight: 500;
+      }
+
+      .ppt-nav .spacer {
+        width: 100%;
+        height: 14px;
+      }
+
+      .ppt-nav .indicator {
+        width: 100%;
+        height: 2px;
+        border-radius: 2px;
+        background: #eaff4e;
+      }
+
+      .carousel {
+        position: absolute;
+        inset: 118px -260px 114px;
+        cursor: grab;
+        perspective: 1100px;
+        user-select: none;
+        touch-action: pan-y;
+      }
+
+      .carousel.dragging {
+        cursor: grabbing;
+      }
+
+      .card {
+        --edge-proximity: 0;
+        --cursor-angle: 45deg;
+        --edge-sensitivity: 30;
+        --color-sensitivity: calc(var(--edge-sensitivity) + 20);
+        --border-radius: 40px;
+        --glow-padding: 34px;
+        --cone-spread: 25;
+        --card-bg: #111;
+        --glow-color: hsl(73deg 100% 65% / 100%);
+        --glow-color-60: hsl(73deg 100% 65% / 60%);
+        --glow-color-50: hsl(73deg 100% 65% / 50%);
+        --glow-color-40: hsl(73deg 100% 65% / 40%);
+        --glow-color-30: hsl(73deg 100% 65% / 30%);
+        --glow-color-20: hsl(73deg 100% 65% / 20%);
+        --glow-color-10: hsl(73deg 100% 65% / 10%);
+        position: absolute;
+        top: 90px;
+        left: 50%;
+        display: grid;
+        place-items: center;
+        width: 400px;
+        height: 518px;
+        border: 1px solid rgba(234, 255, 78, 0.3);
+        border-radius: 40px;
+        background: #111;
+        overflow: visible;
+        isolation: isolate;
+        transform-origin: center center;
+        transition:
+          transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 420ms ease,
+          border-color 420ms ease,
+          filter 420ms ease;
+        will-change: transform, opacity;
+      }
+
+      .card::before,
+      .card::after,
+      .card > .edge-light {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        border-radius: inherit;
+        content: "";
+        transition: opacity 0.25s ease-out;
+      }
+
+      .card:not(:hover):not(.sweep-active)::before,
+      .card:not(:hover):not(.sweep-active)::after,
+      .card:not(:hover):not(.sweep-active) > .edge-light {
+        opacity: 0;
+        transition: opacity 0.75s ease-in-out;
+      }
+
+      .card::before {
+        border: 1px solid transparent;
+        background:
+          linear-gradient(var(--card-bg) 0 100%) padding-box,
+          radial-gradient(at 80% 55%, hsla(73, 100%, 65%, 1) 0, transparent 48%) border-box,
+          radial-gradient(at 20% 15%, hsla(120, 100%, 72%, 0.9) 0, transparent 46%) border-box,
+          radial-gradient(at 50% 95%, hsla(48, 100%, 70%, 0.8) 0, transparent 45%) border-box,
+          linear-gradient(#eaff4e 0 100%) border-box;
+        opacity: calc((var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+        mask-image:
+          conic-gradient(
+            from var(--cursor-angle) at center,
+            black calc(var(--cone-spread) * 1%),
+            transparent calc((var(--cone-spread) + 15) * 1%),
+            transparent calc((100 - var(--cone-spread) - 15) * 1%),
+            black calc((100 - var(--cone-spread)) * 1%)
+          );
+      }
+
+      .card::after {
+        border: 1px solid transparent;
+        background:
+          radial-gradient(at 80% 55%, hsla(73, 100%, 65%, 0.75) 0, transparent 48%) padding-box,
+          radial-gradient(at 20% 15%, hsla(120, 100%, 72%, 0.55) 0, transparent 46%) padding-box,
+          radial-gradient(at 50% 95%, hsla(48, 100%, 70%, 0.45) 0, transparent 45%) padding-box;
+        opacity: calc(0.35 * (var(--edge-proximity) - var(--color-sensitivity)) / (100 - var(--color-sensitivity)));
+        mix-blend-mode: soft-light;
+      }
+
+      .card > .edge-light {
+        inset: calc(var(--glow-padding) * -1);
+        z-index: 1;
+        pointer-events: none;
+        opacity: calc((var(--edge-proximity) - var(--edge-sensitivity)) / (100 - var(--edge-sensitivity)));
+        mix-blend-mode: plus-lighter;
+        mask-image:
+          conic-gradient(
+            from var(--cursor-angle) at center,
+            black 2.5%,
+            transparent 10%,
+            transparent 90%,
+            black 97.5%
+          );
+      }
+
+      .card > .edge-light::before {
+        position: absolute;
+        inset: var(--glow-padding);
+        border-radius: inherit;
+        box-shadow:
+          inset 0 0 0 1px var(--glow-color),
+          inset 0 0 8px 0 var(--glow-color-40),
+          inset 0 0 24px 0 var(--glow-color-20),
+          0 0 8px 0 var(--glow-color-50),
+          0 0 24px 2px var(--glow-color-20),
+          0 0 52px 2px var(--glow-color-10);
+        content: "";
+      }
+
+      .card img {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: none;
+        transform: scale(0.86);
+        transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .card.active {
+        border-color: rgba(234, 255, 78, 0.3);
+        filter: none;
+      }
+
+      .card.active img {
+        transform: scale(1.02);
+      }
+
+      .card:not(.active) {
+        filter: brightness(0.68);
+      }
+
+      .hint {
+        position: absolute;
+        left: 50%;
+        bottom: 92px;
+        z-index: 7;
+        display: flex;
+        gap: 8px;
+        transform: translateX(-50%);
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0;
+        background: rgba(255, 255, 255, 0.28);
+        cursor: pointer;
+      }
+
+      .dot.active {
+        width: 24px;
+        background: #eaff4e;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p {
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .footer-brand {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 20px;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 40px;
+        color: #999;
+        font: 400 15px/1.2 Inter, "PingFang SC", sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="图片预告">
+      <div class="dot-bg dot-bg-top" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target">
+          <span>目标</span>
+          <span class="spacer"></span>
+        </a>
+        <a href="./figma-page7" data-slide-key="solution">
+          <span>方案</span>
+          <span class="spacer"></span>
+        </a>
+        <a class="active" href="./figma-page12" data-slide-key="result">
+          <span>成果</span>
+          <span class="spacer"></span>
+          <span class="indicator"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="roadmap">
+          <span>规划</span>
+          <span class="spacer"></span>
+        </a>
+      </nav>
+
+      <section class="carousel" aria-label="图片预览轮播">
+        <article class="card" data-index="0">
+          <span class="edge-light"></span>
+          <img src="./assets/figma-page13/coins.png" alt="金融图标预览 1" />
+        </article>
+        <article class="card" data-index="1">
+          <span class="edge-light"></span>
+          <img src="./assets/figma-page13/growth.png" alt="金融图标预览 2" />
+        </article>
+        <article class="card" data-index="2">
+          <span class="edge-light"></span>
+          <img src="./assets/figma-page13/wallet.png" alt="金融图标预览 3" />
+        </article>
+        <article class="card" data-index="3">
+          <span class="edge-light"></span>
+          <img src="./assets/figma-page13/card.png" alt="金融图标预览 4" />
+        </article>
+        <article class="card" data-index="4">
+          <span class="edge-light"></span>
+          <img src="./assets/figma-page13/shield.png" alt="金融图标预览 5" />
+        </article>
+      </section>
+
+      <div class="hint" aria-label="轮播分页"></div>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links" aria-label="工作流原则">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      const carousel = document.querySelector(".carousel");
+      const cards = [...document.querySelectorAll(".card")];
+      const hint = document.querySelector(".hint");
+      let activeIndex = 2;
+      let startX = 0;
+      let pointerDown = false;
+
+      function wrappedOffset(index) {
+        const total = cards.length;
+        let offset = index - activeIndex;
+
+        if (offset > total / 2) {
+          offset -= total;
+        }
+
+        if (offset < -total / 2) {
+          offset += total;
+        }
+
+        return offset;
+      }
+
+      function render() {
+        cards.forEach((card, index) => {
+          const offset = wrappedOffset(index);
+          const abs = Math.abs(offset);
+          const x = offset * 410;
+          const scale = offset === 0 ? 1.16 : abs === 1 ? 0.82 : 0.68;
+          const rotate = offset * -8;
+          const z = 10 - abs;
+          const opacity = abs > 2 ? 0 : 1;
+
+          card.classList.toggle("active", offset === 0);
+          card.style.zIndex = z;
+          card.style.opacity = opacity;
+          card.style.transform = `translateX(calc(-50% + ${x}px)) scale(${scale}) rotateY(${rotate}deg)`;
+        });
+
+        [...hint.children].forEach((dot, index) => {
+          dot.classList.toggle("active", index === activeIndex);
+        });
+      }
+
+      function go(delta) {
+        activeIndex = (activeIndex + delta + cards.length) % cards.length;
+        render();
+      }
+
+      function updateGlow(card, clientX, clientY) {
+        const rect = card.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const edgeDistance = Math.min(x, y, rect.width - x, rect.height - y);
+        const edgeProximity = Math.max(0, Math.min(100, 100 - (edgeDistance / 120) * 100));
+        const angle = Math.atan2(y - centerY, x - centerX) * (180 / Math.PI) + 90;
+
+        card.style.setProperty("--edge-proximity", edgeProximity.toFixed(2));
+        card.style.setProperty("--cursor-angle", `${angle.toFixed(2)}deg`);
+      }
+
+      cards.forEach((card) => {
+        card.addEventListener("pointermove", (event) => {
+          updateGlow(card, event.clientX, event.clientY);
+        });
+
+        card.addEventListener("pointerleave", () => {
+          card.style.setProperty("--edge-proximity", "0");
+        });
+      });
+
+      cards.forEach((_, index) => {
+        const dot = document.createElement("button");
+        dot.className = "dot";
+        dot.type = "button";
+        dot.addEventListener("click", () => {
+          activeIndex = index;
+          render();
+        });
+        hint.appendChild(dot);
+      });
+
+      carousel.addEventListener("pointerdown", (event) => {
+        pointerDown = true;
+        startX = event.clientX;
+        carousel.classList.add("dragging");
+        carousel.setPointerCapture(event.pointerId);
+      });
+
+      carousel.addEventListener("pointerup", (event) => {
+        if (!pointerDown) {
+          return;
+        }
+
+        pointerDown = false;
+        carousel.classList.remove("dragging");
+        const delta = event.clientX - startX;
+
+        if (Math.abs(delta) > 42) {
+          go(delta < 0 ? 1 : -1);
+        }
+      });
+
+      carousel.addEventListener("pointercancel", () => {
+        pointerDown = false;
+        carousel.classList.remove("dragging");
+      });
+
+      carousel.addEventListener(
+        "wheel",
+        (event) => {
+          if (Math.abs(event.deltaX) <= Math.abs(event.deltaY)) {
+            return;
+          }
+
+          event.preventDefault();
+          if (Math.abs(event.deltaX) < 18) {
+            return;
+          }
+
+          go(event.deltaX > 0 ? 1 : -1);
+        },
+        { passive: false },
+      );
+
+      render();
+    </script>
+  </body>
+</html>

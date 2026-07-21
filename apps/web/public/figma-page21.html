@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>目录-规划</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+
+      .page {
+        position: relative;
+        width: min(100vw, 1440px);
+        aspect-ratio: 1440 / 900;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg {
+        position: absolute;
+        width: 62.64%;
+        height: 62.11%;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .dot-bg img {
+        position: absolute;
+        top: -0.96%;
+        left: -14.63%;
+        width: 114.63%;
+        height: 101.02%;
+        max-width: none;
+      }
+
+      .dot-bg-top {
+        top: 0;
+        left: 0;
+      }
+
+      .dot-bg-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .section-mark {
+        position: absolute;
+        top: 44.22%;
+        left: 69.1%;
+        z-index: 1;
+        margin: 0;
+        color: #eaff4e;
+        font-size: min(60px, 4.17vw);
+        font-weight: 600;
+        letter-spacing: min(1.2px, 0.08vw);
+        line-height: 1.74;
+        white-space: pre;
+        word-break: break-word;
+      }
+
+      .menu {
+        position: absolute;
+        top: 41.33%;
+        left: 12.26%;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: min(180px, 12.5vw);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        color: #fff;
+        font-weight: 300;
+        line-height: 1.74;
+        white-space: nowrap;
+        word-break: break-word;
+      }
+
+      .menu li {
+        margin: 0;
+      }
+
+      .menu button {
+        margin: 0;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+        letter-spacing: inherit;
+        line-height: inherit;
+        white-space: nowrap;
+      }
+
+      .menu .active {
+        font-size: min(90px, 6.25vw);
+        letter-spacing: min(1.8px, 0.13vw);
+      }
+
+      .menu .muted {
+        margin-top: min(26.5px, 1.84vw);
+        color: rgba(255, 255, 255, 0.6);
+        font-size: min(60px, 4.17vw);
+        letter-spacing: min(1.2px, 0.08vw);
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 7.11%;
+        padding: 0 5.56%;
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+      }
+
+      .footer p {
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .footer-brand {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: min(20px, 1.39vw);
+        font-weight: 400;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: min(40px, 2.78vw);
+        align-items: flex-start;
+        font-family: Inter, "PingFang SC", ui-sans-serif, system-ui, sans-serif;
+        font-size: min(15px, 1.04vw);
+        font-weight: 400;
+        line-height: 1.2;
+      }
+
+      .footer-links span {
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="目录-规划">
+      <div class="dot-bg dot-bg-top" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+
+      <p class="section-mark">（           ）</p>
+      <ul class="menu" aria-label="页面目录">
+        <li class="muted">
+          <button type="button" data-slide-key="target">目标</button>
+        </li>
+        <li class="muted">
+          <button type="button" data-slide-key="solution">方案</button>
+        </li>
+        <li class="muted">
+          <button type="button" data-slide-key="result">成果</button>
+        </li>
+        <li class="active">
+          <button type="button" data-slide-key="roadmap">规划</button>
+        </li>
+      </ul>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links" aria-label="工作流原则">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

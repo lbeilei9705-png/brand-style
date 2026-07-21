@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>品牌视觉生产工作流汇报</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #000;
+        font-family:
+          Inter, "PingFang SC", "PingFangSC", ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-width: 320px;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+      }
+
+      body {
+        position: fixed;
+        inset: 0;
+      }
+
+      .shared-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        background: #000;
+        pointer-events: none;
+      }
+
+      .bg-dots {
+        position: absolute;
+        width: 902px;
+        height: 559px;
+        overflow: hidden;
+      }
+
+      .bg-dots img {
+        position: absolute;
+        top: -5.37px;
+        left: -131.94px;
+        width: 1033.94px;
+        height: 564.69px;
+        max-width: none;
+      }
+
+      .bg-dots-top {
+        top: 0;
+        left: 0;
+      }
+
+      .bg-dots-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .shared-footer {
+        position: fixed;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 max(24px, calc((100vw - 1280px) / 2 + 80px));
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+        pointer-events: none;
+      }
+
+      .shared-footer p {
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .shared-footer-brand {
+        font-size: 20px;
+        font-weight: 400;
+      }
+
+      .shared-footer-links {
+        display: flex;
+        gap: 40px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 15px;
+      }
+
+      .deck {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+      }
+
+      .slide-section {
+        position: absolute;
+        inset: 0;
+        height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 0;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate3d(0, 22%, 0) scale(0.92);
+        transition:
+          transform 900ms cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 260ms ease;
+        will-change: transform, opacity;
+      }
+
+      .slide-section.active {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+
+      .slide-stage {
+        width: 1440px;
+        height: 900px;
+        transform-origin: center center;
+      }
+
+      .slide-frame {
+        display: block;
+        width: 1440px;
+        height: 900px;
+        border: 0;
+        background: transparent;
+      }
+
+      .scroll-progress {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 4;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.36);
+        color: rgba(255, 255, 255, 0.68);
+        font-size: 12px;
+        backdrop-filter: blur(12px);
+      }
+
+      .fixed-section-nav {
+        position: fixed;
+        top: 30px;
+        left: 50%;
+        z-index: 4;
+        display: flex;
+        width: 480px;
+        height: 40px;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%) translateY(-10px);
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .fixed-section-nav.visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      .fixed-section-nav button {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 40px;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        font: 400 14px/normal Inter, ui-sans-serif, system-ui, sans-serif;
+        text-align: center;
+      }
+
+      .fixed-section-nav button.active {
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .fixed-section-nav .nav-spacer {
+        width: 100%;
+        height: 14px;
+      }
+
+      .fixed-section-nav .nav-indicator {
+        width: 100%;
+        height: 2px;
+        border-radius: 2px;
+        background: transparent;
+      }
+
+      .fixed-section-nav button.active .nav-indicator {
+        background: #eaff4e;
+      }
+
+      @media (max-width: 780px) {
+        .shared-footer {
+          padding: 0 16px;
+        }
+
+        .shared-footer-links {
+          display: none;
+        }
+
+        .scroll-progress {
+          top: 12px;
+          right: 12px;
+        }
+
+        .fixed-section-nav {
+          top: 16px;
+          width: min(480px, calc(100vw - 32px));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shared-bg" aria-hidden="true">
+      <div class="bg-dots bg-dots-top">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <div class="bg-dots bg-dots-bottom">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+    </div>
+
+    <div class="scroll-progress" aria-live="polite">1 / 8</div>
+
+    <nav class="fixed-section-nav" aria-label="章节导航">
+      <button type="button" data-slide-key="target">
+        <span>目标</span>
+        <span class="nav-spacer"></span>
+        <span class="nav-indicator"></span>
+      </button>
+      <button type="button" data-slide-key="solution">
+        <span>方案</span>
+        <span class="nav-spacer"></span>
+        <span class="nav-indicator"></span>
+      </button>
+      <button type="button" data-slide-key="result">
+        <span>成果</span>
+        <span class="nav-spacer"></span>
+        <span class="nav-indicator"></span>
+      </button>
+      <button type="button" data-slide-key="roadmap">
+        <span>规划</span>
+        <span class="nav-spacer"></span>
+        <span class="nav-indicator"></span>
+      </button>
+    </nav>
+
+    <main class="deck" aria-label="品牌视觉生产工作流汇报"></main>
+
+    <footer class="shared-footer" aria-label="固定页脚">
+      <p class="shared-footer-brand">Brand Style</p>
+      <p class="shared-footer-links">
+        <span>设计定义标准</span>
+        <span>AI执行标准</span>
+        <span>系统沉淀资产</span>
+        <span>组织获得能力</span>
+      </p>
+    </footer>
+
+    <script>
+      const slides = [
+        { key: "cover", title: "封面", src: "./figma-cover.html", keepOwnBackground: true },
+        { key: "contents", title: "目录", src: "./figma-page2.html" },
+        { key: "target", title: "痛点", src: "./figma-page3.html" },
+        { key: "asset-reuse", title: "资产复用", src: "./figma-page4.html" },
+        { key: "process-cost", title: "流程消耗", src: "./figma-page6.html" },
+        { key: "target-summary", title: "目标", src: "./figma-page5.html" },
+        { key: "solution", title: "目录-方案", src: "./figma-page7.html" },
+        { key: "q1-generic-ai", title: "Q1 普通生图", src: "./figma-page8.html" },
+        { key: "q1-constraints", title: "Q1 风格约束", src: "./figma-page9.html" },
+        { key: "q2-reusable-assets", title: "Q2 团队资产", src: "./figma-page10.html" },
+        { key: "q3-workflow", title: "Q3 工作流", src: "./figma-page11.html" },
+        { key: "designer-value", title: "设计师价值", src: "./figma-page25.html" },
+        { key: "result", title: "目录-成果", src: "./figma-page19.html" },
+        { key: "tool-intro", title: "系统介绍", src: "./figma-page12.html" },
+        { key: "image-preview", title: "图片预告", src: "./figma-page13.html" },
+        { key: "icon-wall", title: "图标墙", src: "./figma-page14.html" },
+        { key: "single-element", title: "单元素图标", src: "./figma-page15.html" },
+        { key: "creative-visual", title: "创意视觉", src: "./figma-page16.html" },
+        { key: "scene", title: "场景", src: "./figma-page17.html" },
+        { key: "workflow-comparison", title: "新旧流程对比", src: "./figma-page18.html" },
+        { key: "asset-archive", title: "团队资产沉淀", src: "./figma-page20.html" },
+        { key: "roadmap", title: "目录-规划", src: "./figma-page21.html" },
+        { key: "mvp-loop", title: "MVP闭环", src: "./figma-page22.html" },
+        { key: "next-plan", title: "下一步规划", src: "./figma-page23.html" },
+        { key: "summary", title: "总结", src: "./figma-page24.html" },
+      ];
+
+      const deck = document.querySelector(".deck");
+      const progress = document.querySelector(".scroll-progress");
+      const fixedSectionNav = document.querySelector(".fixed-section-nav");
+      const fixedSectionButtons = [...document.querySelectorAll(".fixed-section-nav button")];
+      const slideKeyToSection = new Map();
+      const sectionGroups = {
+        target: new Set(["target", "asset-reuse", "process-cost", "target-summary"]),
+        solution: new Set(["solution", "q1-generic-ai", "q1-constraints", "designer-value"]),
+        result: new Set(["result", "tool-intro", "image-preview", "icon-wall", "single-element", "creative-visual", "scene", "workflow-comparison", "asset-archive"]),
+        roadmap: new Set(["roadmap", "mvp-loop", "next-plan"]),
+      };
+      let currentSlideIndex = 0;
+      let isSnapping = false;
+
+      function createSlides() {
+        slides.forEach((slide, index) => {
+          const section = document.createElement("section");
+          section.className = "slide-section";
+          section.dataset.slideKey = slide.key;
+          section.setAttribute("aria-label", slide.title);
+          section.style.transform = index === 0 ? "translate3d(0, 0, 0) scale(1)" : "translate3d(0, 22%, 0) scale(0.92)";
+          section.style.opacity = index === 0 ? "1" : "0";
+
+          if (index === 0) {
+            section.classList.add("active");
+          }
+
+          const stage = document.createElement("div");
+          stage.className = "slide-stage";
+
+          const frame = document.createElement("iframe");
+          frame.className = "slide-frame";
+          frame.title = slide.title;
+          frame.src = slide.src;
+          frame.dataset.index = String(index);
+
+          frame.addEventListener("load", () => {
+            prepareFrame(frame, slide);
+          });
+
+          stage.appendChild(frame);
+          section.appendChild(stage);
+          deck.appendChild(section);
+          slideKeyToSection.set(slide.key, section);
+        });
+      }
+
+      function prepareFrame(frame, slide) {
+        const doc = frame.contentDocument;
+
+        if (!doc) {
+          return;
+        }
+
+        const style = doc.createElement("style");
+        const hiddenBackgroundSelector = slide.keepOwnBackground ? "" : ".background-art,";
+        style.textContent = `
+          html,
+          body,
+          .page,
+          .cover {
+            background: transparent !important;
+          }
+
+          ${hiddenBackgroundSelector}
+          .dot-bg,
+          .footer,
+          .ppt-nav {
+            display: none !important;
+          }
+        `;
+        doc.head.appendChild(style);
+
+        doc.querySelectorAll("[data-slide-key]").forEach((element) => {
+          element.addEventListener("click", (event) => {
+            const key = element.getAttribute("data-slide-key");
+            const section = key ? slideKeyToSection.get(key) : null;
+
+            if (!section) {
+              return;
+            }
+
+            event.preventDefault();
+            goToSlide([...document.querySelectorAll(".slide-section")].indexOf(section));
+          });
+        });
+
+        doc.addEventListener(
+          "wheel",
+          (event) => {
+            event.preventDefault();
+            handleWheel(event);
+          },
+          { passive: false },
+        );
+
+        doc.addEventListener("keydown", handleKeydown);
+      }
+
+      function fitStages() {
+        const scale = window.innerWidth / 1440;
+        const scaledHeight = 900 * scale;
+        const offsetY = Math.max(0, (window.innerHeight - scaledHeight) / 2);
+
+        document.querySelectorAll(".slide-stage").forEach((stage) => {
+          stage.style.transform = `translateY(${offsetY}px) scale(${scale})`;
+          stage.style.width = "1440px";
+          stage.style.height = "900px";
+        });
+      }
+
+      function updateProgress() {
+        progress.textContent = `${currentSlideIndex + 1} / ${slides.length}`;
+        updateFixedNav(currentSlideIndex);
+      }
+
+      function goToSlide(index) {
+        const sections = [...document.querySelectorAll(".slide-section")];
+        const targetIndex = Math.max(0, Math.min(sections.length - 1, index));
+        const currentSection = sections[currentSlideIndex];
+        const targetSection = sections[targetIndex];
+
+        if (!targetSection || targetIndex === currentSlideIndex || isSnapping) {
+          return;
+        }
+
+        const direction = targetIndex > currentSlideIndex ? 1 : -1;
+        isSnapping = true;
+        targetSection.style.transition = "none";
+        targetSection.style.transform = `translate3d(0, ${direction * 22}%, 0) scale(0.92)`;
+        targetSection.style.opacity = "1";
+        targetSection.classList.add("active");
+        targetSection.offsetHeight;
+
+        currentSection.classList.remove("active");
+        currentSection.style.transition = "";
+        targetSection.style.transition = "";
+        currentSection.style.transform = `translate3d(0, ${direction * -18}%, 0) scale(0.94)`;
+        currentSection.style.opacity = "0";
+        targetSection.style.transform = "translate3d(0, 0, 0) scale(1)";
+        targetSection.style.opacity = "1";
+        currentSlideIndex = targetIndex;
+        updateFixedNav(targetIndex);
+        progress.textContent = `${targetIndex + 1} / ${slides.length}`;
+
+        window.setTimeout(() => {
+          isSnapping = false;
+          currentSection.style.transform = `translate3d(0, ${direction * -22}%, 0) scale(0.92)`;
+          updateProgress();
+        }, 920);
+      }
+
+      function handleWheel(event) {
+        if (Math.abs(event.deltaY) < 24 || isSnapping) {
+          event.preventDefault();
+          return;
+        }
+
+        event.preventDefault();
+        goToSlide(currentSlideIndex + (event.deltaY > 0 ? 1 : -1));
+      }
+
+      function handleKeydown(event) {
+        if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
+          event.preventDefault();
+          goToSlide(currentSlideIndex + 1);
+        }
+
+        if (event.key === "ArrowUp" || event.key === "PageUp") {
+          event.preventDefault();
+          goToSlide(currentSlideIndex - 1);
+        }
+      }
+
+      function updateFixedNav(currentIndex) {
+        const currentSlide = slides[currentIndex];
+        const shouldShowNav = currentIndex >= 2;
+        fixedSectionNav.classList.toggle("visible", shouldShowNav);
+
+        let activeKey = "";
+
+        for (const [key, slideKeys] of Object.entries(sectionGroups)) {
+          if (slideKeys.has(currentSlide.key)) {
+            activeKey = key;
+            break;
+          }
+        }
+
+        fixedSectionButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.slideKey === activeKey);
+        });
+      }
+
+      window.addEventListener("resize", fitStages);
+      window.addEventListener("wheel", handleWheel, { passive: false });
+      window.addEventListener("keydown", handleKeydown);
+
+      fixedSectionButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const key = button.dataset.slideKey;
+          const section = key ? slideKeyToSection.get(key) : null;
+
+          if (!section) {
+            return;
+          }
+
+          goToSlide([...document.querySelectorAll(".slide-section")].indexOf(section));
+        });
+      });
+
+      createSlides();
+      fitStages();
+      updateProgress();
+    </script>
+  </body>
+</html>

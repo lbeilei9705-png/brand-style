@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Q3 - 搭建高效工作流</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg {
+        position: absolute;
+        width: 902px;
+        height: 559px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .dot-bg img {
+        position: absolute;
+        top: -5.37px;
+        left: -131.94px;
+        width: 1033.94px;
+        height: 564.69px;
+        max-width: none;
+      }
+
+      .dot-bg-top {
+        top: 0;
+        left: 0;
+      }
+
+      .dot-bg-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 480px;
+        z-index: 5;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active {
+        color: #fff;
+        font-weight: 500;
+      }
+
+      .ppt-nav .spacer {
+        width: 100%;
+        height: 14px;
+      }
+
+      .ppt-nav .indicator {
+        width: 100%;
+        height: 2px;
+        border-radius: 2px;
+        background: #eaff4e;
+      }
+
+      .header {
+        position: absolute;
+        top: 112px;
+        left: 80px;
+        width: 1280px;
+        height: 138px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 24px;
+        background: rgba(11, 11, 11, 0.45);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 40px;
+        font-weight: 300;
+        line-height: 1.2;
+      }
+
+      .header p {
+        margin: 10px 0 0;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 20px;
+        line-height: 1.6;
+      }
+
+      .flow {
+        position: absolute;
+        top: 275px;
+        left: 80px;
+        width: 1280px;
+      }
+
+      .group-label {
+        display: inline-flex;
+        border-radius: 100px;
+        padding: 4px 12px;
+        background: #eaff4e;
+        color: #000;
+        font: 700 20px/normal Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .warning {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 1280px;
+        height: 58px;
+        margin-top: 29px;
+        border: 1px solid #eaff4e;
+        border-radius: 8px;
+        padding: 12px 24px;
+        background: rgba(11, 11, 11, 0.07);
+        color: #eaff4e;
+        font-size: 24px;
+        font-weight: 500;
+      }
+
+      .warning img {
+        width: 20px;
+        height: 20px;
+      }
+
+      .steps-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 44px;
+        margin-top: 24px;
+      }
+
+      .step {
+        position: relative;
+        width: 120px;
+        text-align: center;
+      }
+
+      .step-box {
+        display: grid;
+        place-items: center;
+        width: 120px;
+        height: 100px;
+        border-radius: 8px;
+        background: #1e1e1e;
+      }
+
+      .step-box img {
+        width: 44px;
+        height: 44px;
+      }
+
+      .step h2 {
+        margin: 19px 0 0;
+        color: #e6e6e6;
+        font: 600 18px/normal Inter, "PingFang SC", sans-serif;
+      }
+
+      .step p {
+        margin: 8px 0 0;
+        color: #b3b3b3;
+        font: 400 14px/1.4 Inter, "PingFang SC", sans-serif;
+      }
+
+      .arrow {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 64px;
+        padding-top: 40px;
+      }
+
+      .arrow img {
+        width: 24px;
+        height: 24px;
+      }
+
+      .bottom-line {
+        position: absolute;
+        top: 596px;
+        left: 1300px;
+        width: 1164px;
+        height: 33px;
+        transform: rotate(180deg) scaleY(-1);
+        transform-origin: left top;
+      }
+
+      .down-line {
+        position: absolute;
+        top: 629px;
+        left: 720px;
+        width: 8px;
+        height: 37px;
+        transform: translateX(-50%);
+      }
+
+      .platform-chip {
+        position: absolute;
+        top: 678px;
+        left: 542px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 360px;
+        height: 58px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 12px 24px;
+        background: #0b0b0b;
+        color: #fff;
+        cursor: pointer;
+        font: 500 24px/normal "PingFang SC", Inter, sans-serif;
+        white-space: pre;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .platform-chip:hover,
+      .platform-chip:focus,
+      .platform-chip:focus-visible,
+      .platform-chip.is-highlighted {
+        border-color: #eaff4e;
+        color: #eaff4e;
+        box-shadow:
+          0 0 0 1px rgba(234, 255, 78, 0.2),
+          0 0 24px rgba(234, 255, 78, 0.12);
+        outline: none;
+        transform: translateY(-2px);
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p {
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .footer-brand {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 20px;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 40px;
+        color: #999;
+        font-family: Inter, "PingFang SC", ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="Q3 - 搭建高效工作流">
+      <div class="dot-bg dot-bg-top" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target">
+          <span>目标</span>
+          <span class="spacer"></span>
+        </a>
+        <a class="active" href="./figma-page7" data-slide-key="solution">
+          <span>方案</span>
+          <span class="spacer"></span>
+          <span class="indicator"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="result">
+          <span>成果</span>
+          <span class="spacer"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="roadmap">
+          <span>规划</span>
+          <span class="spacer"></span>
+        </a>
+      </nav>
+
+      <section class="header">
+        <h1>搭建高效工作流</h1>
+        <p>一件调用并生成，嵌进设计师真实工作台</p>
+      </section>
+
+      <section class="flow">
+        <span class="group-label">普通流程</span>
+        <div class="warning">
+          <img src="./assets/figma-page11/alert.svg" alt="" />
+          <span>工具频繁切换，经验难复用，试错链路过长</span>
+        </div>
+
+        <div class="steps-row">
+          <article class="step">
+            <div class="step-box"><img src="./assets/figma-page11/search.svg" alt="" /></div>
+            <h2>网页搜案例</h2>
+            <p>搜索、归纳</p>
+          </article>
+          <div class="arrow"><img src="./assets/figma-page11/chevron.svg" alt="" /></div>
+          <article class="step">
+            <div class="step-box"><img src="./assets/figma-page11/llm.svg" alt="" /></div>
+            <h2>LLM</h2>
+            <p>分析需求、写<br />prompt</p>
+          </article>
+          <div class="arrow"><img src="./assets/figma-page11/chevron.svg" alt="" /></div>
+          <article class="step">
+            <div class="step-box"><img src="./assets/figma-page11/image-tool.svg" alt="" /></div>
+            <h2>生图工具</h2>
+            <p>抽卡</p>
+          </article>
+          <div class="arrow"><img src="./assets/figma-page11/chevron.svg" alt="" /></div>
+          <article class="step">
+            <div class="step-box"><img src="./assets/figma-page11/tune.svg" alt="" /></div>
+            <h2>Ai调整细节</h2>
+            <p>优化</p>
+          </article>
+          <div class="arrow"><img src="./assets/figma-page11/chevron.svg" alt="" /></div>
+          <article class="step">
+            <div class="step-box"><img src="./assets/figma-page11/edit.svg" alt="" /></div>
+            <h2>p 图</h2>
+            <p>编排、可用性</p>
+          </article>
+          <div class="arrow"><img src="./assets/figma-page11/chevron.svg" alt="" /></div>
+          <article class="step">
+            <div class="step-box"><img src="./assets/figma-page11/export.svg" alt="" /></div>
+            <h2>到 Figma 中</h2>
+            <p>排版、导出、交付</p>
+          </article>
+        </div>
+      </section>
+
+      <img class="bottom-line" src="./assets/figma-page11/line.svg" alt="" />
+      <img class="down-line" src="./assets/figma-page11/down.svg" alt="" />
+      <div class="platform-chip" tabindex="0">后台能力管理   前台一键调用</div>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links" aria-label="工作流原则">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

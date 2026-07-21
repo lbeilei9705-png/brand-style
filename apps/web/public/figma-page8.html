@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Q1 - 普通AI生图工具</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg {
+        position: absolute;
+        width: 902px;
+        height: 559px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .dot-bg img {
+        position: absolute;
+        top: -5.37px;
+        left: -131.94px;
+        width: 1033.94px;
+        height: 564.69px;
+        max-width: none;
+      }
+
+      .dot-bg-top {
+        top: 0;
+        left: 0;
+      }
+
+      .dot-bg-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 450px;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: normal;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active {
+        color: #fff;
+        font-weight: 500;
+      }
+
+      .ppt-nav .spacer {
+        width: 100%;
+        height: 14px;
+      }
+
+      .ppt-nav .indicator {
+        width: 100%;
+        height: 2px;
+        border-radius: 2px;
+        background: #eaff4e;
+      }
+
+      .tool-header {
+        position: absolute;
+        top: 124px;
+        left: 80px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .robot {
+        display: grid;
+        place-items: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 999px;
+        background: #ababab;
+        color: #000;
+        font-size: 30px;
+        line-height: 1.74;
+      }
+
+      .tool-title {
+        margin: 0;
+        color: #fff;
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.4;
+      }
+
+      .mockup-card {
+        position: absolute;
+        top: 220px;
+        left: 80px;
+        width: 1280px;
+        height: 552px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 32px;
+        background: #0b0b0b;
+        box-shadow: 0 -30px 90px rgba(0, 0, 0, 0.32);
+      }
+
+      .section-label {
+        margin: 0 0 12px;
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.6;
+      }
+
+      .input-box {
+        display: flex;
+        align-items: center;
+        width: 1216px;
+        height: 52px;
+        border-radius: 12px;
+        padding: 0 48px;
+        background: #1e1e1e;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      .results {
+        margin-top: 24px;
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .result-card {
+        position: relative;
+        width: 600px;
+        height: 326px;
+        min-width: 0;
+        border: 1px solid #2a2a2a;
+        border-radius: 16px;
+        padding: 16px;
+        background: #1e1e1e;
+        cursor: pointer;
+        overflow: hidden;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          transform 180ms ease;
+      }
+
+      .result-card:hover,
+      .result-card:focus-visible {
+        border-color: #eaff4e;
+        box-shadow:
+          0 0 0 1px rgba(234, 255, 78, 0.22),
+          0 0 28px rgba(234, 255, 78, 0.12);
+        outline: none;
+        transform: translateY(-2px);
+      }
+
+      .preview {
+        position: relative;
+        width: 568px;
+        height: 264px;
+        border-radius: 8px;
+        background: #1e1e1e;
+        overflow: hidden;
+      }
+
+      .caption {
+        margin: 8px 0 0;
+        color: #fff;
+        font-size: 18px;
+        line-height: normal;
+      }
+
+      .result-image-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 3;
+        width: 1440px;
+        height: 900px;
+        max-width: none;
+        object-fit: cover;
+        pointer-events: none;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff;
+      }
+
+      .footer p {
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .footer-brand {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 20px;
+        font-weight: 400;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 40px;
+        align-items: flex-start;
+        color: #999;
+        font-family: Inter, "PingFang SC", ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.2;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="Q1 - 普通AI生图工具">
+      <div class="dot-bg dot-bg-top" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <img class="result-image-layer" src="./assets/figma-page8/image-layer.png" alt="" />
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target">
+          <span>目标</span>
+          <span class="spacer"></span>
+        </a>
+        <a class="active" href="./figma-page7" data-slide-key="solution">
+          <span>方案</span>
+          <span class="spacer"></span>
+          <span class="indicator"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="result">
+          <span>成果</span>
+          <span class="spacer"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="roadmap">
+          <span>规划</span>
+          <span class="spacer"></span>
+        </a>
+      </nav>
+
+      <div class="tool-header">
+        <div class="robot">🤖</div>
+        <h1 class="tool-title">普通AI生图工具</h1>
+      </div>
+
+      <section class="mockup-card">
+        <h2 class="section-label">输入需求</h2>
+        <div class="input-box">生成一组金融图标</div>
+
+        <section class="results">
+          <h2 class="section-label">通用审美生成结果</h2>
+          <div class="result-grid">
+            <article class="result-card" tabindex="0">
+                  <div class="preview"></div>
+              <p class="caption">样式不统一</p>
+            </article>
+
+            <article class="result-card" tabindex="0">
+                  <div class="preview"></div>
+              <p class="caption">缺乏品牌识别</p>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links" aria-label="工作流原则">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Q2 - 可复用的团队资产</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg {
+        position: absolute;
+        width: 902px;
+        height: 559px;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .dot-bg img {
+        position: absolute;
+        top: -5.37px;
+        left: -131.94px;
+        width: 1033.94px;
+        height: 564.69px;
+        max-width: none;
+      }
+
+      .dot-bg-top {
+        top: 0;
+        left: 0;
+      }
+
+      .dot-bg-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 480px;
+        z-index: 5;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active {
+        color: #fff;
+        font-weight: 500;
+      }
+
+      .ppt-nav .spacer {
+        width: 100%;
+        height: 14px;
+      }
+
+      .ppt-nav .indicator {
+        width: 100%;
+        height: 2px;
+        border-radius: 2px;
+        background: #eaff4e;
+      }
+
+      .header {
+        position: absolute;
+        top: 112px;
+        left: 80px;
+        width: 1280px;
+        height: 138px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 24px;
+        background: rgba(11, 11, 11, 0.45);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 40px;
+        font-weight: 300;
+        line-height: 1.2;
+      }
+
+      .header p {
+        margin: 10px 0 0;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 20px;
+        line-height: 1.6;
+      }
+
+      .summary-bar {
+        position: absolute;
+        top: 283px;
+        left: 80px;
+        display: flex;
+        align-items: center;
+        width: 1280px;
+        height: 74.78px;
+        border: 1px solid #000;
+        border-radius: 16px;
+        padding: 18px 24px;
+        background: #1e1e1e;
+      }
+
+      .summary-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #eaff4e;
+        flex: 0 0 auto;
+      }
+
+      .summary-bar p {
+        margin: 0 0 0 8px;
+        width: 560px;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.5;
+      }
+
+      .summary-spark {
+        width: 47.93px;
+        height: 38.78px;
+        margin-left: 8px;
+      }
+
+      .section-label {
+        position: absolute;
+        top: 384.78px;
+        left: 80px;
+        margin: 0;
+        font: 600 14px/normal Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .content {
+        position: absolute;
+        top: 428.78px;
+        left: 80px;
+        display: flex;
+        gap: 48px;
+        width: 1280px;
+        height: 334px;
+      }
+
+      .process-flow {
+        display: flex;
+        gap: 44px;
+        width: 943px;
+      }
+
+      .step {
+        width: 186px;
+      }
+
+      .number-circle {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #1e1e1e;
+        border-radius: 18px;
+        background: #0d0d0d;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 14px;
+        font-weight: 500;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .step h2 {
+        margin: 16px 0 16px;
+        font-size: 24px;
+        font-weight: 500;
+        line-height: normal;
+      }
+
+      .icon-box {
+        display: grid;
+        place-items: center;
+        width: 186px;
+        height: 120px;
+        border: 1px solid #2a2a2a;
+        border-radius: 12px;
+        background: #1e1e1e;
+        cursor: pointer;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          transform 180ms ease;
+      }
+
+      .icon-box:hover,
+      .icon-box:focus,
+      .icon-box:focus-visible,
+      .icon-box.is-highlighted,
+      .step:hover .icon-box,
+      .step:focus-within .icon-box,
+      .value-card:hover,
+      .value-card:focus,
+      .value-card:focus-visible,
+      .value-card.is-highlighted {
+        border-color: #eaff4e;
+        box-shadow:
+          0 0 0 1px rgba(234, 255, 78, 0.2),
+          0 0 28px rgba(234, 255, 78, 0.12);
+        outline: none;
+        transform: translateY(-2px);
+      }
+
+      .step:hover .number-circle,
+      .step:focus-within .number-circle,
+      .step.is-highlighted .number-circle {
+        border-color: #eaff4e;
+        color: #eaff4e;
+        box-shadow:
+          0 0 0 1px rgba(234, 255, 78, 0.18),
+          0 0 20px rgba(234, 255, 78, 0.12);
+        transform: translateY(-2px);
+      }
+
+      .icon-box img {
+        width: 72px;
+        height: 72px;
+        transition: filter 180ms ease;
+      }
+
+      .icon-box:hover img,
+      .icon-box:focus img,
+      .icon-box:focus-visible img,
+      .icon-box.is-highlighted img,
+      .step:hover .icon-box img,
+      .step:focus-within .icon-box img,
+      .step.is-highlighted .icon-box img {
+        filter:
+          brightness(0) saturate(100%) invert(92%) sepia(97%) saturate(816%)
+          hue-rotate(11deg) brightness(106%) contrast(104%)
+          drop-shadow(0 0 10px rgba(234, 255, 78, 0.35));
+      }
+
+      .step p {
+        margin: 16px 0 0;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .value-card {
+        width: 289px;
+        height: 329px;
+        border: 1px solid #2a2a2a;
+        border-radius: 16px;
+        padding: 24px;
+        background: #1e1e1e;
+        cursor: pointer;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          transform 180ms ease;
+      }
+
+      .value-card h2 {
+        margin: 0 0 18px;
+        font-size: 40px;
+        font-weight: 300;
+        line-height: normal;
+      }
+
+      .value-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        width: max-content;
+        height: 41px;
+        border: 1px solid #1e1e1e;
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: #1e1e1e;
+        font-size: 18px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .chip img {
+        width: 14px;
+        height: 14px;
+      }
+
+      .chip strong {
+        color: #eaff4e;
+        font-weight: 600;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p {
+        margin: 0;
+        white-space: nowrap;
+      }
+
+      .footer-brand {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: 20px;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 40px;
+        color: #999;
+        font-family: Inter, "PingFang SC", ui-sans-serif, system-ui, sans-serif;
+        font-size: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="Q2 - 可复用的团队资产">
+      <div class="dot-bg dot-bg-top" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true">
+        <img src="./assets/shared/ppt-bg-dots.png" alt="" />
+      </div>
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target">
+          <span>目标</span>
+          <span class="spacer"></span>
+        </a>
+        <a class="active" href="./figma-page7" data-slide-key="solution">
+          <span>方案</span>
+          <span class="spacer"></span>
+          <span class="indicator"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="result">
+          <span>成果</span>
+          <span class="spacer"></span>
+        </a>
+        <a href="./figma-page2" data-slide-key="roadmap">
+          <span>规划</span>
+          <span class="spacer"></span>
+        </a>
+      </nav>
+
+      <section class="header">
+        <h1>可复用的团队资产</h1>
+        <p>好的案例应该被团队快速复用</p>
+      </section>
+
+      <section class="summary-bar">
+        <span class="summary-dot"></span>
+        <p>先沉淀案例，再结构化经验，团队才能规模化复用品牌视觉能力</p>
+        <img class="summary-spark" src="./assets/figma-page10/spark.svg" alt="" />
+      </section>
+
+      <p class="section-label">整体方案</p>
+
+      <section class="content">
+        <div class="process-flow">
+          <article class="step">
+              <div class="number-circle">01</div>
+            <h2>收集</h2>
+            <div class="icon-box" tabindex="0"><img src="./assets/figma-page10/inbox.svg" alt="" /></div>
+            <p>• 沉淀品牌设计素材、收集好的参考案例、 单一图标/ 组合图形 / 复杂视觉</p>
+          </article>
+          <article class="step">
+              <div class="number-circle">02</div>
+            <h2>结构化</h2>
+            <div class="icon-box" tabindex="0"><img src="./assets/figma-page10/tag.svg" alt="" /></div>
+            <p>• 标注标签（色彩、质感、风格）、为什么好、为什么不好、它在什么情况下用</p>
+          </article>
+          <article class="step">
+              <div class="number-circle">03</div>
+            <h2>封装</h2>
+            <div class="icon-box" tabindex="0"><img src="./assets/figma-page10/package.svg" alt="" /></div>
+            <p>• 提炼为 Prompt、提炼为 Skill、绑定案例形成组合包、应用场景 / 约束条件 / 效果预览</p>
+          </article>
+          <article class="step">
+              <div class="number-circle">04</div>
+            <h2>复用</h2>
+            <div class="icon-box" tabindex="0"><img src="./assets/figma-page10/refresh.svg" alt="" /></div>
+            <p>• 在案例库中快速调用、支持多品牌多场景调用、团队共享设计资产</p>
+          </article>
+        </div>
+
+        <aside class="value-card" tabindex="0">
+          <h2>核心价值</h2>
+          <div class="value-list">
+            <div class="chip">个人经验 <img src="./assets/figma-page10/arrow.svg" alt="" /> <strong>团队资产</strong></div>
+            <div class="chip">一次沉淀 <img src="./assets/figma-page10/arrow.svg" alt="" /> <strong>复用迭代</strong></div>
+            <div class="chip">从无序积累 <img src="./assets/figma-page10/arrow.svg" alt="" /> <strong>有序生产能力</strong></div>
+          </div>
+        </aside>
+      </section>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links" aria-label="工作流原则">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

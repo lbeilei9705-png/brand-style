@@ -1,0 +1,10 @@
+<svg preserveAspectRatio="xMidYMid meet" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="25.5 26 37 37" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="target">
+<path id="Vector" d="M44 48C45.933 48 47.5 46.433 47.5 44.5C47.5 42.567 45.933 41 44 41C42.067 41 40.5 42.567 40.5 44.5C40.5 46.433 42.067 48 44 48Z" stroke="var(--stroke-0, white)" stroke-linecap="round"/>
+<path id="Vector_2" d="M44 55C49.799 55 54.5 50.299 54.5 44.5C54.5 38.701 49.799 34 44 34C38.201 34 33.5 38.701 33.5 44.5C33.5 50.299 38.201 55 44 55Z" stroke="var(--stroke-0, white)" stroke-width="1.5" stroke-linecap="round"/>
+</g>
+<path id="Vector 108" d="M44 53V59" stroke="var(--stroke-0, white)" stroke-linecap="round"/>
+<path id="Vector 110" d="M44 29V35" stroke="var(--stroke-0, white)" stroke-linecap="round"/>
+<path id="Vector 109" d="M30 45H36" stroke="var(--stroke-0, white)" stroke-linecap="round"/>
+<path id="Vector 111" d="M52 45H58" stroke="var(--stroke-0, white)" stroke-linecap="round"/>
+</svg>

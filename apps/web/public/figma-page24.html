@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>总结</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #000;
+        font-family:
+          "PingFang SC", "PingFangSC", Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-width: 320px; min-height: 100%; margin: 0; background: #000; }
+      body { display: flex; justify-content: center; }
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg { position: absolute; width: 902px; height: 559px; overflow: hidden; pointer-events: none; }
+      .dot-bg img { position: absolute; top: -5.37px; left: -131.94px; width: 1033.94px; height: 564.69px; max-width: none; }
+      .dot-bg-top { top: 0; left: 0; }
+      .dot-bg-bottom { right: 0; bottom: 0; transform: rotate(180deg); }
+
+      .headline {
+        position: absolute;
+        top: 207px;
+        left: calc(50% + 0.5px);
+        margin: 0;
+        color: #fff;
+        font-size: 26px;
+        font-weight: 300;
+        line-height: 2.31;
+        text-align: center;
+        white-space: pre;
+        transform: translateX(-50%);
+      }
+
+      .divider-dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+      }
+
+      .dot-1 { top: 232px; left: 555px; }
+      .dot-2 { top: 232px; left: 717px; }
+      .dot-3 { top: 232px; left: 908px; }
+
+      .spark {
+        position: absolute;
+        top: 344px;
+        left: 1270px;
+        width: 68px;
+        height: 55.018px;
+      }
+
+      .main-title {
+        position: absolute;
+        top: 275px;
+        left: 50%;
+        width: 1192px;
+        margin: 0;
+        color: #fff;
+        font-size: 50px;
+        font-weight: 300;
+        line-height: 2.31;
+        text-align: center;
+        transform: translateX(-50%);
+      }
+
+      .value-copy {
+        position: absolute;
+        top: 465px;
+        left: calc(50% - 338px);
+        width: 677px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 20px;
+        font-weight: 300;
+        line-height: 2.31;
+      }
+
+      .value-copy p {
+        margin: 0;
+      }
+
+      .value-copy strong {
+        color: rgba(255, 255, 255, 0.82);
+        font-weight: 600;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p { margin: 0; white-space: nowrap; }
+      .footer-brand { font-family: Inter, sans-serif; font-size: 20px; }
+      .footer-links { display: flex; gap: 40px; color: #999; font-size: 15px; }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="总结">
+      <div class="dot-bg dot-bg-top" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+
+      <p class="headline">设计师定义标准    AI执行标准    系统沉淀资产    组织获得能力</p>
+      <img class="divider-dot dot-1" src="./assets/figma-page24/dot.svg" alt="" />
+      <img class="divider-dot dot-2" src="./assets/figma-page24/dot.svg" alt="" />
+      <img class="divider-dot dot-3" src="./assets/figma-page24/dot.svg" alt="" />
+      <img class="spark" src="./assets/figma-page24/spark.svg" alt="" />
+
+      <p class="main-title">更快响应需求，更稳定控制质量，更低成本复用经验</p>
+      <div class="value-copy" aria-label="价值总结">
+        <p><strong>业务：</strong>它可以更快响应活动、运营、权益、节日营销等高频视觉需求</p>
+        <p><strong>品牌：</strong>它通过设计规则约束 AI 输出，减少风格漂移、语义偏差和质量不稳定</p>
+        <p><strong>团队：</strong>每一次成功案例都能沉淀成规则、Skill 或标签，下一次不用从零开始</p>
+      </div>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

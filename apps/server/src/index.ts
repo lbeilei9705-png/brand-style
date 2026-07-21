@@ -247,6 +247,33 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
   const routeAliases: Record<string, string> = {
     "/": "/showcase.html",
     "/debug-prompt": "/debug-prompt.html",
+    "/figma-ai": "/figma-ai.html",
+    "/figma-cover": "/figma-cover.html",
+    "/figma-page2": "/figma-page2.html",
+    "/figma-page3": "/figma-page3.html",
+    "/figma-page4": "/figma-page4.html",
+    "/figma-page5": "/figma-page5.html",
+    "/figma-page6": "/figma-page6.html",
+    "/figma-page7": "/figma-page7.html",
+    "/figma-page8": "/figma-page8.html",
+    "/figma-page9": "/figma-page9.html",
+    "/figma-page10": "/figma-page10.html",
+    "/figma-page11": "/figma-page11.html",
+    "/figma-page12": "/figma-page12.html",
+    "/figma-page13": "/figma-page13.html",
+    "/figma-page14": "/figma-page14.html",
+    "/figma-page15": "/figma-page15.html",
+    "/figma-page16": "/figma-page16.html",
+    "/figma-page17": "/figma-page17.html",
+    "/figma-page18": "/figma-page18.html",
+    "/figma-page19": "/figma-page19.html",
+    "/figma-page20": "/figma-page20.html",
+    "/figma-page21": "/figma-page21.html",
+    "/figma-page22": "/figma-page22.html",
+    "/figma-page23": "/figma-page23.html",
+    "/figma-page24": "/figma-page24.html",
+    "/figma-page25": "/figma-page25.html",
+    "/figma-ppt": "/figma-ppt.html",
     "/showcase": "/showcase.html",
   };
   const safePath = routeAliases[pathname] || pathname;
@@ -263,12 +290,19 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
       return;
     }
 
-    const ext = path.extname(filePath);
-    const contentType = ext === ".css"
-      ? "text/css; charset=utf-8"
-      : ext === ".js"
-        ? "application/javascript; charset=utf-8"
-        : "text/html; charset=utf-8";
+    const ext = path.extname(filePath).toLowerCase();
+    const contentTypes: Record<string, string> = {
+      ".css": "text/css; charset=utf-8",
+      ".gif": "image/gif",
+      ".html": "text/html; charset=utf-8",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".js": "application/javascript; charset=utf-8",
+      ".png": "image/png",
+      ".svg": "image/svg+xml; charset=utf-8",
+      ".webp": "image/webp",
+    };
+    const contentType = contentTypes[ext] || "application/octet-stream";
 
     send(res, 200, content, contentType);
   });

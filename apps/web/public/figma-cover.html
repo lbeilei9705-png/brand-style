@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>品牌视觉生产工作流</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+
+      .cover {
+        position: relative;
+        width: min(100vw, 1440px);
+        aspect-ratio: 1440 / 900;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .background-art {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+      }
+
+      .dot-bg {
+        position: absolute;
+        width: 62.64%;
+        height: 62.11%;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .dot-bg img {
+        position: absolute;
+        top: -0.96%;
+        left: -14.63%;
+        width: 114.63%;
+        height: 101.02%;
+        max-width: none;
+      }
+
+      .dot-bg-top {
+        top: 0;
+        left: 0;
+      }
+
+      .dot-bg-bottom {
+        right: 0;
+        bottom: 0;
+        transform: rotate(180deg);
+      }
+
+      .visual-word {
+        position: absolute;
+        top: 22.9%;
+        left: 5.42%;
+        margin: 0;
+        color: rgba(56, 56, 56, 0.2);
+        font-size: min(228.632px, 15.88vw);
+        font-weight: 600;
+        letter-spacing: min(4.5726px, 0.32vw);
+        line-height: 1.74;
+        white-space: nowrap;
+        word-break: break-word;
+      }
+
+      .title {
+        position: absolute;
+        top: 10.1%;
+        left: 5.49%;
+        margin: 0;
+        font-size: min(70px, 4.86vw);
+        font-weight: 300;
+        letter-spacing: min(1.4px, 0.1vw);
+        line-height: 1.74;
+        white-space: nowrap;
+      }
+
+      .title .accent {
+        color: #eaff4e;
+      }
+
+      .sparkle {
+        position: absolute;
+        top: 14.89%;
+        left: 50.21%;
+        width: 4.72%;
+        height: 6.17%;
+        object-fit: cover;
+        pointer-events: none;
+      }
+
+      .principles {
+        position: absolute;
+        top: 24.39%;
+        left: 5.56%;
+        display: flex;
+        align-items: center;
+        gap: min(19px, 1.32vw);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: min(22px, 1.53vw);
+        font-weight: 400;
+        line-height: 1.4;
+        white-space: nowrap;
+      }
+
+      .principles li {
+        display: flex;
+        align-items: center;
+        gap: min(19px, 1.32vw);
+      }
+
+      .principles li + li::before {
+        display: block;
+        width: min(6px, 0.42vw);
+        height: min(6px, 0.42vw);
+        border-radius: 50%;
+        background: #eaff4e;
+        content: "";
+      }
+
+      .meta {
+        position: absolute;
+        top: 45.56%;
+        left: 5.56%;
+        display: grid;
+        grid-template-columns: min(61.18px, 4.25vw) min(488px, 33.9vw);
+        gap: min(27px, 1.88vw);
+        font-size: min(20px, 1.39vw);
+        font-weight: 400;
+        line-height: 1.74;
+        white-space: nowrap;
+      }
+
+      .meta-group {
+        display: grid;
+        gap: min(16.68px, 1.16vw);
+      }
+
+      .meta-label {
+        opacity: 0.6;
+      }
+
+      .tag {
+        position: absolute;
+        margin: 0;
+        color: #767676;
+        font-size: min(30px, 2.08vw);
+        font-weight: 300;
+        letter-spacing: min(0.6px, 0.04vw);
+        line-height: 1.74;
+        opacity: 0.7;
+        white-space: nowrap;
+      }
+
+      .brand-tag {
+        top: 29.78%;
+        left: 60.69%;
+      }
+
+      .design-tag {
+        top: 69%;
+        left: 78.68%;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 7.11%;
+        padding: 0 5.56%;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p {
+        margin: 0;
+        font-weight: 400;
+        white-space: nowrap;
+      }
+
+      .footer-brand {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        font-size: min(20px, 1.39vw);
+      }
+
+      .footer-note {
+        font-size: min(15px, 1.04vw);
+        font-weight: 300;
+        letter-spacing: min(0.3px, 0.02vw);
+        line-height: 1.61;
+      }
+
+      @media (max-width: 720px) {
+        .cover {
+          width: 100vw;
+        }
+
+        .meta,
+        .principles,
+        .footer {
+          font-size: max(10px, 1.8vw);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="cover" aria-label="品牌视觉生产工作流封面">
+      <img class="background-art" src="./assets/figma-cover/background-shape.png" alt="" />
+      <div class="dot-bg dot-bg-top" aria-hidden="true">
+        <img src="./assets/figma-cover/dots-updated.png" alt="" />
+      </div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true">
+        <img src="./assets/figma-cover/dots-updated.png" alt="" />
+      </div>
+      <p class="visual-word">Visual</p>
+
+      <h1 class="title">
+        <span class="accent">品牌视觉</span><span>生产工作流</span>
+      </h1>
+      <img class="sparkle" src="./assets/figma-cover/star.png" alt="" />
+
+      <ul class="principles" aria-label="工作流原则">
+        <li>设计定义标准</li>
+        <li>AI执行标准</li>
+        <li>系统沉淀资产</li>
+        <li>组织获得能力</li>
+      </ul>
+
+      <section class="meta" aria-label="项目信息">
+        <div class="meta-group">
+          <span class="meta-label">负责人</span>
+          <span>刘蓓蕾</span>
+        </div>
+        <div class="meta-group">
+          <span class="meta-label">成果形态</span>
+          <span>资产+方法+系统</span>
+        </div>
+      </section>
+
+      <p class="tag brand-tag">（Brand）</p>
+      <p class="tag design-tag">（Design）</p>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-note">Design AI research application</p>
+      </footer>
+    </main>
+  </body>
+</html>

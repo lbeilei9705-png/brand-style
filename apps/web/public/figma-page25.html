@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>设计师价值</title>
+    <link rel="stylesheet" href="./assets/shared/ppt-common.css" />
+    <style>
+      :root {
+        color-scheme: dark;
+        background: #000;
+        font-family:
+          "PingFang SC", "PingFangSC", "Noto Sans SC", Inter, ui-sans-serif, system-ui,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { min-width: 320px; min-height: 100%; margin: 0; background: #000; }
+      body { display: flex; justify-content: center; }
+
+      .page {
+        position: relative;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+      }
+
+      .dot-bg { position: absolute; width: 902px; height: 559px; overflow: hidden; pointer-events: none; }
+      .dot-bg img { position: absolute; top: -5.37px; left: -131.94px; width: 1033.94px; height: 564.69px; max-width: none; }
+      .dot-bg-top { top: 0; left: 0; }
+      .dot-bg-bottom { right: 0; bottom: 0; transform: rotate(180deg); }
+
+      .ppt-nav {
+        position: absolute;
+        top: 30px;
+        left: 480px;
+        z-index: 5;
+        display: flex;
+        width: 480px;
+        height: 33px;
+        overflow: hidden;
+      }
+
+      .ppt-nav a {
+        display: flex;
+        flex: 0 0 25%;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        color: rgba(255, 255, 255, 0.4);
+        font: 400 14px/normal Inter, sans-serif;
+        text-align: center;
+        text-decoration: none;
+      }
+
+      .ppt-nav .active { color: #fff; font-weight: 500; }
+      .ppt-nav .spacer { width: 100%; height: 14px; }
+      .ppt-nav .indicator { width: 100%; height: 2px; border-radius: 2px; background: #eaff4e; }
+
+      .header {
+        position: absolute;
+        top: 112px;
+        left: 80px;
+        width: 1280px;
+        height: 138px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 24px;
+        background: rgba(11, 11, 11, 0.45);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+        text-align: center;
+      }
+
+      .header h1 {
+        margin: 0;
+        color: #fff;
+        font-size: 40px;
+        font-weight: 300;
+        line-height: 1.2;
+      }
+
+      .header p {
+        margin: 10px 0 0;
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 20px;
+        line-height: 1.6;
+      }
+
+      .features {
+        position: absolute;
+        top: 321px;
+        left: 80px;
+        width: 1280px;
+        height: 296px;
+      }
+
+      .top-line {
+        width: 1280px;
+        height: 1px;
+        opacity: 1;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        margin-top: 60px;
+      }
+
+      .feature {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 30px;
+        min-height: 236px;
+        cursor: pointer;
+        text-align: center;
+        transform-origin: center center;
+        transition:
+          transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+          filter 220ms ease,
+          opacity 220ms ease;
+        will-change: transform, filter, opacity;
+        z-index: 2;
+      }
+
+      .feature:not(:last-child)::after {
+        position: absolute;
+        top: 48px;
+        right: 0;
+        width: 1px;
+        height: 140px;
+        background: rgba(255, 255, 255, 0.2);
+        content: "";
+      }
+
+      .short-line {
+        width: 24px;
+        height: 2px;
+        background: #eaff4e;
+      }
+
+      .icon-box {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        border-radius: 32px;
+        background: rgba(255, 255, 255, 0.04);
+        box-shadow: none;
+        transition:
+          border-color 180ms ease,
+          background 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .icon-box img {
+        width: 24px;
+        height: 24px;
+        transition: filter 180ms ease;
+      }
+
+      .feature:nth-child(2) .icon-box img {
+        width: 37px;
+        height: 37px;
+      }
+
+      .feature:hover .icon-box,
+      .feature:focus-within .icon-box,
+      .feature.is-highlighted .icon-box {
+        border-color: #eaff4e;
+        background: rgba(234, 255, 78, 0.08);
+        box-shadow: 0 0 12px rgba(212, 255, 0, 0.2);
+      }
+
+      .feature:hover .icon-box img,
+      .feature:focus-within .icon-box img,
+      .feature.is-highlighted .icon-box img {
+        filter:
+          brightness(0) saturate(100%) invert(92%) sepia(97%) saturate(816%)
+          hue-rotate(11deg) brightness(106%) contrast(104%)
+          drop-shadow(0 0 10px rgba(234, 255, 78, 0.35));
+      }
+
+      .feature h2 {
+        margin: 0;
+        color: #fff;
+        font-size: 30px;
+        font-weight: 400;
+        line-height: normal;
+      }
+
+      .feature p {
+        margin: 10px 0 0;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 18px;
+        line-height: normal;
+      }
+
+      .footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        padding: 0 80px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .footer p { margin: 0; white-space: nowrap; }
+      .footer-brand { font-family: Inter, sans-serif; font-size: 20px; }
+      .footer-links { display: flex; gap: 40px; color: #999; font-size: 15px; }
+    </style>
+  </head>
+  <body>
+    <main class="page" aria-label="设计师价值">
+      <div class="dot-bg dot-bg-top" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+      <div class="dot-bg dot-bg-bottom" aria-hidden="true"><img src="./assets/shared/ppt-bg-dots.png" alt="" /></div>
+
+      <nav class="ppt-nav" aria-label="PPT 导航">
+        <a href="./figma-page3" data-slide-key="target"><span>目标</span><span class="spacer"></span></a>
+        <a class="active" href="./figma-page7" data-slide-key="solution"><span>方案</span><span class="spacer"></span><span class="indicator"></span></a>
+        <a href="./figma-page12" data-slide-key="result"><span>成果</span><span class="spacer"></span></a>
+        <a href="./figma-page21" data-slide-key="roadmap"><span>规划</span><span class="spacer"></span></a>
+      </nav>
+
+      <section class="header">
+        <h1>设计师以专业判断力，定义 AI 的创作边界</h1>
+        <p>把创意精力留给高价值决策，把重复劳动标准化</p>
+      </section>
+
+      <section class="features">
+        <img class="top-line" src="./assets/figma-page25/line.svg" alt="" />
+        <div class="feature-grid">
+          <article class="feature">
+              <div class="short-line"></div>
+            <div class="icon-box"><img src="./assets/figma-page25/search.svg" alt="" /></div>
+            <div>
+              <h2>看懂业务背景</h2>
+              <p>看清这版为什么这样做</p>
+              <p>业务目标 / 设计策略 / 品牌表达</p>
+            </div>
+          </article>
+          <article class="feature">
+              <div class="short-line"></div>
+            <div class="icon-box"><img src="./assets/figma-page25/target.svg" alt="" /></div>
+            <div>
+              <h2>找准变化重点</h2>
+              <p>明确这次变化的重点</p>
+              <p>业务诉求 / 场景变化 / 用户感知</p>
+            </div>
+          </article>
+          <article class="feature">
+              <div class="short-line"></div>
+            <div class="icon-box"><img src="./assets/figma-page25/alert.svg" alt="" /></div>
+            <div>
+              <h2>找出关键问题</h2>
+              <p>不是改改表面，而是定位问题</p>
+              <p>语义 / 构图 / 风格 / 细节</p>
+            </div>
+          </article>
+          <article class="feature">
+              <div class="short-line"></div>
+            <div class="icon-box"><img src="./assets/figma-page25/bolt.svg" alt="" /></div>
+            <div>
+              <h2>写成执行规则</h2>
+              <p>把设计经验沉淀下来，交给工具复用</p>
+              <p>Prompt / 规则约束 / 风格标签 / 备注</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p class="footer-brand">Brand Style</p>
+        <p class="footer-links">
+          <span>设计定义标准</span>
+          <span>AI执行标准</span>
+          <span>系统沉淀资产</span>
+          <span>组织获得能力</span>
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -83,15 +83,15 @@ function normalizeGoogleImageModelId(model: string): string | undefined {
   return GOOGLE_IMAGE_MODEL_ALIASES[(model || "").trim()];
 }
 
-function isYunwuNanoImageModel(config: FintopiaConfig): boolean {
-  return (config.apiUrl || "").includes("yunwu.site") && Boolean(normalizeGoogleImageModelId(config.model));
+function isGoogleNanoImageModel(config: FintopiaConfig): boolean {
+  return Boolean(normalizeGoogleImageModelId(config.model));
 }
 
 function buildGoogleProxyAttempt(config: FintopiaConfig): EndpointAttempt | undefined {
   const googleModel = normalizeGoogleImageModelId(config.model);
   const googleToken = (process.env.GOOGLE_API_TOKEN || "").trim();
 
-  if (!isYunwuNanoImageModel(config) || !googleModel || !googleToken) {
+  if (!isGoogleNanoImageModel(config) || !googleModel || !googleToken) {
     return undefined;
   }
 
@@ -109,6 +109,14 @@ function buildGoogleProxyAttempt(config: FintopiaConfig): EndpointAttempt | unde
 }
 
 function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
+  const googlePrimary = buildGoogleProxyAttempt(config);
+
+  // Nano2 / Nano Pro should only use Google gemini-proxy. Do not fall back to
+  // retired Yunwu preview endpoints, because they hide the real proxy error.
+  if (isGoogleNanoImageModel(config)) {
+    return googlePrimary ? [googlePrimary] : [];
+  }
+
   const base = trimTrailingSlash(config.apiUrl);
   const encodedModel = encodeURIComponent(config.model);
   const apiStyle = config.apiStyle || "azure";
@@ -125,7 +133,7 @@ function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
       endpoint: config.version ? `${endpoint}${endpoint.includes("?") ? "&" : "?"}api-version=${encodeURIComponent(config.version)}` : endpoint,
       kind,
       timeoutMs: kind === "chat-completions" || kind === "gemini-generate-content" ? 300000 : 180000,
-      label: isYunwuNanoImageModel(config) ? "yunwu-fallback" : "primary",
+      label: "primary",
     });
   } else if (apiStyle === "openai" || apiStyle === "custom") {
     configuredAttempts.push({
@@ -144,13 +152,6 @@ function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
       timeoutMs: 180000,
       label: "primary",
     });
-  }
-
-  const googlePrimary = buildGoogleProxyAttempt(config);
-
-  // Nano2 / Nano Pro: Google gemini-proxy first, Yunwu as fallback.
-  if (googlePrimary) {
-    return [googlePrimary, ...configuredAttempts];
   }
 
   return configuredAttempts;
@@ -750,6 +751,10 @@ export class FintopiaImageProvider implements ImageProvider {
     const usableAttempts = attempts.filter((attempt) => (
       attempt.googleProxy ? Boolean(attempt.bearerToken) : hasYunwuCredentials
     ));
+
+    if (!usableAttempts.length) {
+      throw new Error("Nano Banana 图像模型必须配置 GOOGLE_API_TOKEN，并通过 Google gemini-proxy 调用。");
+    }
 
     const variantCount = usableAttempts.some((attempt) => attempt.kind === "gemini-generate-content")
       ? Math.min(Math.max(request.constraints.batchSize, 1), 4)

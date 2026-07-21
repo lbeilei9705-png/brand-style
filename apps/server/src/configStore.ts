@@ -106,13 +106,14 @@ function readSeedConfig(): StoredConfig | undefined {
 }
 
 function getModelApiKey(model: ModelConfig): string | undefined {
-  if (model.apiKey || model.provider === "mock") {
+  const isGoogleGeminiProxyModel = (model.apiUrl || "").includes("/functions/v1/gemini-proxy");
+
+  if (model.provider === "mock" || (model.apiKey && !isGoogleGeminiProxyModel)) {
     return model.apiKey;
   }
 
   const normalizedId = model.id.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
   const isYunwuModel = (model.apiUrl || "").includes("yunwu.site");
-  const isGoogleGeminiProxyModel = (model.apiUrl || "").includes("/functions/v1/gemini-proxy");
   const yunwuPurposeEnvNames = isYunwuModel
     ? model.purpose === "language"
       ? ["YUNWU_LANGUAGE_API_KEY"]
@@ -136,15 +137,47 @@ function getModelApiKey(model: ModelConfig): string | undefined {
     }
   }
 
-  return undefined;
+  return model.apiKey;
+}
+
+function getGoogleGeminiProxyUrl(): string {
+  return process.env.GOOGLE_GEMINI_PROXY_URL
+    || `${(process.env.SUPABASE_URL || "https://zbhvoeakhrvzahmmades.supabase.co").replace(/\/+$/, "")}/functions/v1/gemini-proxy`;
+}
+
+function normalizeNanoImageModel(model: ModelConfig): ModelConfig {
+  const normalizedModelIds: Record<string, string> = {
+    "gemini-3.1-flash-image-preview": "gemini-3.1-flash-image",
+    "gemini-3.1-flash-image": "gemini-3.1-flash-image",
+    "gemini-3-pro-image-preview": "gemini-3-pro-image",
+    "gemini-3-pro-image": "gemini-3-pro-image",
+  };
+  const normalizedModel = normalizedModelIds[model.model];
+
+  if (!normalizedModel) {
+    return model;
+  }
+
+  return {
+    ...model,
+    model: normalizedModel,
+    apiUrl: getGoogleGeminiProxyUrl(),
+    apiVersion: "",
+    apiStyle: "custom",
+    apiPath: "",
+  };
 }
 
 function hydrateConfig(config: StoredConfig): StoredConfig {
   return {
-    models: withBuiltInModels(config.models).map((model) => ({
-      ...model,
-      apiKey: getModelApiKey(model),
-    })),
+    models: withBuiltInModels(config.models).map((model) => {
+      const normalizedModel = normalizeNanoImageModel(model);
+
+      return {
+        ...normalizedModel,
+        apiKey: getModelApiKey(normalizedModel),
+      };
+    }),
     agents: config.agents.map((agent) => ({ ...agent })),
     materials: config.materials.map((material) => ({ ...material })),
     colorPalettes: config.colorPalettes.map((palette) => ({ ...palette })),

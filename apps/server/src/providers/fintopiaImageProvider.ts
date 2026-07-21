@@ -100,6 +100,66 @@ function getEndpointLabel(endpoint: string): string {
   }
 }
 
+function logProviderInfo(message: string, details: Record<string, unknown> = {}): void {
+  console.log(JSON.stringify({
+    level: "info",
+    scope: "image-provider",
+    message,
+    time: new Date().toISOString(),
+    ...details,
+  }));
+}
+
+function logProviderError(message: string, details: Record<string, unknown> = {}): void {
+  console.error(JSON.stringify({
+    level: "error",
+    scope: "image-provider",
+    message,
+    time: new Date().toISOString(),
+    ...details,
+  }));
+}
+
+function truncateText(value: string | undefined, maxLength = 1200): string {
+  const text = String(value || "");
+
+  return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+}
+
+function summarizeGenerateRequest(request: GenerateImageRequest, config: FintopiaConfig): Record<string, unknown> {
+  const references = request.referenceAssets?.length ? request.referenceAssets : [request.inputAsset];
+
+  return {
+    taskId: request.taskId,
+    provider: "fintopia",
+    model: config.model,
+    apiStyle: config.apiStyle || "azure",
+    apiPath: config.apiPath || "",
+    hasApiKey: Boolean(config.apiKey),
+    inputAsset: {
+      filename: request.inputAsset.filename,
+      mimeType: request.inputAsset.mimeType,
+      sizeBytes: request.inputAsset.sizeBytes,
+      width: request.inputAsset.width,
+      height: request.inputAsset.height,
+    },
+    referenceAssets: references.map((asset) => ({
+      referenceLabel: asset.referenceLabel,
+      filename: asset.filename,
+      mimeType: asset.mimeType,
+      sizeBytes: asset.sizeBytes,
+      width: asset.width,
+      height: asset.height,
+    })),
+    constraints: request.constraints,
+    prompt: {
+      positive: truncateText(request.prompt.positive),
+      negative: truncateText(request.prompt.negative, 600),
+      template: request.prompt.template,
+    },
+  };
+}
+
 function formatReferenceSummary(request: GenerateImageRequest): string {
   const assets = request.referenceAssets?.length ? request.referenceAssets : [request.inputAsset];
 
@@ -609,6 +669,15 @@ export class FintopiaImageProvider implements ImageProvider {
     const variantCount = attempts.some((attempt) => attempt.kind === "gemini-generate-content")
       ? Math.min(Math.max(request.constraints.batchSize, 1), 4)
       : 1;
+    logProviderInfo("generate request prepared", {
+      ...summarizeGenerateRequest(request, this.config),
+      endpoints: attempts.map((attempt) => ({
+        endpoint: getEndpointLabel(attempt.endpoint),
+        kind: attempt.kind,
+        timeoutMs: attempt.timeoutMs,
+      })),
+      variantCount,
+    });
     const generateVariant = async (variantIndex: number): Promise<string[]> => {
       let response: Response | undefined;
       const failures: string[] = [];
@@ -620,11 +689,31 @@ export class FintopiaImageProvider implements ImageProvider {
         const endpointLabel = getEndpointLabel(endpoint);
 
         try {
+          const variantStartedAt = Date.now();
+          logProviderInfo("model request started", {
+            taskId: request.taskId,
+            model: this.config.model,
+            endpoint: endpointLabel,
+            kind: attempt.kind,
+            variantIndex: variantIndex + 1,
+            variantCount,
+          });
           response = await fetch(endpoint, {
             method: "POST",
             headers: buildHeaders(this.config.apiKey, attempt.kind),
             body: JSON.stringify(buildImagePayload(request, this.config, attempt.kind, variantIndex, variantCount)),
             signal: AbortSignal.timeout(attempt.timeoutMs),
+          });
+          logProviderInfo("model response received", {
+            taskId: request.taskId,
+            model: this.config.model,
+            endpoint: endpointLabel,
+            kind: attempt.kind,
+            variantIndex: variantIndex + 1,
+            variantCount,
+            status: response.status,
+            ok: response.ok,
+            durationMs: Date.now() - variantStartedAt,
           });
 
           if (!response.ok && attempts.indexOf(attempt) < attempts.length - 1) {
@@ -652,6 +741,15 @@ export class FintopiaImageProvider implements ImageProvider {
             ? `请求超过 ${Math.round(attempt.timeoutMs / 1000)} 秒仍未返回，已自动中断`
             : rawDetail;
 
+          logProviderError("model request failed", {
+            taskId: request.taskId,
+            model: this.config.model,
+            endpoint: endpointLabel,
+            kind: attempt.kind,
+            variantIndex: variantIndex + 1,
+            variantCount,
+            error: detail,
+          });
           failures.push(`${endpointLabel}：${detail}`);
         }
       }
@@ -664,10 +762,25 @@ export class FintopiaImageProvider implements ImageProvider {
 
       if (!response.ok) {
         const endpointLabel = getEndpointLabel(response.url);
-        throw new Error(`${endpointLabel} 请求失败：${getErrorMessage(payload) || `HTTP 状态码 ${response.status}`}。`);
+        const errorMessage = getErrorMessage(payload) || `HTTP 状态码 ${response.status}`;
+        logProviderError("model response rejected", {
+          taskId: request.taskId,
+          model: this.config.model,
+          endpoint: endpointLabel,
+          status: response.status,
+          error: errorMessage,
+        });
+        throw new Error(`${endpointLabel} 请求失败：${errorMessage}。`);
       }
 
-      return collectImageUrls(payload);
+      const urls = collectImageUrls(payload);
+      logProviderInfo("model response parsed", {
+        taskId: request.taskId,
+        model: this.config.model,
+        variantIndex: variantIndex + 1,
+        imageCount: urls.length,
+      });
+      return urls;
     };
 
     const variantImageUrlGroups = await Promise.all(

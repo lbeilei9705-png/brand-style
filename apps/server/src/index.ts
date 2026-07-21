@@ -57,6 +57,46 @@ const imageProvider = appConfig.imageProvider === "fintopia" && appConfig.fintop
 const taskService = new TaskService(store, imageProvider);
 const conversationService = new ConversationService(conversationStore, configStore, store, appConfig.fintopia);
 
+function logInfo(scope: string, message: string, details: Record<string, unknown> = {}): void {
+  console.log(JSON.stringify({
+    level: "info",
+    scope,
+    message,
+    time: new Date().toISOString(),
+    ...details,
+  }));
+}
+
+function logError(scope: string, message: string, details: Record<string, unknown> = {}): void {
+  console.error(JSON.stringify({
+    level: "error",
+    scope,
+    message,
+    time: new Date().toISOString(),
+    ...details,
+  }));
+}
+
+function summarizeTaskRequest(request: CreateTaskRequest): Record<string, unknown> {
+  return {
+    inputType: request.inputType,
+    source: request.source,
+    target: request.target,
+    filename: request.filename,
+    mimeType: request.mimeType,
+    sizeBytes: request.sizeBytes,
+    hasAssetDataUrl: Boolean(request.assetDataUrl),
+    referenceAssetCount: request.referenceAssets?.length || 0,
+    stylePresetId: request.stylePresetId || "",
+    hasMaterialPrompt: Boolean(request.materialPrompt),
+    hasColorPrompt: Boolean(request.colorPrompt),
+    hasShapeArchitecturePrompt: Boolean(request.shapeArchitecturePrompt),
+    hasOperationScenarioPrompt: Boolean(request.operationScenarioPrompt),
+    usePromptOrchestrator: request.usePromptOrchestrator,
+    constraints: request.constraints,
+  };
+}
+
 function stripModelSecret<T extends { apiKey?: string }>(model: T): Omit<T, "apiKey"> {
   const { apiKey: _apiKey, ...safeModel } = model;
 
@@ -141,7 +181,13 @@ async function handleCreateTask(req: http.IncomingMessage, res: http.ServerRespo
   const request = contentType.startsWith("multipart/form-data")
     ? normalizeMultipartCreateTaskRequest(req, await readRequestBody(req))
     : normalizeCreateTaskRequest(await readJsonRequest(req));
+  logInfo("task", "create task request", summarizeTaskRequest(request));
   const response = await taskService.createTask(request);
+  logInfo("task", "create task completed", {
+    taskId: response.taskId,
+    resultCount: response.task.results.length,
+    selectedResultId: response.task.selectedResultId,
+  });
 
   sendJson(res, 201, response);
 }
@@ -160,6 +206,14 @@ async function handleAssetUpload(req: http.IncomingMessage, res: http.ServerResp
     filename: asset.filename || "asset.png",
     mimeType: asset.mimeType || "application/octet-stream",
     buffer: asset.buffer,
+  });
+  logInfo("asset", "asset uploaded", {
+    category: parsed.fields.category || "admin",
+    filename: asset.filename,
+    mimeType: asset.mimeType,
+    sizeBytes: asset.sizeBytes,
+    objectKey: uploaded.objectKey,
+    url: uploaded.url,
   });
 
   sendJson(res, 201, { asset: uploaded });
@@ -229,8 +283,27 @@ function isAuthorizedRequest(req: http.IncomingMessage): boolean {
 }
 
 const server = http.createServer(async (req, res) => {
+  const requestId = `req_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+  const startedAt = Date.now();
   const url = new URL(req.url || "/", `http://localhost:${port}`);
   const pathname = url.pathname;
+  res.setHeader("x-request-id", requestId);
+  res.on("finish", () => {
+    logInfo("http", "request completed", {
+      requestId,
+      method: req.method,
+      pathname,
+      statusCode: res.statusCode,
+      durationMs: Date.now() - startedAt,
+    });
+  });
+  logInfo("http", "request received", {
+    requestId,
+    method: req.method,
+    pathname,
+    contentType: req.headers["content-type"] || "",
+    userAgent: req.headers["user-agent"] || "",
+  });
 
   try {
     if (req.method === "OPTIONS") {
@@ -562,6 +635,12 @@ const server = http.createServer(async (req, res) => {
 
     sendJson(res, 405, { error: "Method not allowed." });
   } catch (error) {
+    logError("http", "request failed", {
+      requestId,
+      method: req.method,
+      pathname,
+      error: error instanceof Error ? error.message : String(error),
+    });
     sendJson(res, 500, {
       error: error instanceof Error ? error.message : "Internal server error.",
     });

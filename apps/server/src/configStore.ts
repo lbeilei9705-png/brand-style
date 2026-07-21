@@ -55,6 +55,7 @@ const seedConfigPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "
 const modelApiKeyEnvNames: Record<string, string[]> = {
   "fintopia-gpt-image-2": ["FINTOPIA_API_KEY"],
   "fintopia-gpt-5-5": ["FINTOPIA_API_KEY"],
+  "gemini-3-1-pro": ["GOOGLE_API_TOKEN"],
   "model_1778388177536": ["YUNWU_IMAGE_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
   "nano-banana-pro": ["YUNWU_IMAGE_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
 };
@@ -71,12 +72,29 @@ const mockPreviewModel: ModelConfig = {
   updatedAt: "2026-05-28T08:00:00.000Z",
 };
 
-function withBuiltInModels(models: ModelConfig[]): ModelConfig[] {
-  const hasMockPreview = models.some((model) => model.id === mockPreviewModel.id);
+const gemini31ProModel: ModelConfig = {
+  id: "gemini-3-1-pro",
+  name: "Gemini 3.1 Pro",
+  provider: "fintopia",
+  model: "gemini-3.1-pro-preview",
+  apiUrl: process.env.GOOGLE_GEMINI_PROXY_URL || `${(process.env.SUPABASE_URL || "https://zbhvoeakhrvzahmmades.supabase.co").replace(/\/+$/, "")}/functions/v1/gemini-proxy`,
+  apiStyle: "custom",
+  apiPath: "",
+  purpose: "language",
+  quality: "auto",
+  enabled: true,
+  createdAt: "2026-07-21T05:28:00.000Z",
+  updatedAt: "2026-07-21T05:28:00.000Z",
+};
 
-  return hasMockPreview
-    ? models.map((model) => (model.id === mockPreviewModel.id ? { ...mockPreviewModel, ...model } : model))
-    : [...models, mockPreviewModel];
+function withBuiltInModels(models: ModelConfig[]): ModelConfig[] {
+  return [gemini31ProModel, mockPreviewModel].reduce((items, builtInModel) => {
+    const hasBuiltInModel = items.some((model) => model.id === builtInModel.id);
+
+    return hasBuiltInModel
+      ? items.map((model) => (model.id === builtInModel.id ? { ...builtInModel, ...model } : model))
+      : [...items, builtInModel];
+  }, models);
 }
 
 function readSeedConfig(): StoredConfig | undefined {
@@ -94,13 +112,18 @@ function getModelApiKey(model: ModelConfig): string | undefined {
 
   const normalizedId = model.id.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
   const isYunwuModel = (model.apiUrl || "").includes("yunwu.site");
+  const isGoogleGeminiProxyModel = (model.apiUrl || "").includes("/functions/v1/gemini-proxy");
   const yunwuPurposeEnvNames = isYunwuModel
     ? model.purpose === "language"
       ? ["YUNWU_LANGUAGE_API_KEY"]
       : ["YUNWU_IMAGE_API_KEY"]
     : [];
+  const googlePurposeEnvNames = isGoogleGeminiProxyModel || model.model.startsWith("gemini-")
+    ? ["GOOGLE_API_TOKEN"]
+    : [];
   const envNames = [
     `MODEL_API_KEY_${normalizedId}`,
+    ...googlePurposeEnvNames,
     ...yunwuPurposeEnvNames,
     ...(modelApiKeyEnvNames[model.id] || []),
   ];

@@ -30,6 +30,21 @@
     },
     {
       "apiStyle": "custom",
+      "quality": "auto",
+      "enabled": true,
+      "id": "gemini-3-1-pro",
+      "name": "Gemini 3.1 Pro",
+      "provider": "fintopia",
+      "model": "gemini-3.1-pro-preview",
+      "purpose": "language",
+      "apiUrl": "https://zbhvoeakhrvzahmmades.supabase.co/functions/v1/gemini-proxy",
+      "apiVersion": "",
+      "apiPath": "",
+      "createdAt": "2026-07-21T05:28:00.000Z",
+      "updatedAt": "2026-07-21T05:28:00.000Z"
+    },
+    {
+      "apiStyle": "custom",
       "id": "model_1778388177536",
       "name": " nano- banana-2",
       "provider": "fintopia",

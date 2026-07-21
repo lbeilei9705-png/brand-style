@@ -847,10 +847,13 @@ export class ConversationService {
       }
     }
 
-    return this.configStore.listModels().find((item) => (
+    const enabledLanguageModels = this.configStore.listModels().filter((item) => (
       item.enabled
       && item.provider === "fintopia"
       && item.purpose === "language"
     ));
+
+    return enabledLanguageModels.find((item) => item.id === "gemini-3-1-pro")
+      || enabledLanguageModels[0];
   }
 }

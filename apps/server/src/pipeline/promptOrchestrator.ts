@@ -51,7 +51,27 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+function resolveGoogleGeminiProxyBase(model?: ModelConfig): string {
+  const explicit = (model?.apiUrl || process.env.GOOGLE_GEMINI_PROXY_URL || "").trim();
+
+  if (explicit) {
+    return trimTrailingSlash(explicit);
+  }
+
+  const supabaseUrl = (process.env.SUPABASE_URL || "https://zbhvoeakhrvzahmmades.supabase.co").trim();
+  return `${trimTrailingSlash(supabaseUrl)}/functions/v1/gemini-proxy`;
+}
+
+function isGoogleGeminiProxyModel(model: ModelConfig): boolean {
+  return (model.apiUrl || "").includes("/functions/v1/gemini-proxy")
+    || model.id === "gemini-3-1-pro";
+}
+
 function buildEndpoint(model: ModelConfig, fallback?: FintopiaConfig): string {
+  if (isGoogleGeminiProxyModel(model)) {
+    return resolveGoogleGeminiProxyBase(model);
+  }
+
   const apiUrl = model.apiUrl || fallback?.apiUrl || "";
   const apiStyle = model.apiStyle || fallback?.apiStyle || "azure";
   const apiPath = model.apiPath || fallback?.apiPath || "";
@@ -79,6 +99,11 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
     "Content-Type": "application/json",
   };
 
+  if (isGoogleGeminiProxyModel(model)) {
+    headers.Authorization = `Bearer ${apiKey}`;
+    return headers;
+  }
+
   if ((model.apiStyle || fallback?.apiStyle || "azure") === "azure" && !model.apiPath) {
     headers["api-key"] = apiKey;
   } else {
@@ -86,6 +111,63 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
   }
 
   return headers;
+}
+
+function buildLanguagePayload(model: ModelConfig, systemPrompt: string, userContent: unknown, temperature: number): Record<string, unknown> {
+  if (isGoogleGeminiProxyModel(model)) {
+    const contentText = typeof userContent === "string"
+      ? userContent
+      : JSON.stringify(userContent);
+
+    return {
+      model: model.model,
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: contentText }],
+        },
+      ],
+      generationConfig: {
+        temperature,
+      },
+    };
+  }
+
+  return {
+    model: model.apiStyle === "azure" ? undefined : model.model,
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt,
+      },
+      {
+        role: "user",
+        content: userContent,
+      },
+    ],
+    temperature,
+  };
+}
+
+function extractLanguageText(payload: ChatCompletionResponse): string {
+  const chatContent = payload.choices?.[0]?.message?.content;
+
+  if (chatContent) {
+    return chatContent;
+  }
+
+  const candidates = (payload as unknown as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: unknown }> } }>;
+  }).candidates;
+  const parts = candidates?.[0]?.content?.parts || [];
+
+  return parts
+    .map((part) => (typeof part.text === "string" ? part.text : ""))
+    .filter(Boolean)
+    .join("\n");
 }
 
 function extractJsonObject<T>(content: string): T | undefined {
@@ -469,20 +551,12 @@ export class PromptOrchestrator {
       const response = await fetch(endpoint, {
         method: "POST",
         headers: buildHeaders(this.model, this.fallbackConfig),
-        body: JSON.stringify({
-          model: (this.model.apiStyle || this.fallbackConfig?.apiStyle) === "azure" ? undefined : this.model.model,
-          messages: [
-            {
-              role: "system",
-              content: "你是设计任务 Agent 的意图拆解器。你只负责判断多张参考图的职责关系，并输出严格 JSON。不要生成生图提示词，不要输出解释。",
-            },
-            {
-              role: "user",
-              content: buildReferenceRolePlanContent(request),
-            },
-          ],
-          temperature: 0,
-        }),
+        body: JSON.stringify(buildLanguagePayload(
+          this.model,
+          "你是设计任务 Agent 的意图拆解器。你只负责判断多张参考图的职责关系，并输出严格 JSON。不要生成生图提示词，不要输出解释。",
+          buildReferenceRolePlanContent(request),
+          0,
+        )),
         signal: AbortSignal.timeout(12000),
       });
       const payload = await response.json() as ChatCompletionResponse;
@@ -491,7 +565,7 @@ export class PromptOrchestrator {
         return undefined;
       }
 
-      const content = payload.choices?.[0]?.message?.content || "";
+      const content = extractLanguageText(payload);
       const parsed = extractJsonObject<ReferenceRolePlan>(content);
 
       return validateReferenceRolePlan(parsed, request.referenceAssets || []);
@@ -520,20 +594,12 @@ export class PromptOrchestrator {
       response = await fetch(endpoint, {
         method: "POST",
         headers: buildHeaders(this.model, this.fallbackConfig),
-        body: JSON.stringify({
-          model: (this.model.apiStyle || this.fallbackConfig?.apiStyle) === "azure" ? undefined : this.model.model,
-          messages: [
-            {
-              role: "system",
-              content: "你是一个多模态 3D 视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、风格套装、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；优先级为：用户输入 > 自由搭配（形状/配色/材质）> 风格套装 > 默认高清规则。颜色优先级为：用户输入的颜色/色值最高，当前启用配色第二，风格套装中未作为默认配色启用的颜色描述最低；用户手动选择配色时，优先参考当前配色进行色彩转译，不要让配色规则压过参考图结构、图标数量、元素位置和色块关系；用户未手动选择配色时，可启用风格套装默认配色。未选择任何配色方案时，按照原图色彩执行；清晰度只保留一条简短描述，不要在 positive 堆叠高清、4K、锐利、细节清晰等同义词，禁止项合并到 negative 且去重。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
-            },
-            {
-              role: "user",
-              content: buildUserContent(requestForOptimization),
-            },
-          ],
-          temperature: 0.2,
-        }),
+        body: JSON.stringify(buildLanguagePayload(
+          this.model,
+          "你是一个多模态 3D 视觉生图 Prompt 编排器。你需要阅读用户选中的参考图，结合用户本轮输入、风格套装、材质、形状和配色配置，生成最终可直接用于生图模型的提示词。不要引用历史对话上下文。如果有多张参考图，必须严格按“图1、图2、图3...”区分它们，用户提到某张图时不得混淆。你必须保持用户核心意图；优先级为：用户输入 > 自由搭配（形状/配色/材质）> 风格套装 > 默认高清规则。颜色优先级为：用户输入的颜色/色值最高，当前启用配色第二，风格套装中未作为默认配色启用的颜色描述最低；用户手动选择配色时，优先参考当前配色进行色彩转译，不要让配色规则压过参考图结构、图标数量、元素位置和色块关系；用户未手动选择配色时，可启用风格套装默认配色。未选择任何配色方案时，按照原图色彩执行；清晰度只保留一条简短描述，不要在 positive 堆叠高清、4K、锐利、细节清晰等同义词，禁止项合并到 negative 且去重。只输出 JSON，字段为 positive 和 negative，不要输出 Markdown。",
+          buildUserContent(requestForOptimization),
+          0.2,
+        )),
         signal: AbortSignal.timeout(20000),
       });
     } catch (error) {
@@ -546,7 +612,7 @@ export class PromptOrchestrator {
       throw new Error(message || `语言模型请求失败，HTTP ${response.status}`);
     }
 
-    const content = payload.choices?.[0]?.message?.content || "";
+    const content = extractLanguageText(payload);
     const parsed = extractJsonObject<{ positive?: string; negative?: string }>(content);
 
     if (!parsed?.positive) {

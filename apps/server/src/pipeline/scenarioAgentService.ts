@@ -316,7 +316,27 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+function resolveGoogleGeminiProxyBase(model?: ModelConfig): string {
+  const explicit = (model?.apiUrl || process.env.GOOGLE_GEMINI_PROXY_URL || "").trim();
+
+  if (explicit) {
+    return trimTrailingSlash(explicit);
+  }
+
+  const supabaseUrl = (process.env.SUPABASE_URL || "https://zbhvoeakhrvzahmmades.supabase.co").trim();
+  return `${trimTrailingSlash(supabaseUrl)}/functions/v1/gemini-proxy`;
+}
+
+function isGoogleGeminiProxyModel(model: ModelConfig): boolean {
+  return (model.apiUrl || "").includes("/functions/v1/gemini-proxy")
+    || model.id === "gemini-3-1-pro";
+}
+
 function buildEndpoint(model: ModelConfig, fallback?: FintopiaConfig): string {
+  if (isGoogleGeminiProxyModel(model)) {
+    return resolveGoogleGeminiProxyBase(model);
+  }
+
   const apiUrl = model.apiUrl || fallback?.apiUrl || "";
   const apiStyle = model.apiStyle || fallback?.apiStyle || "azure";
   const apiPath = model.apiPath || fallback?.apiPath || "";
@@ -344,6 +364,11 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
     "Content-Type": "application/json",
   };
 
+  if (isGoogleGeminiProxyModel(model)) {
+    headers.Authorization = `Bearer ${apiKey}`;
+    return headers;
+  }
+
   if ((model.apiStyle || fallback?.apiStyle || "azure") === "azure" && !model.apiPath) {
     headers["api-key"] = apiKey;
   } else {
@@ -351,6 +376,52 @@ function buildHeaders(model: ModelConfig, fallback?: FintopiaConfig): HeadersIni
   }
 
   return headers;
+}
+
+function buildLanguagePayload(model: ModelConfig, systemPrompt: string, userContent: string): Record<string, unknown> {
+  if (isGoogleGeminiProxyModel(model)) {
+    return {
+      model: model.model,
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: userContent }],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+      },
+    };
+  }
+
+  return {
+    model: model.apiStyle === "azure" ? undefined : model.model,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userContent },
+    ],
+    temperature: 0.2,
+  };
+}
+
+function extractLanguageText(payload: Record<string, unknown>): string {
+  const choices = payload.choices as Array<{ message?: { content?: unknown } }> | undefined;
+  const chatContent = choices?.[0]?.message?.content;
+
+  if (typeof chatContent === "string") {
+    return chatContent;
+  }
+
+  const candidates = payload.candidates as Array<{ content?: { parts?: Array<{ text?: unknown }> } }> | undefined;
+  const parts = candidates?.[0]?.content?.parts || [];
+
+  return parts
+    .map((part) => (typeof part.text === "string" ? part.text : ""))
+    .filter(Boolean)
+    .join("\n");
 }
 
 function getReadableLanguageModelError(error: unknown, model?: ModelConfig): string {
@@ -741,26 +812,20 @@ export async function runScenarioAgent(
       response = await fetch(buildEndpoint(input.model, input.fallbackConfig), {
         method: "POST",
         headers: buildHeaders(input.model, input.fallbackConfig),
-        body: JSON.stringify({
-          model: (input.model.apiStyle || input.fallbackConfig?.apiStyle) === "azure" ? undefined : input.model.model,
-          messages: [
-            { role: "system", content: skillSystemPrompt },
-            { role: "user", content: userContent },
-          ],
-          temperature: 0.2,
-        }),
+        body: JSON.stringify(buildLanguagePayload(input.model, skillSystemPrompt, userContent)),
         signal: AbortSignal.timeout(60000),
       });
     } catch (error) {
       throw new Error(getReadableLanguageModelError(error, input.model));
     }
-    const payload = await response.json();
+    const payload = await response.json() as Record<string, unknown>;
 
     if (!response.ok) {
-      throw new Error(payload.error?.message || payload.error || "场景智能体调用失败。");
+      const error = payload.error as { message?: string } | string | undefined;
+      throw new Error((typeof error === "string" ? error : error?.message) || "场景智能体调用失败。");
     }
 
-    const rawOutput = payload.choices?.[0]?.message?.content || "";
+    const rawOutput = extractLanguageText(payload);
     const shouldParseFinalPrompt = parsed.agent.outputMode === "json_final_prompt";
     const parsedOutput = shouldParseFinalPrompt ? extractJsonObject(rawOutput) : undefined;
     const stageOutput = parsed.agent.outputMode === "prompt_sections" ? extractJsonObject(rawOutput) : undefined;

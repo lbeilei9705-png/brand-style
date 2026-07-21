@@ -34,7 +34,24 @@ interface EndpointAttempt {
   endpoint: string;
   kind: EndpointKind;
   timeoutMs: number;
+  /** Bearer token auth (Supabase gemini-proxy). When set, skip Yunwu `?key=` query auth. */
+  bearerToken?: string;
+  /** GA model id for Google proxy (preview ids are mapped). */
+  modelId?: string;
+  /** Build Google Vertex-compatible generateContent payload. */
+  googleProxy?: boolean;
+  label?: string;
 }
+
+const DEFAULT_GEMINI_PROXY_BASE = "https://zbhvoeakhrvzahmmades.supabase.co/functions/v1/gemini-proxy";
+
+/** Preview image model IDs retired on Vertex; map to GA ids for Google fallback. */
+const GOOGLE_IMAGE_MODEL_ALIASES: Record<string, string> = {
+  "gemini-3.1-flash-image-preview": "gemini-3.1-flash-image",
+  "gemini-3-pro-image-preview": "gemini-3-pro-image",
+  "gemini-3.1-flash-image": "gemini-3.1-flash-image",
+  "gemini-3-pro-image": "gemini-3-pro-image",
+};
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
@@ -46,10 +63,53 @@ function joinUrl(baseUrl: string, path: string): string {
   return `${base}${normalizedPath}`;
 }
 
+function resolveGoogleGeminiProxyBase(): string {
+  const explicit = (process.env.GOOGLE_GEMINI_PROXY_URL || "").trim();
+
+  if (explicit) {
+    return trimTrailingSlash(explicit);
+  }
+
+  const supabaseUrl = (process.env.SUPABASE_URL || "").trim();
+
+  if (supabaseUrl) {
+    return `${trimTrailingSlash(supabaseUrl)}/functions/v1/gemini-proxy`;
+  }
+
+  return DEFAULT_GEMINI_PROXY_BASE;
+}
+
+function normalizeGoogleImageModelId(model: string): string | undefined {
+  return GOOGLE_IMAGE_MODEL_ALIASES[(model || "").trim()];
+}
+
+function buildGoogleProxyAttempt(config: FintopiaConfig): EndpointAttempt | undefined {
+  const isYunwu = (config.apiUrl || "").includes("yunwu.site");
+  const googleModel = normalizeGoogleImageModelId(config.model);
+  const googleToken = (process.env.GOOGLE_API_TOKEN || "").trim();
+
+  if (!isYunwu || !googleModel || !googleToken) {
+    return undefined;
+  }
+
+  const encodedModel = encodeURIComponent(googleModel);
+
+  return {
+    endpoint: `${resolveGoogleGeminiProxyBase()}/${encodedModel}:generateContent`,
+    kind: "gemini-generate-content",
+    timeoutMs: 300000,
+    bearerToken: googleToken,
+    modelId: googleModel,
+    googleProxy: true,
+    label: "google-gemini-proxy",
+  };
+}
+
 function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
   const base = trimTrailingSlash(config.apiUrl);
   const encodedModel = encodeURIComponent(config.model);
   const apiStyle = config.apiStyle || "azure";
+  const attempts: EndpointAttempt[] = [];
 
   if (config.apiPath) {
     const endpoint = joinUrl(base, config.apiPath.replace("{model}", encodedModel));
@@ -58,37 +118,38 @@ function buildEndpointAttempts(config: FintopiaConfig): EndpointAttempt[] {
       : config.apiPath.includes("/chat/completions")
         ? "chat-completions"
         : "openai-images";
-    return [{
+    attempts.push({
       endpoint: config.version ? `${endpoint}${endpoint.includes("?") ? "&" : "?"}api-version=${encodeURIComponent(config.version)}` : endpoint,
       kind,
       timeoutMs: kind === "chat-completions" || kind === "gemini-generate-content" ? 300000 : 180000,
-    }];
-  }
-
-  if (apiStyle === "openai") {
-    return [{
+      label: "primary",
+    });
+  } else if (apiStyle === "openai" || apiStyle === "custom") {
+    attempts.push({
       endpoint: joinUrl(base, "/v1/images/generations"),
       kind: "openai-images",
       timeoutMs: 180000,
-    }];
-  }
+      label: "primary",
+    });
+  } else {
+    const endpoint = `${base}/openai/deployments/${encodedModel}/images/generations`;
+    const azureEndpoint = config.version ? `${endpoint}?api-version=${encodeURIComponent(config.version)}` : endpoint;
 
-  if (apiStyle === "custom") {
-    return [{
-      endpoint: joinUrl(base, "/v1/images/generations"),
-      kind: "openai-images",
+    attempts.push({
+      endpoint: azureEndpoint,
+      kind: "azure-images",
       timeoutMs: 180000,
-    }];
+      label: "primary",
+    });
   }
 
-  const endpoint = `${base}/openai/deployments/${encodedModel}/images/generations`;
-  const azureEndpoint = config.version ? `${endpoint}?api-version=${encodeURIComponent(config.version)}` : endpoint;
+  const googleFallback = buildGoogleProxyAttempt(config);
 
-  return [{
-    endpoint: azureEndpoint,
-    kind: "azure-images",
-    timeoutMs: 180000,
-  }];
+  if (googleFallback) {
+    attempts.push(googleFallback);
+  }
+
+  return attempts;
 }
 
 function getEndpointLabel(endpoint: string): string {
@@ -387,7 +448,14 @@ function buildVariantInstruction(variantIndex: number, variantCount: number): st
   return `这是第 ${variantIndex + 1}/${variantCount} 张候选图。必须保持同一主体结构和风格，但使用与其他候选明显不同的配色方案；不要只做轻微明暗变化。`;
 }
 
-function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig, kind: EndpointKind, variantIndex = 0, variantCount = 1): Record<string, unknown> {
+function buildImagePayload(
+  request: GenerateImageRequest,
+  config: FintopiaConfig,
+  kind: EndpointKind,
+  variantIndex = 0,
+  variantCount = 1,
+  options: { modelId?: string; googleProxy?: boolean } = {},
+): Record<string, unknown> {
   const outputSize = buildOutputSize(request);
   const variantInstruction = buildVariantInstruction(variantIndex, variantCount);
 
@@ -420,7 +488,7 @@ function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig
       });
     }
 
-    return {
+    const payload: Record<string, unknown> = {
       contents: [
         {
           role: "user",
@@ -428,13 +496,19 @@ function buildImagePayload(request: GenerateImageRequest, config: FintopiaConfig
         },
       ],
       generationConfig: {
-        responseModalities: ["image"],
+        responseModalities: options.googleProxy ? ["TEXT", "IMAGE"] : ["image"],
         imageConfig: {
           aspectRatio: normalizeGeminiAspectRatio(request.constraints.aspectRatio),
           imageSize: request.constraints.resolution.toUpperCase(),
         },
       },
     };
+
+    if (options.modelId) {
+      payload.model = options.modelId;
+    }
+
+    return payload;
   }
 
   if (kind === "chat-completions") {
@@ -661,20 +735,30 @@ export class FintopiaImageProvider implements ImageProvider {
   }
 
   async generate(request: GenerateImageRequest): Promise<GeneratedImage[]> {
-    if (!this.config.apiUrl || !this.config.apiKey) {
-      throw new Error("当前模型缺少 API URL 或 API Key。请在模型管理中补齐配置。");
+    const attempts = buildEndpointAttempts(this.config);
+    const hasPrimaryCredentials = Boolean(this.config.apiUrl && this.config.apiKey);
+    const hasGoogleFallback = attempts.some((attempt) => attempt.googleProxy && attempt.bearerToken);
+
+    if (!hasPrimaryCredentials && !hasGoogleFallback) {
+      throw new Error("当前模型缺少 API URL 或 API Key。请在模型管理中补齐配置，或为 Nano 模型配置 GOOGLE_API_TOKEN 兜底。");
     }
 
-    const attempts = buildEndpointAttempts(this.config);
-    const variantCount = attempts.some((attempt) => attempt.kind === "gemini-generate-content")
+    const usableAttempts = hasPrimaryCredentials
+      ? attempts
+      : attempts.filter((attempt) => attempt.googleProxy && attempt.bearerToken);
+
+    const variantCount = usableAttempts.some((attempt) => attempt.kind === "gemini-generate-content")
       ? Math.min(Math.max(request.constraints.batchSize, 1), 4)
       : 1;
     logProviderInfo("generate request prepared", {
       ...summarizeGenerateRequest(request, this.config),
-      endpoints: attempts.map((attempt) => ({
+      endpoints: usableAttempts.map((attempt) => ({
         endpoint: getEndpointLabel(attempt.endpoint),
         kind: attempt.kind,
         timeoutMs: attempt.timeoutMs,
+        label: attempt.label || "primary",
+        googleProxy: Boolean(attempt.googleProxy),
+        modelId: attempt.modelId || this.config.model,
       })),
       variantCount,
     });
@@ -682,33 +766,54 @@ export class FintopiaImageProvider implements ImageProvider {
       let response: Response | undefined;
       const failures: string[] = [];
 
-      for (const attempt of attempts) {
-        const endpoint = attempt.kind === "gemini-generate-content"
+      for (const attempt of usableAttempts) {
+        const endpoint = attempt.kind === "gemini-generate-content" && !attempt.bearerToken
           ? `${attempt.endpoint}${attempt.endpoint.includes("?") ? "&" : "?"}key=${encodeURIComponent(this.config.apiKey)}`
           : attempt.endpoint;
         const endpointLabel = getEndpointLabel(endpoint);
+        const requestModel = attempt.modelId || this.config.model;
 
         try {
           const variantStartedAt = Date.now();
           logProviderInfo("model request started", {
             taskId: request.taskId,
-            model: this.config.model,
+            model: requestModel,
             endpoint: endpointLabel,
             kind: attempt.kind,
+            label: attempt.label || "primary",
+            googleProxy: Boolean(attempt.googleProxy),
             variantIndex: variantIndex + 1,
             variantCount,
           });
+          const headers: Record<string, string> = attempt.bearerToken
+            ? {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${attempt.bearerToken}`,
+            }
+            : buildHeaders(this.config.apiKey, attempt.kind) as Record<string, string>;
           response = await fetch(endpoint, {
             method: "POST",
-            headers: buildHeaders(this.config.apiKey, attempt.kind),
-            body: JSON.stringify(buildImagePayload(request, this.config, attempt.kind, variantIndex, variantCount)),
+            headers,
+            body: JSON.stringify(buildImagePayload(
+              request,
+              this.config,
+              attempt.kind,
+              variantIndex,
+              variantCount,
+              {
+                modelId: attempt.modelId,
+                googleProxy: attempt.googleProxy,
+              },
+            )),
             signal: AbortSignal.timeout(attempt.timeoutMs),
           });
           logProviderInfo("model response received", {
             taskId: request.taskId,
-            model: this.config.model,
+            model: requestModel,
             endpoint: endpointLabel,
             kind: attempt.kind,
+            label: attempt.label || "primary",
+            googleProxy: Boolean(attempt.googleProxy),
             variantIndex: variantIndex + 1,
             variantCount,
             status: response.status,
@@ -716,7 +821,7 @@ export class FintopiaImageProvider implements ImageProvider {
             durationMs: Date.now() - variantStartedAt,
           });
 
-          if (!response.ok && attempts.indexOf(attempt) < attempts.length - 1) {
+          if (!response.ok && usableAttempts.indexOf(attempt) < usableAttempts.length - 1) {
             let errorMessage = `HTTP ${response.status}`;
 
             try {
@@ -726,6 +831,14 @@ export class FintopiaImageProvider implements ImageProvider {
               // Some gateways return empty/non-JSON errors; keep the HTTP status.
             }
 
+            logProviderError("model response rejected, trying fallback", {
+              taskId: request.taskId,
+              model: requestModel,
+              endpoint: endpointLabel,
+              label: attempt.label || "primary",
+              status: response.status,
+              error: errorMessage,
+            });
             failures.push(`${endpointLabel}：${errorMessage}`);
             response = undefined;
             continue;
@@ -743,9 +856,11 @@ export class FintopiaImageProvider implements ImageProvider {
 
           logProviderError("model request failed", {
             taskId: request.taskId,
-            model: this.config.model,
+            model: requestModel,
             endpoint: endpointLabel,
             kind: attempt.kind,
+            label: attempt.label || "primary",
+            googleProxy: Boolean(attempt.googleProxy),
             variantIndex: variantIndex + 1,
             variantCount,
             error: detail,

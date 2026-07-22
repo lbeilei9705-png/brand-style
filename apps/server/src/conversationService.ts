@@ -295,7 +295,7 @@ export class ConversationService {
       sizeBytes: new TextEncoder().encode(request.content).length,
     };
 
-    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 4;
+    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 1;
     const batchSize = Math.min(4, Math.max(1, requestedBatchSize));
     const materialPresetIds = request.materialPresetIds?.length
       ? request.materialPresetIds
@@ -332,6 +332,7 @@ export class ConversationService {
     const operationScenario = request.operationScenarioId
       ? this.configStore.listOperationScenarios().find((item) => item.id === request.operationScenarioId && item.enabled)
       : undefined;
+    const hasGenerationConfig = Boolean(agent.id || materials.length || colorPalette || shapeArchitecture || operationScenario);
     const dedupedStylePrompt = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
       hasManualPalette: Boolean(colorPalette),
       hasManualMaterials: materials.length > 0,
@@ -365,8 +366,8 @@ export class ConversationService {
           negativeRules: agent.defaultNegativeRules,
         }
         : undefined,
-      extraNegativeRules: operationScenario ? [] : agent.defaultNegativeRules,
-      usePromptOrchestrator: operationScenario ? false : request.usePromptOrchestrator !== false,
+      extraNegativeRules: operationScenario || !hasGenerationConfig ? [] : agent.defaultNegativeRules,
+      usePromptOrchestrator: hasGenerationConfig && !operationScenario && request.usePromptOrchestrator !== false,
       orchestrationContext: {
         selectedImage: {
           referenceLabel: primaryAsset.referenceLabel,
@@ -547,7 +548,7 @@ export class ConversationService {
       mimeType: "text/plain",
       sizeBytes: new TextEncoder().encode(request.content).length,
     };
-    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 4;
+    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 1;
     const batchSize = Math.min(4, Math.max(1, requestedBatchSize));
     const materialPresetIds = request.materialPresetIds?.length
       ? request.materialPresetIds
@@ -584,6 +585,7 @@ export class ConversationService {
     const operationScenario = request.operationScenarioId
       ? this.configStore.listOperationScenarios().find((item) => item.id === request.operationScenarioId && item.enabled)
       : undefined;
+    const hasGenerationConfig = Boolean(agent.id || materials.length || colorPalette || shapeArchitecture || operationScenario);
     const dedupedStylePrompt = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
       hasManualPalette: Boolean(colorPalette),
       hasManualMaterials: materials.length > 0,
@@ -617,8 +619,8 @@ export class ConversationService {
           negativeRules: agent.defaultNegativeRules,
         }
         : undefined,
-      extraNegativeRules: operationScenario ? [] : agent.defaultNegativeRules,
-      usePromptOrchestrator: operationScenario ? false : request.usePromptOrchestrator !== false,
+      extraNegativeRules: operationScenario || !hasGenerationConfig ? [] : agent.defaultNegativeRules,
+      usePromptOrchestrator: hasGenerationConfig && !operationScenario && request.usePromptOrchestrator !== false,
       orchestrationContext: {
         selectedImage: {
           referenceLabel: primaryAsset.referenceLabel,

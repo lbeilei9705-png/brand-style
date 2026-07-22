@@ -13,7 +13,7 @@ const defaultConstraints: GenerationConstraints = {
   transparentBackground: true,
   fidelityLevel: "balanced",
   variationStrength: "medium",
-  batchSize: 4,
+  batchSize: 1,
   aspectRatio: "1:1",
   resolution: "2k",
 };

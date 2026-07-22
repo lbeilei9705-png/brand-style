@@ -122,10 +122,17 @@ export function buildPromptBundle(
 ): PromptBundle {
   const { stylePreset } = stylePack;
   const hasReferenceImage = hasImageReference(inputAsset);
+  const hasStyleGuidance = Boolean(
+    context.agentSystemPrompt
+    || context.materialPrompt
+    || context.colorPrompt
+    || context.shapeArchitecturePrompt
+    || stylePreset,
+  );
   const shouldTransferReferenceMaterial = hasReferenceMaterialTransferIntent(context.userMessage);
   const shouldPreserveExplicitColors = hasExplicitColorPreservation(context.userMessage);
   const isSketchTo3d = preprocess.mode === "sketch_to_3d";
-  const shouldSkipDefaultStructureRule = shouldTransferReferenceMaterial && !context.shapeArchitecturePrompt;
+  const shouldSkipDefaultStructureRule = !hasStyleGuidance || (shouldTransferReferenceMaterial && !context.shapeArchitecturePrompt);
   const structureRule = isSketchTo3d || shouldSkipDefaultStructureRule
     ? ""
     : formatStructureRule(context.shapeArchitecturePrompt, constraints.preserveStructure, hasReferenceImage);
@@ -147,7 +154,7 @@ export function buildPromptBundle(
     : `输出 ${constraints.aspectRatio}、${constraints.resolution}，清晰锐利，材质和小元素可辨。`;
   const negativeRules = splitNegativeRules([
     ...(context.extraNegativeRules || []),
-    ...(!hasReferenceImage || isSketchTo3d ? [] : [
+    ...(!hasStyleGuidance || !hasReferenceImage || isSketchTo3d ? [] : [
       "不要扭曲原始轮廓",
       "不要添加输入图之外的额外元素",
     ]),

@@ -3330,7 +3330,7 @@
           `参考图编号：\n${buildReferenceDebugText(task)}`,
           `语言模型最终正向 Prompt：\n${task.prompt?.positive || "无"}`,
           `语言模型最终负向 Prompt：\n${task.prompt?.negative || "无"}`,
-          `输出设置：\n比例：${task.constraints?.aspectRatio || "未知"}\n分辨率：${task.constraints?.resolution || "未知"}`,
+          `输出设置：\n比例：${task.constraints?.aspectRatio || "未知"}\n分辨率：${task.constraints?.resolution || "未知"}\n请求张数：${task.constraints?.batchSize || "未知"}`,
         ].join("\n\n");
 
         panel.className = "debug-panel";
@@ -3352,6 +3352,7 @@
         appendDebugSection(panel, "输出设置", [
           `比例：${task.constraints?.aspectRatio || "未知"}`,
           `分辨率：${task.constraints?.resolution || "未知"}`,
+          `请求张数：${task.constraints?.batchSize || "未知"}`,
         ].join("\n"));
 
         return panel;
@@ -3536,6 +3537,7 @@
       async function submitConversationMessage(content, messageAttachments, inputType = "auto", hasRetried = false, signal) {
         const conversationId = await ensureConversation(signal);
         const directPrompt = buildDirectPromptFromScenarioDraft(content);
+        const currentBatchSize = resolveBatchSize();
         const response = await apiFetch(`/api/conversations/${conversationId}/messages`, {
           method: "POST",
           headers: {
@@ -3547,7 +3549,7 @@
             agentId: agentSelect.value,
             inputType,
             selectionAssets: messageAttachments,
-            batchSize,
+            batchSize: currentBatchSize,
             aspectRatio: resolveAspectRatio(),
             resolution,
             materialPresetIds,
@@ -3556,7 +3558,7 @@
             shapeArchitectureId,
             operationScenarioId: selectedOperationScenarioId || undefined,
             directPrompt,
-            usePromptOrchestrator: directPrompt ? false : true,
+            usePromptOrchestrator: directPrompt ? false : hasPromptOrchestrationConfig(),
           }),
           signal,
         });
@@ -3603,6 +3605,23 @@
         if (activeGenerationController) {
           activeGenerationController.abort();
         }
+      }
+
+      function resolveBatchSize() {
+        batchSize = Math.min(4, Math.max(1, Number(batchSizeSelect.value) || 1));
+        batchSizeSelect.value = String(batchSize);
+        return batchSize;
+      }
+
+      function hasPromptOrchestrationConfig() {
+        return Boolean(
+          agentSelect.value
+          || materialPresetIds.length
+          || colorPaletteId
+          || customPaletteColors.length
+          || shapeArchitectureId
+          || selectedOperationScenarioId
+        );
       }
 
       async function sendMessage() {
@@ -3683,8 +3702,9 @@
           return;
         }
 
-        const loadingText = batchSize > 1
-          ? `正在并发渲染 ${batchSize} 张候选图...`
+        const currentBatchSize = resolveBatchSize();
+        const loadingText = currentBatchSize > 1
+          ? `正在并发渲染 ${currentBatchSize} 张候选图...`
           : "正在渲染一种‘甲方闭嘴’的高级感...";
         let renderTimer;
         const generationController = new AbortController();
@@ -3881,8 +3901,7 @@
         resolution = resolutionSelect.value;
       });
       batchSizeSelect.addEventListener("change", () => {
-        batchSize = Math.min(4, Math.max(1, Number(batchSizeSelect.value) || 1));
-        batchSizeSelect.value = String(batchSize);
+        resolveBatchSize();
       });
       colorPaletteSelect.addEventListener("change", () => {
         colorPaletteId = colorPaletteSelect.value;

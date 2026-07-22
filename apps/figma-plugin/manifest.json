@@ -8,6 +8,7 @@
   "networkAccess": {
     "allowedDomains": [
       "https://brand-style.fintopia-social-media-ads-tools.tech",
+      "https://*.aliyuncs.com",
       "https://brand-style-api.onrender.com",
       "https://*.onrender.com",
       "https://yunwu.site",
@@ -17,6 +18,7 @@
     "devAllowedDomains": [
       "http://localhost:5180",
       "https://brand-style.fintopia-social-media-ads-tools.tech",
+      "https://*.aliyuncs.com",
       "https://brand-style-api.onrender.com",
       "https://*.onrender.com",
       "https://yunwu.site",

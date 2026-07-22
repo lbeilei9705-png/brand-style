@@ -2936,6 +2936,7 @@
           event.stopPropagation();
           materialPresetIds = [];
           renderMaterialPanel();
+          updateRunState();
         });
         header.appendChild(clearButton);
         materialPanel.appendChild(header);
@@ -2954,7 +2955,9 @@
               ? [...materialPresetIds, material.id]
               : materialPresetIds.filter((id) => id !== material.id);
             label.classList.toggle("selected", checkbox.checked);
+            clearButton.disabled = !materialPresetIds.length;
             updateMaterialButton();
+            updateRunState();
           });
           const preview = document.createElement("div");
           const previewImageUrl = resolveMaterialPreviewUrl(material.previewImageUrl);

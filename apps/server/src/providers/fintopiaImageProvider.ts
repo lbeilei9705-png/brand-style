@@ -472,6 +472,7 @@ function buildImagePayload(
           variantInstruction,
           `输出比例：${request.constraints.aspectRatio}，实际 imageConfig.aspectRatio：${normalizeGeminiAspectRatio(request.constraints.aspectRatio)}。`,
           `输出清晰度：${request.constraints.resolution}，实际 imageConfig.imageSize：${request.constraints.resolution.toUpperCase()}。`,
+          `只生成 ${request.constraints.batchSize} 张图片，不要在同一次响应里返回更多图片。`,
           "必须输出高清锐利图像，边缘清楚，局部细节可辨认，不要柔焦、虚化、糊边或低分辨率放大感。",
         ].join("\n\n"),
       },
@@ -910,7 +911,8 @@ export class FintopiaImageProvider implements ImageProvider {
     const variantImageUrlGroups = await Promise.all(
       Array.from({ length: variantCount }, (_, variantIndex) => generateVariant(variantIndex)),
     );
-    const imageUrls = variantImageUrlGroups.flat();
+    const requestedImageCount = Math.min(Math.max(request.constraints.batchSize, 1), 4);
+    const imageUrls = variantImageUrlGroups.flat().slice(0, requestedImageCount);
 
     if (!imageUrls.length) {
       throw new Error("当前模型接口响应中没有解析到图片。如果你使用的是 /v1/chat/completions 中转站，请确认该模型会在 message.content 或 message.images 中返回图片 URL/base64。");

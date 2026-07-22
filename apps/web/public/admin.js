@@ -575,6 +575,7 @@ function resetMaterialForm() {
 
 function fillMaterialForm(material) {
   qs("#material-modal-title").textContent = "编辑材质";
+  qs("#material-preview-image-file").value = "";
   qs("#material-id").value = material.id;
   qs("#material-name").value = material.name;
   qs("#material-prompt").value = material.prompt;
@@ -584,24 +585,41 @@ function fillMaterialForm(material) {
 
 async function saveMaterial(event) {
   event.preventDefault();
-  const uploadFile = qs("#material-preview-image-file").files[0];
-  const uploadedUrl = uploadFile ? await uploadAsset(uploadFile, "material-thumbnails") : "";
-  await requestJson("/api/config/materials", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      id: qs("#material-id").value || undefined,
-      name: qs("#material-name").value,
-      description: qs("#material-name").value,
-      prompt: qs("#material-prompt").value,
-      previewImageUrl: uploadedUrl || qs("#material-preview-image-url").value.trim(),
-      enabled: boolValue(qs("#material-enabled").value),
-    }),
-  });
-  closeModals();
-  await loadConfig();
+  const submitButton = event.submitter || qs("#material-form button[type='submit']");
+  const originalText = submitButton?.textContent || "保存材质";
+
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "保存中...";
+  }
+
+  try {
+    const uploadFile = qs("#material-preview-image-file").files[0];
+    const uploadedUrl = uploadFile ? await uploadAsset(uploadFile, "material-thumbnails") : "";
+    await requestJson("/api/config/materials", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: qs("#material-id").value || undefined,
+        name: qs("#material-name").value,
+        description: qs("#material-name").value,
+        prompt: qs("#material-prompt").value,
+        previewImageUrl: uploadedUrl || qs("#material-preview-image-url").value.trim(),
+        enabled: boolValue(qs("#material-enabled").value),
+      }),
+    });
+    closeModals();
+    await loadConfig();
+  } catch (error) {
+    alert(error instanceof Error ? error.message : "保存材质失败");
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+    }
+  }
 }
 
 async function deleteMaterial(materialId) {

@@ -1714,6 +1714,259 @@
         font-size: 11px;
       }
 
+      /* Light card treatment based on the compact Figma reference. */
+      :root {
+        --plugin-card-bg: #ffffff;
+        --plugin-page-bg: #f4f4f6;
+        --plugin-card-border: #e5e5e8;
+        --plugin-text: #1c1c1e;
+        --plugin-muted: #7c7c80;
+        --plugin-placeholder: #aeaeb2;
+        --plugin-control-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+      }
+
+      body,
+      .app {
+        background: var(--plugin-page-bg);
+      }
+
+      .app {
+        display: block;
+        grid-template-rows: 296px minmax(0, 1fr);
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: var(--plugin-page-bg);
+      }
+
+      .chat {
+        min-height: 296px;
+        border-bottom: 0;
+        background: transparent;
+      }
+
+      .agent-console {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 14px;
+        max-height: none;
+        overflow: visible;
+        border-top: 0;
+        padding: 14px 10px 10px;
+        background: var(--plugin-page-bg);
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+
+      .control-strip {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .config-section,
+      .composer-card {
+        flex: 0 0 auto;
+        border: 0;
+        background: var(--plugin-card-bg);
+        box-shadow: none;
+      }
+
+      .config-section {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        min-height: 68px;
+        border-radius: 15px;
+        padding: 10px;
+      }
+
+      .free-mix-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        align-items: flex-start;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .free-mix-row > .control-select,
+      .free-mix-row > .palette-select-wrap,
+      .free-mix-row > .multi-select-wrap {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .control-section-label {
+        gap: 4px;
+        padding: 0;
+        color: var(--plugin-muted);
+        font-size: 8px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .tooltip-trigger {
+        width: 10px;
+        height: 10px;
+        border-color: var(--plugin-muted);
+        border-width: 0.9px;
+        color: var(--plugin-muted);
+        font-size: 7px;
+      }
+
+      .control-select,
+      .multi-select-button,
+      .pill-select,
+      #model-select,
+      .add-selection-button,
+      .icon-button {
+        min-height: 30px;
+        border: 1px solid var(--plugin-card-border);
+        border-radius: 15px;
+        background-color: #ffffff;
+        color: var(--plugin-text);
+        box-shadow: var(--plugin-control-shadow);
+        font-size: 10px;
+        font-weight: 600;
+      }
+
+      .control-select,
+      .pill-select {
+        padding-right: 28px;
+        padding-left: 10px;
+        background-position: right 10px center;
+      }
+
+      .free-mix-row .control-select,
+      .free-mix-row .multi-select-button {
+        padding-right: 18px;
+        padding-left: 10px;
+        background-position: right 8px center;
+      }
+
+      .multi-select-button {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .composer-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-height: 292px;
+        height: auto;
+        overflow: visible;
+        border-radius: 18px;
+        padding: 14px 10px 18px;
+        box-shadow: 0 4px 7px rgba(0, 0, 0, 0.03);
+      }
+
+      .selection-tools {
+        gap: 8px;
+        padding: 0;
+      }
+
+      .add-selection-button {
+        flex: 0 0 auto;
+        min-height: 26px;
+        border-radius: 20px;
+        padding: 0 10px;
+      }
+
+      .selection-status {
+        flex: 1 1 0;
+        color: var(--plugin-muted);
+        font-size: 8px;
+        font-weight: 400;
+        white-space: normal;
+      }
+
+      .attachment-row {
+        padding: 0;
+      }
+
+      textarea {
+        flex: 0 0 auto;
+        height: 112px;
+        min-height: 112px;
+        max-height: 112px;
+        border: 1px solid var(--plugin-card-border);
+        border-radius: 15px;
+        padding: 12px;
+        background: #ffffff;
+        color: var(--plugin-text);
+        box-shadow: var(--plugin-control-shadow);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+
+      textarea::placeholder {
+        color: var(--plugin-placeholder);
+      }
+
+      .composer-footer {
+        flex: 0 0 auto;
+        grid-template-columns: 44px repeat(5, minmax(0, 1fr));
+        gap: 6px;
+        padding: 0;
+      }
+
+      #aspect-ratio-select,
+      #resolution-select,
+      #batch-size-select {
+        grid-column: span 2;
+      }
+
+      #model-select {
+        grid-column: 1 / -1;
+      }
+
+      #new-chat-button {
+        grid-column: 1;
+        width: 44px;
+        min-width: 44px;
+        height: 34px;
+        min-height: 34px;
+        border-radius: 16px;
+        padding: 0;
+        justify-self: stretch;
+        font-size: 14px;
+      }
+
+      .run-button {
+        grid-column: 2 / -1;
+        width: 100%;
+        height: 34px;
+        min-height: 34px;
+        border: 0;
+        border-radius: 16px;
+        background: #efefef;
+        color: #8f8f94;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .run-button:not(:disabled) {
+        background: #111827;
+        color: #ffffff;
+        box-shadow: 0 8px 9px rgba(0, 0, 0, 0.08);
+      }
+
+      .multi-select-panel,
+      .palette-inline-editor {
+        border-color: var(--plugin-card-border);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+      }
+
+      #material-panel {
+        margin-top: 4px;
+        background: rgba(255, 255, 255, 0.78);
+      }
+
     </style>
   </head>
   <body>
@@ -1725,30 +1978,36 @@
 
       <section class="agent-console">
         <div class="control-strip">
-          <div class="control-section-label">
-            <span>自由搭配</span>
-            <span class="tooltip-trigger" tabindex="0" data-tooltip="形状、配色、材质可以单独选择，像积木一样自由组合。">?</span>
-          </div>
-          <select id="shape-architecture-select" class="control-select" title="自由搭配：形状"></select>
-          <div class="palette-select-wrap">
-            <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
-            <div id="palette-inline-editor" class="palette-inline-editor" hidden>
-              <div id="palette-swatch-row" class="palette-swatch-row"></div>
-              <div id="palette-editor-panel" class="palette-editor-panel">
-                <div id="plugin-palette-color-list" class="plugin-palette-color-list"></div>
-                <button id="plugin-add-palette-color-button" class="palette-editor-add" type="button">添加颜色</button>
+          <div class="config-section free-mix-section">
+            <div class="control-section-label">
+              <span>自由搭配</span>
+              <span class="tooltip-trigger" tabindex="0" data-tooltip="形状、配色、材质可以单独选择，像积木一样自由组合。">?</span>
+            </div>
+            <div class="free-mix-row">
+              <select id="shape-architecture-select" class="control-select" title="自由搭配：形状"></select>
+              <div class="palette-select-wrap">
+                <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
+                <div id="palette-inline-editor" class="palette-inline-editor" hidden>
+                  <div id="palette-swatch-row" class="palette-swatch-row"></div>
+                  <div id="palette-editor-panel" class="palette-editor-panel">
+                    <div id="plugin-palette-color-list" class="plugin-palette-color-list"></div>
+                    <button id="plugin-add-palette-color-button" class="palette-editor-add" type="button">添加颜色</button>
+                  </div>
+                </div>
+              </div>
+              <div class="multi-select-wrap">
+                <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">未选择材质</button>
               </div>
             </div>
+            <div id="material-panel" class="multi-select-panel"></div>
           </div>
-          <div class="multi-select-wrap">
-            <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">未选择材质</button>
+          <div class="config-section style-set-section">
+            <div class="control-section-label">
+              <span>风格套装</span>
+              <span class="tooltip-trigger" tabindex="0" data-tooltip="风格套装是已经搭好的整体视觉方案，可直接套用，也可以再用上方选项微调。">?</span>
+            </div>
+            <select id="agent-select" class="control-select" title="选择风格套装"></select>
           </div>
-          <div id="material-panel" class="multi-select-panel"></div>
-          <div class="control-section-label">
-            <span>风格套装</span>
-            <span class="tooltip-trigger" tabindex="0" data-tooltip="风格套装是已经搭好的整体视觉方案，可直接套用，也可以再用上方选项微调。">?</span>
-          </div>
-          <select id="agent-select" class="control-select" title="选择风格套装"></select>
         </div>
 
         <section class="composer-card">
@@ -2403,6 +2662,31 @@
             height,
           },
         }, "*");
+      }
+
+      function scrollComposerActionsIntoView() {
+        requestAnimationFrame(() => {
+          const app = document.querySelector(".app");
+          if (!app || !sendButton) {
+            return;
+          }
+
+          const appRect = app.getBoundingClientRect();
+          const buttonRect = sendButton.getBoundingClientRect();
+          const bottomPadding = 28;
+          const overflow = buttonRect.bottom + bottomPadding - appRect.bottom;
+
+          if (overflow > 0) {
+            app.scrollTop += overflow;
+          }
+        });
+      }
+
+      function scheduleInitialComposerActionsScroll() {
+        scrollComposerActionsIntoView();
+        setTimeout(scrollComposerActionsIntoView, 80);
+        setTimeout(scrollComposerActionsIntoView, 240);
+        setTimeout(scrollComposerActionsIntoView, 600);
       }
 
       function updateMaterialButton() {
@@ -3636,6 +3920,9 @@
       messageInput.addEventListener("click", renderScenarioSuggestions);
       setupResizeHandle();
       resizeMessageInput();
+      window.addEventListener("resize", scrollComposerActionsIntoView);
+      window.addEventListener("load", scheduleInitialComposerActionsScroll);
+      scheduleInitialComposerActionsScroll();
 
       window.onmessage = (event) => {
         const message = event.data.pluginMessage;
@@ -3687,7 +3974,10 @@
       };
 
       loadConfig()
-        .then(updateRunState)
+        .then(() => {
+          updateRunState();
+          scheduleInitialComposerActionsScroll();
+        })
         .catch((error) => {
           addMessage("system", getReadableError(error));
         });

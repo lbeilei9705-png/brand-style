@@ -1543,6 +1543,24 @@
         gap: 8px;
       }
 
+      @media (min-width: 380px) {
+        #material-panel.open {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 540px) {
+        #material-panel.open {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 720px) {
+        #material-panel.open {
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+      }
+
       #material-panel .multi-select-panel-header {
         grid-column: 1 / -1;
       }

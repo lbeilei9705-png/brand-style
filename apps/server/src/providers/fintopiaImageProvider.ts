@@ -465,6 +465,7 @@ function buildImagePayload(
   const variantInstruction = buildVariantInstruction(variantIndex, variantCount);
 
   if (kind === "gemini-generate-content") {
+    const imagesPerResponse = variantCount > 1 ? 1 : request.constraints.batchSize;
     const parts: Array<Record<string, unknown>> = [
       {
         text: [
@@ -472,7 +473,7 @@ function buildImagePayload(
           variantInstruction,
           `输出比例：${request.constraints.aspectRatio}，实际 imageConfig.aspectRatio：${normalizeGeminiAspectRatio(request.constraints.aspectRatio)}。`,
           `输出清晰度：${request.constraints.resolution}，实际 imageConfig.imageSize：${request.constraints.resolution.toUpperCase()}。`,
-          `只生成 ${request.constraints.batchSize} 张图片，不要在同一次响应里返回更多图片。`,
+          `只生成 ${imagesPerResponse} 张图片，不要在同一次响应里返回更多图片。`,
           "必须输出高清锐利图像，边缘清楚，局部细节可辨认，不要柔焦、虚化、糊边或低分辨率放大感。",
         ].join("\n\n"),
       },
@@ -908,14 +909,72 @@ export class FintopiaImageProvider implements ImageProvider {
       return urls;
     };
 
-    const variantImageUrlGroups = await Promise.all(
+    const requestedImageCount = Math.min(Math.max(request.constraints.batchSize, 1), 4);
+    const variantResults = await Promise.allSettled(
       Array.from({ length: variantCount }, (_, variantIndex) => generateVariant(variantIndex)),
     );
-    const requestedImageCount = Math.min(Math.max(request.constraints.batchSize, 1), 4);
-    const imageUrls = variantImageUrlGroups.flat().slice(0, requestedImageCount);
+    const imageUrls = [...new Set(variantResults.flatMap((result) => (
+      result.status === "fulfilled" ? result.value : []
+    )))].slice(0, requestedImageCount);
+    const failedVariants = variantResults.filter((result) => result.status === "rejected");
+
+    if (failedVariants.length === variantResults.length) {
+      const reason = failedVariants[0]?.reason;
+      throw reason instanceof Error
+        ? reason
+        : new Error(String(reason || "所有图片生成请求均失败。"));
+    }
+
+    for (let retryIndex = 0; imageUrls.length < requestedImageCount && retryIndex < requestedImageCount; retryIndex += 1) {
+      logProviderInfo("retrying missing image variant", {
+        taskId: request.taskId,
+        model: this.config.model,
+        requestedImageCount,
+        currentImageCount: imageUrls.length,
+        retryIndex: retryIndex + 1,
+      });
+
+      try {
+        const retryUrls = await generateVariant(retryIndex % Math.max(variantCount, 1));
+
+        for (const imageUrl of retryUrls) {
+          if (!imageUrls.includes(imageUrl)) {
+            imageUrls.push(imageUrl);
+          }
+
+          if (imageUrls.length >= requestedImageCount) {
+            break;
+          }
+        }
+      } catch (error) {
+        failedVariants.push({
+          status: "rejected",
+          reason: error,
+        });
+      }
+    }
+
+    if (!imageUrls.length && failedVariants.length) {
+      const reason = failedVariants.at(-1)?.reason;
+
+      if (reason instanceof Error) {
+        throw reason;
+      }
+    }
 
     if (!imageUrls.length) {
       throw new Error("当前模型接口响应中没有解析到图片。如果你使用的是 /v1/chat/completions 中转站，请确认该模型会在 message.content 或 message.images 中返回图片 URL/base64。");
+    }
+
+    if (imageUrls.length < requestedImageCount) {
+      logProviderError("model returned fewer images than requested", {
+        taskId: request.taskId,
+        model: this.config.model,
+        requestedImageCount,
+        actualImageCount: imageUrls.length,
+        failedVariantCount: failedVariants.length,
+      });
+      throw new Error(`请求生成 ${requestedImageCount} 张图片，但模型仅返回 ${imageUrls.length} 张。已自动补跑仍未补齐，请稍后重试。`);
     }
 
     const outputSize = buildOutputSize(request);

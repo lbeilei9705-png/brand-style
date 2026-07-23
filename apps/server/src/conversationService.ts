@@ -296,7 +296,10 @@ export class ConversationService {
       sizeBytes: new TextEncoder().encode(request.content).length,
     };
 
-    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 1;
+    const selectedBatchSize = Number(request.batchSize) || 1;
+    const requestedBatchSize = selectedBatchSize > 1
+      ? selectedBatchSize
+      : parseRequestedImageCount(request.content) || selectedBatchSize;
     const batchSize = Math.min(4, Math.max(1, requestedBatchSize));
     const materialPresetIds = request.materialPresetIds?.length
       ? request.materialPresetIds
@@ -549,7 +552,10 @@ export class ConversationService {
       mimeType: "text/plain",
       sizeBytes: new TextEncoder().encode(request.content).length,
     };
-    const requestedBatchSize = parseRequestedImageCount(request.content) || Number(request.batchSize) || 1;
+    const selectedBatchSize = Number(request.batchSize) || 1;
+    const requestedBatchSize = selectedBatchSize > 1
+      ? selectedBatchSize
+      : parseRequestedImageCount(request.content) || selectedBatchSize;
     const batchSize = Math.min(4, Math.max(1, requestedBatchSize));
     const materialPresetIds = request.materialPresetIds?.length
       ? request.materialPresetIds

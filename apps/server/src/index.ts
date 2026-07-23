@@ -24,7 +24,22 @@ const projectRoot = path.resolve(__dirname, "../../..");
 loadDotEnv(projectRoot);
 const appConfig = getAppConfig();
 const port = Number(process.env.PORT || 5180);
-const accessToken = process.env.BRAND_STYLE_ACCESS_TOKEN || "";
+const adminAccessToken = process.env.BRAND_STYLE_ADMIN_TOKEN
+  || process.env.BRAND_STYLE_ACCESS_TOKEN
+  || "";
+const pluginRateLimit = Math.max(1, Number(process.env.BRAND_STYLE_PLUGIN_RATE_LIMIT || 10));
+const pluginRateLimitWindowMs = Math.max(
+  1_000,
+  Number(process.env.BRAND_STYLE_PLUGIN_RATE_WINDOW_MS || 60_000),
+);
+const pluginGlobalRateLimit = Math.max(
+  pluginRateLimit,
+  Number(process.env.BRAND_STYLE_PLUGIN_GLOBAL_RATE_LIMIT || 60),
+);
+const conversationRetentionDays = Math.max(
+  1,
+  Number(process.env.BRAND_STYLE_CONVERSATION_RETENTION_DAYS || 30),
+);
 const webDir = path.resolve(__dirname, "../../web/public");
 const dataDir = path.resolve(projectRoot, "data");
 const remoteConfigStore = appConfig.supabase
@@ -38,7 +53,12 @@ const configStore = new ConfigStore(dataDir, remoteConfigStore);
 await configStore.syncFromRemote().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
 });
-const conversationStore = new ConversationStore(dataDir);
+const conversationStore = new ConversationStore(dataDir, conversationRetentionDays);
+conversationStore.list();
+const conversationCleanupTimer = setInterval(() => {
+  conversationStore.list();
+}, 24 * 60 * 60 * 1_000);
+conversationCleanupTimer.unref();
 const store = new TaskStore();
 const assetStorage = new OssAssetStorage({
   enabled: appConfig.oss?.enabled ?? false,
@@ -101,6 +121,20 @@ function stripModelSecret<T extends { apiKey?: string }>(model: T): Omit<T, "api
   const { apiKey: _apiKey, ...safeModel } = model;
 
   return safeModel;
+}
+
+function stripPublicModel<T extends {
+  id: string;
+  name: string;
+  enabled: boolean;
+  purpose?: string;
+}>(model: T): Pick<T, "id" | "name" | "enabled" | "purpose"> {
+  return {
+    id: model.id,
+    name: model.name,
+    enabled: model.enabled,
+    purpose: model.purpose,
+  };
 }
 
 function parseBoolean(value: string | undefined, fallback: boolean): boolean {
@@ -309,11 +343,110 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
 }
 
 function isAuthorizedRequest(req: http.IncomingMessage): boolean {
-  if (!accessToken) {
+  if (!adminAccessToken) {
     return true;
   }
 
-  return req.headers["x-brand-style-token"] === accessToken;
+  return req.headers["x-brand-style-token"] === adminAccessToken;
+}
+
+function hasAdminCredentials(req: http.IncomingMessage): boolean {
+  return Boolean(adminAccessToken)
+    && req.headers["x-brand-style-token"] === adminAccessToken;
+}
+
+const publicPluginGetRoutes = new Set([
+  "/api/style-presets",
+  "/api/config/models",
+  "/api/config/style-skills",
+  "/api/config/materials",
+  "/api/config/color-palettes",
+  "/api/config/shape-architectures",
+  "/api/config/operation-scenarios",
+  "/api/config/scenario-agents",
+]);
+
+function isPublicPluginRequest(method: string | undefined, pathname: string): boolean {
+  if (method === "GET") {
+    return publicPluginGetRoutes.has(pathname);
+  }
+
+  if (method === "POST") {
+    return pathname === "/api/conversations"
+      || pathname === "/api/scenario-agent/complete"
+      || /^\/api\/conversations\/conv_[0-9a-f-]{36}\/messages$/i.test(pathname);
+  }
+
+  return method === "DELETE"
+    && /^\/api\/conversations\/conv_[0-9a-f-]{36}$/i.test(pathname);
+}
+
+interface RateLimitWindow {
+  count: number;
+  resetAt: number;
+}
+
+const pluginRateLimitWindows = new Map<string, RateLimitWindow>();
+let pluginGlobalRateLimitWindow: RateLimitWindow | undefined;
+
+function getClientAddress(req: http.IncomingMessage): string {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const forwardedAddress = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+  const forwardedAddresses = forwardedAddress
+    ?.split(",")
+    .map((address) => address.trim())
+    .filter(Boolean);
+  return forwardedAddresses?.at(-1) || req.socket.remoteAddress || "unknown";
+}
+
+function consumePluginRateLimit(req: http.IncomingMessage): number {
+  const now = Date.now();
+  const activeGlobalWindow = pluginGlobalRateLimitWindow?.resetAt
+    && pluginGlobalRateLimitWindow.resetAt > now
+    ? pluginGlobalRateLimitWindow
+    : undefined;
+
+  if (activeGlobalWindow && activeGlobalWindow.count >= pluginGlobalRateLimit) {
+    return Math.max(1, Math.ceil((activeGlobalWindow.resetAt - now) / 1_000));
+  }
+
+  if (pluginRateLimitWindows.size > 10_000) {
+    for (const [key, window] of pluginRateLimitWindows) {
+      if (window.resetAt <= now) {
+        pluginRateLimitWindows.delete(key);
+      }
+    }
+  }
+
+  const key = getClientAddress(req);
+  const current = pluginRateLimitWindows.get(key);
+  const activeClientWindow = current?.resetAt && current.resetAt > now
+    ? current
+    : undefined;
+
+  if (activeClientWindow && activeClientWindow.count >= pluginRateLimit) {
+    return Math.max(1, Math.ceil((activeClientWindow.resetAt - now) / 1_000));
+  }
+
+  if (activeGlobalWindow) {
+    activeGlobalWindow.count += 1;
+  } else {
+    pluginGlobalRateLimitWindow = {
+      count: 1,
+      resetAt: now + pluginRateLimitWindowMs,
+    };
+  }
+
+  if (activeClientWindow) {
+    activeClientWindow.count += 1;
+  } else {
+    pluginRateLimitWindows.set(key, {
+      count: 1,
+      resetAt: now + pluginRateLimitWindowMs,
+    });
+  }
+
+  return 0;
 }
 
 const server = http.createServer(async (req, res) => {
@@ -363,9 +496,23 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (pathname.startsWith("/api/") && !isAuthorizedRequest(req)) {
+    const isPublicPluginApi = isPublicPluginRequest(req.method, pathname);
+
+    if (pathname.startsWith("/api/") && !isPublicPluginApi && !isAuthorizedRequest(req)) {
       sendJson(res, 401, { error: "Unauthorized." });
       return;
+    }
+
+    if (isPublicPluginApi && req.method !== "GET") {
+      const retryAfterSeconds = consumePluginRateLimit(req);
+
+      if (retryAfterSeconds) {
+        res.setHeader("Retry-After", String(retryAfterSeconds));
+        sendJson(res, 429, {
+          error: `请求过于频繁，请在 ${retryAfterSeconds} 秒后重试。`,
+        });
+        return;
+      }
     }
 
     if (req.method === "POST" && pathname === "/api/assets") {
@@ -379,7 +526,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && pathname === "/api/config/models") {
-      sendJson(res, 200, { models: configStore.listModels().map(stripModelSecret) });
+      const models = hasAdminCredentials(req)
+        ? configStore.listModels().map(stripModelSecret)
+        : configStore.listModels().map(stripPublicModel);
+      sendJson(res, 200, { models });
       return;
     }
 
@@ -593,6 +743,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     const conversationMatch = pathname.match(/^\/api\/conversations\/([^/]+)$/);
+
+    if (req.method === "DELETE" && conversationMatch) {
+      const deleted = conversationStore.delete(conversationMatch[1]);
+      sendJson(res, deleted ? 200 : 404, { deleted });
+      return;
+    }
 
     if (req.method === "GET" && conversationMatch) {
       const conversation = conversationService.get(conversationMatch[1]);

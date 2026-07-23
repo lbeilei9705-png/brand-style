@@ -9,18 +9,14 @@
     "allowedDomains": [
       "https://brand-style.fintopia-social-media-ads-tools.tech",
       "https://*.aliyuncs.com",
-      "https://brand-style-api.onrender.com",
-      "https://*.onrender.com",
       "https://yunwu.site",
       "https://all-in-one-ai.fintopia.tech"
     ],
-    "reasoning": "The plugin calls the hosted Brand Style backend and configured model gateways to generate prompts and images.",
+    "reasoning": "The plugin sends user-requested prompts and selected reference images to the Brand Style backend. It accesses Aliyun OSS and configured image-provider domains only to preview and insert generated images.",
     "devAllowedDomains": [
       "http://localhost:5180",
       "https://brand-style.fintopia-social-media-ads-tools.tech",
       "https://*.aliyuncs.com",
-      "https://brand-style-api.onrender.com",
-      "https://*.onrender.com",
       "https://yunwu.site",
       "https://all-in-one-ai.fintopia.tech"
     ]

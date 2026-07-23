@@ -8,9 +8,11 @@ interface StoredConversations {
 
 export class ConversationStore {
   private readonly filePath: string;
+  private readonly retentionMs: number;
 
-  constructor(dataDir: string) {
+  constructor(dataDir: string, retentionDays = 30) {
     this.filePath = path.join(dataDir, "conversations.json");
+    this.retentionMs = retentionDays * 24 * 60 * 60 * 1_000;
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
@@ -21,7 +23,18 @@ export class ConversationStore {
       return initial;
     }
 
-    return JSON.parse(fs.readFileSync(this.filePath, "utf8")) as StoredConversations;
+    const data = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as StoredConversations;
+    const cutoff = Date.now() - this.retentionMs;
+    const conversations = data.conversations.filter((conversation) => {
+      const updatedAt = Date.parse(conversation.updatedAt);
+      return Number.isNaN(updatedAt) || updatedAt >= cutoff;
+    });
+
+    if (conversations.length !== data.conversations.length) {
+      this.write({ conversations });
+    }
+
+    return { conversations };
   }
 
   write(data: StoredConversations): void {
@@ -44,5 +57,17 @@ export class ConversationStore {
       : [...data.conversations, conversation];
     this.write(data);
     return conversation;
+  }
+
+  delete(conversationId: string): boolean {
+    const data = this.read();
+    const conversations = data.conversations.filter((conversation) => conversation.id !== conversationId);
+
+    if (conversations.length === data.conversations.length) {
+      return false;
+    }
+
+    this.write({ conversations });
+    return true;
   }
 }

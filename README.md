@@ -73,6 +73,26 @@ http://localhost:5180/admin.html
 
 当前是本地开发期后台，API key 会保存到 `data/config.json`。正式产品需要增加登录、权限和密钥加密。
 
+## 生产安全配置
+
+正式部署时必须设置独立的后台管理令牌，不要把该令牌写入 Figma 插件：
+
+```text
+BRAND_STYLE_ADMIN_TOKEN=足够长的随机字符串
+BRAND_STYLE_PLUGIN_RATE_LIMIT=10
+BRAND_STYLE_PLUGIN_GLOBAL_RATE_LIMIT=60
+BRAND_STYLE_PLUGIN_RATE_WINDOW_MS=60000
+BRAND_STYLE_CONVERSATION_RETENTION_DAYS=30
+```
+
+插件只匿名访问读取配置和生成所需接口，这些写请求按来源地址限流。后台写操作、素材上传、调试接口和对话列表仍需要 `BRAND_STYLE_ADMIN_TOKEN`。旧的 `BRAND_STYLE_ACCESS_TOKEN` 仅作为部署迁移期兼容项。
+
+生产隐私政策和使用条款：
+
+- `/privacy.html`
+- `/terms.html`
+- 支持邮箱：`lbeilei9705@gmail.com`
+
 ## API
 
 - `GET /api/health`

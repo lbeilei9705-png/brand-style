@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import type { AddConversationMessageRequest, AddConversationMessageResponse, AgentConfig, Conversation, ConversationMessage, CreateConversationRequest, CreateTaskRequest, ModelConfig } from "../../../packages/shared/src/index.ts";
 import type { FintopiaConfig } from "./config.ts";
 import type { ConfigStore } from "./configStore.ts";
@@ -15,7 +16,7 @@ function now(): string {
 }
 
 function makeId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+  return `${prefix}_${randomUUID()}`;
 }
 
 function titleFromMessage(content: string): string {

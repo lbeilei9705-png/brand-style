@@ -2123,6 +2123,7 @@
       let isCollapsed = false;
       let materialPanelCloseTimer = null;
       let palettePanelCloseTimer = null;
+      let palettePanelDeletePointer = null;
       const fixedWindowHeight = 780;
       const fixedWindowWidth = 300;
       let expandedWindowSize = {
@@ -2765,10 +2766,15 @@
 
       function closePalettePanel() {
         cancelPalettePanelAutoClose();
+        palettePanelDeletePointer = null;
         paletteInlineEditor.classList.remove("open");
       }
 
       function schedulePalettePanelAutoClose() {
+        if (palettePanelDeletePointer) {
+          return;
+        }
+
         cancelPalettePanelAutoClose();
         palettePanelCloseTimer = setTimeout(() => {
           if (paletteInlineEditor.contains(document.activeElement)) {
@@ -2874,7 +2880,13 @@
           colorInput.value = textInput.value;
           syncCustomPaletteColorsFromRows();
         });
-        removeButton.addEventListener("click", () => {
+        removeButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          cancelPalettePanelAutoClose();
+          palettePanelDeletePointer = {
+            x: event.clientX,
+            y: event.clientY,
+          };
           row.remove();
           syncCustomPaletteColorsFromRows();
         });
@@ -3919,6 +3931,29 @@
       });
       paletteInlineEditor.addEventListener("mouseenter", cancelPalettePanelAutoClose);
       paletteInlineEditor.addEventListener("mouseleave", schedulePalettePanelAutoClose);
+      document.addEventListener("pointermove", (event) => {
+        if (!palettePanelDeletePointer) {
+          return;
+        }
+
+        const deltaX = event.clientX - palettePanelDeletePointer.x;
+        const deltaY = event.clientY - palettePanelDeletePointer.y;
+
+        if ((deltaX * deltaX) + (deltaY * deltaY) < 16) {
+          return;
+        }
+
+        palettePanelDeletePointer = null;
+        const bounds = paletteInlineEditor.getBoundingClientRect();
+        const isPointerInside = event.clientX >= bounds.left
+          && event.clientX <= bounds.right
+          && event.clientY >= bounds.top
+          && event.clientY <= bounds.bottom;
+
+        if (!isPointerInside && paletteInlineEditor.classList.contains("open")) {
+          schedulePalettePanelAutoClose();
+        }
+      });
       shapeArchitectureSelect.addEventListener("focus", loadConfig);
       shapeArchitectureSelect.addEventListener("change", () => {
         shapeArchitectureId = shapeArchitectureSelect.value;

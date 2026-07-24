@@ -11,6 +11,7 @@ import { ConversationService } from "./conversationService.ts";
 import { ConversationStore } from "./conversationStore.ts";
 import { parseMultipart, readRequestBody } from "./http/multipart.ts";
 import { send, sendJson } from "./http/response.ts";
+import { MemberAccessStore } from "./memberAccessStore.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
 import { OssAssetStorage } from "./storage/ossAssetStorage.ts";
@@ -40,6 +41,14 @@ const conversationRetentionDays = Math.max(
   1,
   Number(process.env.BRAND_STYLE_CONVERSATION_RETENTION_DAYS || 30),
 );
+const memberDailyLimit = Math.max(
+  1,
+  Number(process.env.BRAND_STYLE_MEMBER_DAILY_LIMIT || 20),
+);
+const memberSessionTtlDays = Math.max(
+  1,
+  Number(process.env.BRAND_STYLE_MEMBER_SESSION_TTL_DAYS || 30),
+);
 const webDir = path.resolve(__dirname, "../../web/public");
 const dataDir = path.resolve(projectRoot, "data");
 const remoteConfigStore = appConfig.supabase
@@ -54,6 +63,7 @@ await configStore.syncFromRemote().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
 });
 const conversationStore = new ConversationStore(dataDir, conversationRetentionDays);
+const memberAccessStore = new MemberAccessStore(dataDir, memberDailyLimit, memberSessionTtlDays);
 conversationStore.list();
 const conversationCleanupTimer = setInterval(() => {
   conversationStore.list();
@@ -343,11 +353,7 @@ function serveStatic(pathname: string, res: http.ServerResponse): void {
 }
 
 function isAuthorizedRequest(req: http.IncomingMessage): boolean {
-  if (!adminAccessToken) {
-    return true;
-  }
-
-  return req.headers["x-brand-style-token"] === adminAccessToken;
+  return hasAdminCredentials(req);
 }
 
 function hasAdminCredentials(req: http.IncomingMessage): boolean {
@@ -355,7 +361,7 @@ function hasAdminCredentials(req: http.IncomingMessage): boolean {
     && req.headers["x-brand-style-token"] === adminAccessToken;
 }
 
-const publicPluginGetRoutes = new Set([
+const protectedPluginGetRoutes = new Set([
   "/api/style-presets",
   "/api/config/models",
   "/api/config/style-skills",
@@ -364,11 +370,12 @@ const publicPluginGetRoutes = new Set([
   "/api/config/shape-architectures",
   "/api/config/operation-scenarios",
   "/api/config/scenario-agents",
+  "/api/member/session/me",
 ]);
 
-function isPublicPluginRequest(method: string | undefined, pathname: string): boolean {
+function isProtectedPluginRequest(method: string | undefined, pathname: string): boolean {
   if (method === "GET") {
-    return publicPluginGetRoutes.has(pathname);
+    return protectedPluginGetRoutes.has(pathname);
   }
 
   if (method === "POST") {
@@ -378,7 +385,20 @@ function isPublicPluginRequest(method: string | undefined, pathname: string): bo
   }
 
   return method === "DELETE"
-    && /^\/api\/conversations\/conv_[0-9a-f-]{36}$/i.test(pathname);
+    && (
+      pathname === "/api/member/session"
+      || /^\/api\/conversations\/conv_[0-9a-f-]{36}$/i.test(pathname)
+    );
+}
+
+function getMemberToken(req: http.IncomingMessage): string | undefined {
+  const authorization = req.headers.authorization;
+
+  if (!authorization?.startsWith("Bearer ")) {
+    return undefined;
+  }
+
+  return authorization.slice("Bearer ".length).trim();
 }
 
 interface RateLimitWindow {
@@ -496,14 +516,49 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    const isPublicPluginApi = isPublicPluginRequest(req.method, pathname);
+    const isInviteRedemption = req.method === "POST" && pathname === "/api/member/session/redeem";
 
-    if (pathname.startsWith("/api/") && !isPublicPluginApi && !isAuthorizedRequest(req)) {
+    if (isInviteRedemption) {
+      const retryAfterSeconds = consumePluginRateLimit(req);
+
+      if (retryAfterSeconds) {
+        res.setHeader("Retry-After", String(retryAfterSeconds));
+        sendJson(res, 429, {
+          error: `尝试次数过多，请在 ${retryAfterSeconds} 秒后重试。`,
+        });
+        return;
+      }
+
+      try {
+        const body = await readJsonRequest(req) as { code?: string };
+        sendJson(res, 201, memberAccessStore.redeemInvite(body.code || ""));
+      } catch (error) {
+        sendJson(res, 400, {
+          error: error instanceof Error ? error.message : "邀请码兑换失败。",
+        });
+      }
+      return;
+    }
+
+    const isProtectedPluginApi = isProtectedPluginRequest(req.method, pathname);
+    const memberSession = isProtectedPluginApi
+      ? memberAccessStore.resolveSession(getMemberToken(req))
+      : undefined;
+
+    if (isProtectedPluginApi && !memberSession && !hasAdminCredentials(req)) {
+      sendJson(res, 401, {
+        error: "请使用有效的成员邀请码登录。",
+        code: "MEMBER_AUTH_REQUIRED",
+      });
+      return;
+    }
+
+    if (pathname.startsWith("/api/") && !isProtectedPluginApi && !isAuthorizedRequest(req)) {
       sendJson(res, 401, { error: "Unauthorized." });
       return;
     }
 
-    if (isPublicPluginApi && req.method !== "GET") {
+    if (isProtectedPluginApi && req.method !== "GET") {
       const retryAfterSeconds = consumePluginRateLimit(req);
 
       if (retryAfterSeconds) {
@@ -513,6 +568,63 @@ const server = http.createServer(async (req, res) => {
         });
         return;
       }
+    }
+
+    if (req.method === "GET" && pathname === "/api/member/session/me" && memberSession) {
+      sendJson(res, 200, { session: memberSession });
+      return;
+    }
+
+    if (req.method === "DELETE" && pathname === "/api/member/session" && memberSession) {
+      memberAccessStore.revokeCurrentSession(memberSession.id);
+      sendJson(res, 200, { revoked: true });
+      return;
+    }
+
+    if (req.method === "GET" && pathname === "/api/admin/member-access") {
+      sendJson(res, 200, memberAccessStore.listForAdmin());
+      return;
+    }
+
+    if (req.method === "POST" && pathname === "/api/admin/member-invites") {
+      const body = await readJsonRequest(req) as {
+        memberName?: string;
+        dailyLimit?: number;
+        expiresInHours?: number;
+      };
+
+      try {
+        sendJson(res, 201, memberAccessStore.createInvite(body));
+      } catch (error) {
+        sendJson(res, 400, {
+          error: error instanceof Error ? error.message : "邀请码创建失败。",
+        });
+      }
+      return;
+    }
+
+    const revokeMemberInviteMatch = pathname.match(/^\/api\/admin\/member-invites\/([^/]+)$/);
+
+    if (req.method === "DELETE" && revokeMemberInviteMatch) {
+      const revoked = memberAccessStore.revokeInvite(revokeMemberInviteMatch[1]);
+      sendJson(res, revoked ? 200 : 404, { revoked });
+      return;
+    }
+
+    const revokeMemberSessionMatch = pathname.match(/^\/api\/admin\/member-sessions\/([^/]+)$/);
+
+    if (req.method === "DELETE" && revokeMemberSessionMatch) {
+      const revoked = memberAccessStore.revokeSession(revokeMemberSessionMatch[1]);
+      sendJson(res, revoked ? 200 : 404, { revoked });
+      return;
+    }
+
+    const revokeMemberMatch = pathname.match(/^\/api\/admin\/members\/([^/]+)$/);
+
+    if (req.method === "DELETE" && revokeMemberMatch) {
+      const revoked = memberAccessStore.revokeMember(revokeMemberMatch[1]);
+      sendJson(res, revoked ? 200 : 404, { revoked });
+      return;
     }
 
     if (req.method === "POST" && pathname === "/api/assets") {
@@ -766,13 +878,30 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && conversationMessageMatch) {
       let response: Awaited<ReturnType<ConversationService["addMessage"]>>;
+      const messageRequest = await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1];
+      const quotaReservation = memberSession
+        ? memberAccessStore.consumeQuota(memberSession.id, 1)
+        : undefined;
+
+      if (memberSession && (!quotaReservation || !quotaReservation.allowed)) {
+        sendJson(res, 429, {
+          error: "今日生成额度已用完，请联系管理员。",
+          code: "MEMBER_DAILY_LIMIT_REACHED",
+          quota: quotaReservation?.quota,
+        });
+        return;
+      }
 
       try {
         response = await conversationService.addMessage(
           conversationMessageMatch[1],
-          await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1],
+          messageRequest,
         );
       } catch (error) {
+        if (memberSession && quotaReservation?.allowed) {
+          memberAccessStore.refundQuota(memberSession.id, 1);
+        }
+
         if (error instanceof Error && error.message === "Conversation not found.") {
           sendJson(res, 404, { error: error.message });
           return;

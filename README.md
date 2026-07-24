@@ -83,9 +83,13 @@ BRAND_STYLE_PLUGIN_RATE_LIMIT=10
 BRAND_STYLE_PLUGIN_GLOBAL_RATE_LIMIT=60
 BRAND_STYLE_PLUGIN_RATE_WINDOW_MS=60000
 BRAND_STYLE_CONVERSATION_RETENTION_DAYS=30
+BRAND_STYLE_MEMBER_DAILY_LIMIT=20
+BRAND_STYLE_MEMBER_SESSION_TTL_DAYS=30
 ```
 
-插件只匿名访问读取配置和生成所需接口，这些写请求按来源地址限流。后台写操作、素材上传、调试接口和对话列表仍需要 `BRAND_STYLE_ADMIN_TOKEN`。旧的 `BRAND_STYLE_ACCESS_TOKEN` 仅作为部署迁移期兼容项。
+插件使用后台生成的一次性成员邀请码登录。服务端只保存邀请码和会话令牌的哈希，成员会话支持立即撤销、每日生成额度和自动过期；插件写请求还会按来源地址限流。后台写操作、素材上传、调试接口和对话列表仍需要 `BRAND_STYLE_ADMIN_TOKEN`。旧的 `BRAND_STYLE_ACCESS_TOKEN` 仅作为部署迁移期兼容项。
+
+`BRAND_STYLE_ADMIN_TOKEN` 未配置时，后台 API 会拒绝访问，生产部署前必须先设置。成员访问数据当前保存在本机 `data/member-access.json`，只能运行单个 Node.js 服务实例；如果使用 PM2 cluster 或多副本部署，应先迁移到支持事务的数据库存储。
 
 生产隐私政策和使用条款：
 

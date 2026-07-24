@@ -7,6 +7,8 @@ const state = {
   operationScenarios: [],
   scenarioAgents: [],
   scenarioAgentCases: [],
+  memberInvites: [],
+  members: [],
 };
 
 const accessTokenStorageKey = "brand-style-admin-token";
@@ -76,6 +78,15 @@ async function uploadAsset(file, category) {
 
 function boolValue(value) {
   return value === true || value === "true";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function openModal(id) {
@@ -389,6 +400,112 @@ function renderScenarioAgentCases() {
     `;
     container.appendChild(section);
   }
+}
+
+function formatAccessDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  return new Date(value).toLocaleString("zh-CN", {
+    hour12: false,
+  });
+}
+
+function renderMemberAccess() {
+  const membersTable = qs("#member-access-members-table");
+  const invitesTable = qs("#member-access-invites-table");
+  membersTable.innerHTML = state.members.map((member) => `
+    <tr>
+      <td>
+        <strong>${escapeHtml(member.name)}</strong>
+        <span class="muted">${formatAccessDate(member.createdAt)} 加入</span>
+      </td>
+      <td>${member.usedToday} / ${member.dailyLimit}<span class="muted">剩余 ${member.remainingToday}</span></td>
+      <td>${member.sessionCount}</td>
+      <td>${renderStatus(member.enabled)}</td>
+      <td>
+        ${member.enabled
+          ? `<button class="danger-button" data-action="revoke-member" data-id="${member.id}" type="button">撤销访问</button>`
+          : '<span class="muted">已撤销</span>'}
+      </td>
+    </tr>
+  `).join("") || '<tr><td colspan="5" class="muted">暂无成员，请先生成邀请码。</td></tr>';
+
+  const inviteStatusLabels = {
+    active: "待使用",
+    redeemed: "已使用",
+    expired: "已过期",
+    revoked: "已作废",
+  };
+  invitesTable.innerHTML = state.memberInvites.map((invite) => `
+    <tr>
+      <td>
+        <strong>${escapeHtml(invite.memberName)}</strong>
+        <span class="muted">${formatAccessDate(invite.createdAt)} 创建</span>
+      </td>
+      <td>${invite.dailyLimit} 次/日</td>
+      <td>${formatAccessDate(invite.expiresAt)}</td>
+      <td><span class="pill${invite.status === "active" ? "" : " off"}">${inviteStatusLabels[invite.status] || invite.status}</span></td>
+      <td>
+        ${invite.status === "active"
+          ? `<button class="danger-button" data-action="revoke-member-invite" data-id="${invite.id}" type="button">作废</button>`
+          : '<span class="muted">—</span>'}
+      </td>
+    </tr>
+  `).join("") || '<tr><td colspan="5" class="muted">暂无邀请码记录。</td></tr>';
+}
+
+async function loadMemberAccess() {
+  const data = await requestJson("/api/admin/member-access");
+  state.memberInvites = data.invites || [];
+  state.members = data.members || [];
+  renderMemberAccess();
+}
+
+async function createMemberInvite(event) {
+  event.preventDefault();
+  const data = await requestJson("/api/admin/member-invites", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      memberName: qs("#member-invite-name").value.trim(),
+      dailyLimit: Number(qs("#member-invite-daily-limit").value),
+      expiresInHours: Number(qs("#member-invite-expiry").value),
+    }),
+  });
+  qs("#generated-invite-code").textContent = data.code;
+  qs("#generated-invite").hidden = false;
+  qs("#member-invite-name").value = "";
+  await loadMemberAccess();
+}
+
+async function revokeMember(memberId) {
+  const member = state.members.find((item) => item.id === memberId);
+
+  if (!member || !confirm(`确认撤销「${member.name}」的全部访问权限？`)) {
+    return;
+  }
+
+  await requestJson(`/api/admin/members/${memberId}`, {
+    method: "DELETE",
+  });
+  await loadMemberAccess();
+}
+
+async function revokeMemberInvite(inviteId) {
+  const invite = state.memberInvites.find((item) => item.id === inviteId);
+
+  if (!invite || !confirm(`确认作废为「${invite.memberName}」创建的邀请码？`)) {
+    return;
+  }
+
+  await requestJson(`/api/admin/member-invites/${inviteId}`, {
+    method: "DELETE",
+  });
+  await loadMemberAccess();
 }
 
 async function loadConfig() {
@@ -1177,6 +1294,22 @@ document.addEventListener("click", async (event) => {
   if (target.dataset.action === "delete-scenario-agent-case") {
     await deleteScenarioAgentCase(target.dataset.id);
   }
+
+  if (target.dataset.action === "revoke-member") {
+    await revokeMember(target.dataset.id);
+  }
+
+  if (target.dataset.action === "revoke-member-invite") {
+    await revokeMemberInvite(target.dataset.id);
+  }
+
+  if (target.id === "copy-generated-invite") {
+    await navigator.clipboard.writeText(qs("#generated-invite-code").textContent);
+    target.textContent = "已复制";
+    window.setTimeout(() => {
+      target.textContent = "复制邀请码";
+    }, 1200);
+  }
 });
 
 qs("#model-form").addEventListener("submit", saveModel);
@@ -1188,6 +1321,7 @@ qs("#shape-architecture-form").addEventListener("submit", saveShapeArchitecture)
 qs("#scenario-form").addEventListener("submit", saveScenario);
 qs("#scenario-agent-form").addEventListener("submit", saveScenarioAgent);
 qs("#scenario-agent-case-form").addEventListener("submit", saveScenarioAgentCase);
+qs("#member-invite-form").addEventListener("submit", createMemberInvite);
 qs("#agent-md-file").addEventListener("change", async (event) => {
   const file = event.target.files[0];
 
@@ -1199,4 +1333,7 @@ qs("#agent-md-file").addEventListener("change", async (event) => {
 
 loadConfig().catch((error) => {
   qs("#models-table").innerHTML = `<tr><td colspan="5">${error.message}</td></tr>`;
+});
+loadMemberAccess().catch((error) => {
+  qs("#member-access-members-table").innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;
 });

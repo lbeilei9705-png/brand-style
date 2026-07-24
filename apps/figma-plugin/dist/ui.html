@@ -905,6 +905,7 @@
       body.is-collapsed .selection-bar,
       body.is-collapsed .agent-console,
       body.is-collapsed .legal-links,
+      body.is-collapsed .member-session-summary,
       body.is-collapsed .resize-handle {
         display: none;
       }
@@ -1988,6 +1989,122 @@
         text-decoration: underline;
       }
 
+      .member-session-summary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding-bottom: 8px;
+        color: #8e8e93;
+        font-size: 10px;
+      }
+
+      .member-session-summary button {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: #636366;
+        font-size: inherit;
+        cursor: pointer;
+      }
+
+      .member-login-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(245, 245, 247, 0.96);
+        backdrop-filter: blur(18px);
+      }
+
+      .member-login-overlay[hidden] {
+        display: none;
+      }
+
+      .member-login-card {
+        width: min(100%, 360px);
+        padding: 28px 24px 24px;
+        border: 1px solid rgba(60, 60, 67, 0.12);
+        border-radius: 22px;
+        background: #ffffff;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .member-login-mark {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 16px;
+        border-radius: 15px;
+        background: #111111;
+        color: #ffffff;
+        font-family: Georgia, serif;
+        font-size: 30px;
+        font-style: italic;
+      }
+
+      .member-login-card h1 {
+        margin: 0;
+        color: #1d1d1f;
+        font-size: 22px;
+      }
+
+      .member-login-card p {
+        margin: 10px 0 20px;
+        color: #6e6e73;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      .member-login-form {
+        display: grid;
+        gap: 10px;
+      }
+
+      .member-login-form input {
+        width: 100%;
+        height: 42px;
+        border: 1px solid #d1d1d6;
+        border-radius: 12px;
+        padding: 0 14px;
+        background: #ffffff;
+        color: #1d1d1f;
+        font: inherit;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        outline: none;
+      }
+
+      .member-login-form input:focus {
+        border-color: #1d1d1f;
+        box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.08);
+      }
+
+      .member-login-form button {
+        height: 42px;
+        border: 0;
+        border-radius: 12px;
+        background: #1d1d1f;
+        color: #ffffff;
+        font-weight: 700;
+      }
+
+      .member-login-form button:disabled {
+        opacity: 0.5;
+      }
+
+      .member-login-status {
+        min-height: 18px;
+        margin-top: 10px;
+        color: #ff3b30;
+        font-size: 11px;
+      }
+
     </style>
   </head>
   <body>
@@ -2072,8 +2189,24 @@
         <a href="https://brand-style.fintopia-social-media-ads-tools.tech/privacy.html" target="_blank" rel="noreferrer">隐私政策</a>
         <a href="https://brand-style.fintopia-social-media-ads-tools.tech/terms.html" target="_blank" rel="noreferrer">使用条款</a>
       </nav>
+      <div id="member-session-summary" class="member-session-summary" hidden>
+        <span id="member-session-label"></span>
+        <button id="member-logout-button" type="button">退出</button>
+      </div>
       <button id="resize-handle" class="resize-handle" type="button" title="拖拽调整窗口大小" aria-label="拖拽调整窗口大小"></button>
     </main>
+    <section id="member-login-overlay" class="member-login-overlay" aria-label="成员登录">
+      <div class="member-login-card">
+        <div class="member-login-mark" aria-hidden="true">B</div>
+        <h1>Brand Style</h1>
+        <p>仅供内部设计团队使用。请输入管理员为你创建的一次性成员邀请码。</p>
+        <form id="member-login-form" class="member-login-form">
+          <input id="member-invite-code" type="text" autocomplete="one-time-code" placeholder="BS-XXXXX-XXXXX-XXXXX-XXXXX" aria-label="成员邀请码" />
+          <button id="member-login-button" type="submit">验证并进入</button>
+        </form>
+        <div id="member-login-status" class="member-login-status" role="status"></div>
+      </div>
+    </section>
 
     <script>
       const apiBase = "https://brand-style.fintopia-social-media-ads-tools.tech";
@@ -2103,7 +2236,16 @@
       const resizeHandle = document.querySelector("#resize-handle");
       const collapseButton = document.querySelector("#collapse-button");
       const scenarioPanel = document.querySelector("#scenario-panel");
+      const memberLoginOverlay = document.querySelector("#member-login-overlay");
+      const memberLoginForm = document.querySelector("#member-login-form");
+      const memberInviteCodeInput = document.querySelector("#member-invite-code");
+      const memberLoginButton = document.querySelector("#member-login-button");
+      const memberLoginStatus = document.querySelector("#member-login-status");
+      const memberSessionSummary = document.querySelector("#member-session-summary");
+      const memberSessionLabel = document.querySelector("#member-session-label");
+      const memberLogoutButton = document.querySelector("#member-logout-button");
       const scenarioAgentDraftStorageKey = "brand-style-scenario-agent-draft";
+      const memberSessionStorageKey = "brand-style-member-session";
       let selectedAssets = [];
       let batchSize = 1;
       let aspectRatio = "auto";
@@ -2127,6 +2269,8 @@
       let materialPanelCloseTimer = null;
       let palettePanelCloseTimer = null;
       let palettePanelDeletePointer = null;
+      let memberSessionToken = localStorage.getItem(memberSessionStorageKey) || "";
+      let memberSession = null;
       const fixedWindowHeight = 780;
       const fixedWindowWidth = 300;
       let expandedWindowSize = {
@@ -2150,11 +2294,101 @@
       ];
       scenarioAgents = [...defaultScenarioAgents];
 
-      function apiFetch(path, options = {}) {
-        return fetch(`${apiBase}${path}`, {
+      async function apiFetch(path, options = {}) {
+        const headers = {
+          ...(options.headers || {}),
+        };
+
+        if (memberSessionToken) {
+          headers.Authorization = `Bearer ${memberSessionToken}`;
+        }
+
+        const response = await fetch(`${apiBase}${path}`, {
           ...options,
-          headers: options.headers || {},
+          headers,
         });
+
+        if (response.status === 401 && path !== "/api/member/session/redeem") {
+          clearMemberSession();
+          showMemberLogin("登录已失效，请重新输入邀请码。");
+        }
+
+        return response;
+      }
+
+      function renderMemberSession() {
+        if (!memberSession) {
+          memberSessionSummary.hidden = true;
+          memberSessionLabel.textContent = "";
+          return;
+        }
+
+        memberSessionSummary.hidden = false;
+        memberSessionLabel.textContent = `${memberSession.memberName} · 今日剩余 ${memberSession.remainingToday}/${memberSession.dailyLimit}`;
+      }
+
+      function saveMemberSession(token, session) {
+        memberSessionToken = token;
+        memberSession = session;
+        localStorage.setItem(memberSessionStorageKey, token);
+        renderMemberSession();
+      }
+
+      function clearMemberSession() {
+        memberSessionToken = "";
+        memberSession = null;
+        activeConversationId = null;
+        localStorage.removeItem(memberSessionStorageKey);
+        renderMemberSession();
+        updateRunState();
+      }
+
+      function showMemberLogin(message = "") {
+        memberLoginStatus.textContent = message;
+        memberLoginOverlay.hidden = false;
+        window.setTimeout(() => memberInviteCodeInput.focus(), 0);
+      }
+
+      function hideMemberLogin() {
+        memberLoginOverlay.hidden = true;
+        memberLoginStatus.textContent = "";
+        memberInviteCodeInput.value = "";
+      }
+
+      async function initializeMemberSession() {
+        if (!memberSessionToken) {
+          showMemberLogin();
+          return false;
+        }
+
+        const response = await apiFetch("/api/member/session/me");
+
+        if (!response.ok) {
+          showMemberLogin("登录已失效，请重新输入邀请码。");
+          return false;
+        }
+
+        const data = await response.json();
+        memberSession = data.session;
+        renderMemberSession();
+        hideMemberLogin();
+        return true;
+      }
+
+      async function refreshMemberSession() {
+        if (!memberSessionToken) {
+          return;
+        }
+
+        const response = await apiFetch("/api/member/session/me");
+
+        if (!response.ok) {
+          return;
+        }
+
+        const data = await response.json();
+        memberSession = data.session;
+        renderMemberSession();
       }
 
       function getImageExtension(imageUrl) {
@@ -2628,6 +2862,13 @@
       }
 
       function updateRunState() {
+        if (!memberSession) {
+          sendButton.disabled = true;
+          sendButton.textContent = "请登录";
+          sendButton.title = "请输入成员邀请码后使用。";
+          return;
+        }
+
         if (isSending) {
           sendButton.disabled = false;
           sendButton.textContent = "暂停";
@@ -3429,6 +3670,21 @@
             apiFetch("/api/config/operation-scenarios"),
             apiFetch("/api/config/scenario-agents"),
           ]);
+          const failedResponse = [
+            modelsResponse,
+            agentsResponse,
+            materialsResponse,
+            colorPalettesResponse,
+            shapeArchitecturesResponse,
+            scenariosResponse,
+            scenarioAgentsResponse,
+          ].find((response) => !response.ok);
+
+          if (failedResponse) {
+            const errorData = await failedResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || "加载配置失败。");
+          }
+
           const modelsData = await modelsResponse.json();
           const agentsData = await agentsResponse.json();
           const materialsData = await materialsResponse.json();
@@ -3581,9 +3837,17 @@
         }
 
         if (!response.ok) {
+          if (data.quota && memberSession) {
+            memberSession = {
+              ...memberSession,
+              ...data.quota,
+            };
+            renderMemberSession();
+          }
           throw new Error(data.error || "生成失败");
         }
 
+        refreshMemberSession().catch(() => {});
         return data;
       }
 
@@ -3885,6 +4149,62 @@
         updateRunState();
       });
 
+      memberLoginForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const code = memberInviteCodeInput.value.trim();
+
+        if (!code) {
+          memberLoginStatus.textContent = "请输入成员邀请码。";
+          return;
+        }
+
+        memberLoginButton.disabled = true;
+        memberLoginButton.textContent = "验证中...";
+        memberLoginStatus.textContent = "";
+
+        try {
+          const response = await fetch(`${apiBase}/api/member/session/redeem`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ code }),
+          });
+          const data = await response.json().catch(() => ({}));
+
+          if (!response.ok || !data.sessionToken || !data.session) {
+            throw new Error(data.error || "邀请码验证失败。");
+          }
+
+          saveMemberSession(data.sessionToken, data.session);
+          hideMemberLogin();
+          await loadConfig();
+          updateRunState();
+          scheduleInitialComposerActionsScroll();
+        } catch (error) {
+          memberLoginStatus.textContent = getReadableError(error);
+        } finally {
+          memberLoginButton.disabled = false;
+          memberLoginButton.textContent = "验证并进入";
+        }
+      });
+
+      memberLogoutButton.addEventListener("click", async () => {
+        memberLogoutButton.disabled = true;
+
+        try {
+          if (memberSessionToken) {
+            await apiFetch("/api/member/session", {
+              method: "DELETE",
+            });
+          }
+        } finally {
+          clearMemberSession();
+          showMemberLogin("已退出当前成员账号。");
+          memberLogoutButton.disabled = false;
+        }
+      });
+
       modelSelect.addEventListener("focus", loadConfig);
       agentSelect.addEventListener("focus", loadConfig);
       agentSelect.addEventListener("change", updateRunState);
@@ -4057,8 +4377,14 @@
         }
       };
 
-      loadConfig()
-        .then(() => {
+      initializeMemberSession()
+        .then(async (isAuthenticated) => {
+          if (!isAuthenticated) {
+            updateRunState();
+            return;
+          }
+
+          await loadConfig();
           updateRunState();
           scheduleInitialComposerActionsScroll();
         })

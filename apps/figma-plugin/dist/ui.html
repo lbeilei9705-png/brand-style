@@ -2088,12 +2088,23 @@
         border: 0;
         border-radius: 12px;
         background: #1d1d1f;
+        background-color: #1d1d1f;
         color: #ffffff;
         font-weight: 700;
+        box-shadow: none;
+      }
+
+      .member-login-form button:hover:not(:disabled),
+      .member-login-form button:focus-visible {
+        border: 0;
+        background: #000000;
+        background-color: #000000;
+        color: #ffffff;
       }
 
       .member-login-form button:disabled {
         background: #d1d1d6;
+        background-color: #d1d1d6;
         color: #6e6e73;
         opacity: 1;
       }

@@ -2093,7 +2093,9 @@
       }
 
       .member-login-form button:disabled {
-        opacity: 0.5;
+        background: #d1d1d6;
+        color: #6e6e73;
+        opacity: 1;
       }
 
       .member-login-status {
@@ -4176,7 +4178,17 @@
 
           saveMemberSession(data.sessionToken, data.session);
           hideMemberLogin();
-          await loadConfig();
+
+          try {
+            await loadConfig();
+          } catch (loadError) {
+            addMessage("system", getReadableError(loadError));
+          }
+
+          if (!chat.children.length) {
+            addMessage("system", "登录成功。请选择画布对象并描述本轮需求。");
+          }
+
           updateRunState();
           scheduleInitialComposerActionsScroll();
         } catch (error) {

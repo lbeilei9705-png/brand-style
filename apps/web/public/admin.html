@@ -685,6 +685,50 @@
         transform: none;
       }
 
+      .admin-token-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(0, 0, 0, 0.72);
+        backdrop-filter: blur(8px);
+      }
+
+      .admin-token-card {
+        display: grid;
+        gap: 16px;
+        width: min(420px, 100%);
+        border: 1px solid var(--admin-line);
+        border-radius: 16px;
+        padding: 24px;
+        background: var(--admin-panel);
+        box-shadow: var(--admin-shadow);
+      }
+
+      .admin-token-card h2 {
+        margin: 0;
+        color: var(--admin-text);
+        font-size: 20px;
+        letter-spacing: -0.03em;
+      }
+
+      .admin-token-card p {
+        margin: 0;
+        color: var(--admin-muted);
+        font-size: 13px;
+      }
+
+      .admin-token-card .admin-field {
+        margin: 0;
+      }
+
+      .admin-token-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
       .modal-backdrop {
         position: fixed;
         inset: 0;

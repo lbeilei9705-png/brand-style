@@ -12,29 +12,77 @@ const state = {
 };
 
 const accessTokenStorageKey = "brand-style-admin-token";
+let accessTokenPromptPromise;
 
 function qs(selector) {
   return document.querySelector(selector);
 }
 
-function getAccessToken() {
+function promptForAccessToken() {
+  if (accessTokenPromptPromise) {
+    return accessTokenPromptPromise;
+  }
+
+  const promptPromise = new Promise((resolve) => {
+    const backdrop = document.createElement("div");
+    backdrop.className = "admin-token-backdrop";
+    backdrop.innerHTML = `
+      <form class="admin-token-card">
+        <div>
+          <h2>后台访问验证</h2>
+          <p>请输入后台访问 token 后继续管理配置。</p>
+        </div>
+        <label class="admin-field">
+          <span>访问 Token</span>
+          <input id="admin-token-input" type="password" autocomplete="current-password" required />
+        </label>
+        <div class="admin-token-actions">
+          <button class="primary-button" type="submit">确定</button>
+        </div>
+      </form>
+    `;
+    const form = backdrop.querySelector("form");
+    const input = backdrop.querySelector("#admin-token-input");
+    const cleanup = (token) => {
+      backdrop.remove();
+      resolve(token);
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const token = input.value.trim();
+
+      if (!token) {
+        input.focus();
+        return;
+      }
+
+      localStorage.setItem(accessTokenStorageKey, token);
+      cleanup(token);
+    });
+    document.body.appendChild(backdrop);
+    requestAnimationFrame(() => input.focus());
+  });
+
+  accessTokenPromptPromise = promptPromise.finally(() => {
+    accessTokenPromptPromise = undefined;
+  });
+
+  return accessTokenPromptPromise;
+}
+
+async function getAccessToken() {
   const savedToken = localStorage.getItem(accessTokenStorageKey);
 
   if (savedToken) {
     return savedToken;
   }
 
-  const token = prompt("请输入后台访问 token");
-
-  if (token) {
-    localStorage.setItem(accessTokenStorageKey, token);
-  }
-
-  return token;
+  return promptForAccessToken();
 }
 
 async function requestJson(url, options = {}, hasRetried = false) {
-  const accessToken = getAccessToken();
+  const accessToken = await getAccessToken();
 
   if (!accessToken) {
     throw new Error("需要后台访问 token 才能读取配置。");

@@ -2213,7 +2213,7 @@
         <p>仅供内部设计团队使用。请输入管理员为你创建的一次性成员邀请码。</p>
         <form id="member-login-form" class="member-login-form">
           <input id="member-invite-code" type="text" autocomplete="one-time-code" placeholder="BS-XXXXX-XXXXX-XXXXX-XXXXX" aria-label="成员邀请码" required />
-          <button id="member-login-button" type="submit" disabled>验证并进入</button>
+          <button id="member-login-button" type="button">验证并进入</button>
         </form>
         <div id="member-login-status" class="member-login-status" role="status"></div>
       </div>
@@ -2357,7 +2357,6 @@
       function showMemberLogin(message = "") {
         memberLoginStatus.textContent = message;
         memberLoginOverlay.hidden = false;
-        memberLoginButton.disabled = !memberInviteCodeInput.value.trim();
         window.setTimeout(() => memberInviteCodeInput.focus(), 0);
       }
 
@@ -2365,7 +2364,6 @@
         memberLoginOverlay.hidden = true;
         memberLoginStatus.textContent = "";
         memberInviteCodeInput.value = "";
-        memberLoginButton.disabled = true;
       }
 
       async function initializeMemberSession() {
@@ -4162,13 +4160,15 @@
         updateRunState();
       });
 
-      memberLoginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
+      async function submitMemberLogin() {
+        if (memberLoginButton.dataset.loading === "true") {
+          return;
+        }
+
         const code = memberInviteCodeInput.value.trim();
 
         if (!code) {
           memberLoginStatus.textContent = "请输入成员邀请码。";
-          memberLoginButton.disabled = true;
           memberInviteCodeInput.focus();
           return;
         }
@@ -4194,6 +4194,10 @@
 
           saveMemberSession(data.sessionToken, data.session);
           hideMemberLogin();
+          isCollapsed = false;
+          document.body.classList.remove("is-collapsed");
+          collapseButton.title = "收起插件";
+          collapseButton.setAttribute("aria-label", "收起插件");
           chat.innerHTML = "";
           addMessage("system", "登录成功。请选择画布对象并描述本轮需求。");
 
@@ -4212,16 +4216,16 @@
           memberLoginButton.dataset.loading = "";
           memberLoginButton.disabled = false;
           memberLoginButton.textContent = "验证并进入";
-          memberLoginButton.disabled = !memberInviteCodeInput.value.trim();
         }
+      }
+
+      memberLoginForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitMemberLogin();
       });
+      memberLoginButton.addEventListener("click", submitMemberLogin);
 
       memberInviteCodeInput.addEventListener("input", () => {
-        if (memberLoginButton.dataset.loading === "true") {
-          return;
-        }
-
-        memberLoginButton.disabled = !memberInviteCodeInput.value.trim();
         memberLoginStatus.textContent = "";
       });
 

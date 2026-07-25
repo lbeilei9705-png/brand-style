@@ -49,9 +49,28 @@ figma.on("drop", (event) => {
     metadata.height,
     { x: event.absoluteX, y: event.absoluteY },
     false,
-  ).catch((error) => {
+  ).then(() => {
+    figma.ui.postMessage({
+      type: "controller-diagnostic",
+      eventName: "result_drop_success",
+      ok: true,
+      metadata: {
+        width: metadata.width,
+        height: metadata.height,
+      },
+    });
+  }).catch((error) => {
     const errorMessage = error instanceof Error ? error.message : "拖拽插入 Figma 失败。";
+    const issueId = createControllerIssueId();
     figma.notify(errorMessage, { error: true });
+    figma.ui.postMessage({
+      type: "controller-diagnostic",
+      eventName: "result_drop_fail",
+      ok: false,
+      issueId,
+      message: errorMessage,
+      metadata: { issueId },
+    });
   });
 
   return false;

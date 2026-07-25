@@ -4,6 +4,10 @@ figma.showUI(__html__, {
   themeColors: true,
 });
 
+function createControllerIssueId() {
+  return `issue_${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 function bytesToBase64(bytes) {
   let binary = "";
 
@@ -320,9 +324,28 @@ figma.on("drop", (event) => {
     metadata.height,
     { x: event.absoluteX, y: event.absoluteY },
     false,
-  ).catch((error) => {
+  ).then(() => {
+    figma.ui.postMessage({
+      type: "controller-diagnostic",
+      eventName: "result_drop_success",
+      ok: true,
+      metadata: {
+        width: metadata.width,
+        height: metadata.height,
+      },
+    });
+  }).catch((error) => {
     const errorMessage = error instanceof Error ? error.message : "拖拽插入 Figma 失败。";
+    const issueId = createControllerIssueId();
     figma.notify(errorMessage, { error: true });
+    figma.ui.postMessage({
+      type: "controller-diagnostic",
+      eventName: "result_drop_fail",
+      ok: false,
+      issueId,
+      message: errorMessage,
+      metadata: { issueId },
+    });
   });
 
   return false;
@@ -338,7 +361,16 @@ figma.ui.onmessage = async (message) => {
   }
 
   if (message.type === "sync-selection") {
-    await exportSelection();
+    try {
+      await exportSelection();
+    } catch (error) {
+      const issueId = createControllerIssueId();
+      figma.ui.postMessage({
+        type: "selection-error",
+        issueId,
+        message: error instanceof Error ? error.message : "读取 Figma 选区失败。",
+      });
+    }
     return;
   }
 
@@ -353,12 +385,14 @@ figma.ui.onmessage = async (message) => {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "插入 Figma 失败。";
+      const issueId = createControllerIssueId();
       figma.notify(errorMessage, { error: true });
       figma.ui.postMessage({
         type: "insert-result-finished",
         requestId: message.requestId,
         ok: false,
         message: errorMessage,
+        issueId,
       });
     }
   }

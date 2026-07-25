@@ -63,6 +63,38 @@ if (!scriptMatch) {
 }
 new Function(scriptMatch[1]);
 
+const requiredUiProtocol = [
+  'const telemetrySessionStorageKey = "brand-style-client-session-id"',
+  '"x-client-session-id": clientSessionId',
+  '"x-client-request-id": clientRequestId',
+  'response.headers.get("x-request-id")',
+  'fetch(`${apiBase}${telemetryEndpoint}`',
+  'Authorization: `Bearer ${memberSessionToken}`',
+  "keepalive: true",
+  'trackEvent("generation_start"',
+  'trackEvent("generation_success"',
+  'downloadDiagnosticBundle(false)',
+];
+for (const snippet of requiredUiProtocol) {
+  if (!ui.includes(snippet)) {
+    throw new Error(`UI telemetry protocol assertion failed: ${snippet}`);
+  }
+}
+
+const stateIndex = ui.indexOf('const apiBase = "');
+const telemetryIndex = ui.indexOf("const telemetrySessionStorageKey");
+const apiFetchIndex = ui.indexOf("async function apiFetch");
+if (!(stateIndex >= 0 && telemetryIndex > stateIndex && apiFetchIndex > telemetryIndex)) {
+  throw new Error("UI build fragment order must be state -> telemetry -> API.");
+}
+
+const controller = await readFile(resolve(appRoot, "dist/code.js"), "utf8");
+for (const snippet of ["createControllerIssueId", 'type: "controller-diagnostic"', 'type: "selection-error"']) {
+  if (!controller.includes(snippet)) {
+    throw new Error(`Controller diagnostic protocol assertion failed: ${snippet}`);
+  }
+}
+
 const maintainedFiles = [
   ...await collectFiles(resolve(appRoot, "src")),
   ...await collectFiles(resolve(appRoot, "scripts")),

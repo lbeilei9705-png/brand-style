@@ -16,7 +16,7 @@
         });
         const data = await response.json();
         if (!response.ok || !data.conversation) {
-          throw new Error(data.error || "创建对话失败");
+          throw createApiError(response, data, "创建对话失败");
         }
         activeConversationId = data.conversation.id;
         return activeConversationId;
@@ -65,7 +65,7 @@
             };
             renderMemberSession();
           }
-          throw new Error(data.error || "生成失败");
+          throw createApiError(response, data, "生成失败");
         }
 
         refreshMemberSession().catch(() => {});
@@ -87,7 +87,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "场景智能体生成 Prompt 失败");
+          throw createApiError(response, data, "场景智能体生成 Prompt 失败");
         }
 
         return data;
@@ -99,6 +99,7 @@
 
       function stopGeneration() {
         if (activeGenerationController) {
+          trackEvent("generation_abort_requested");
           activeGenerationController.abort();
         }
       }
@@ -163,6 +164,10 @@
           clearStyleSelectionsForScenarioAgent();
           updateRunState();
           const pending = addMessage("system", `正在调用「${scenarioAgent.name}」补全 Prompt...`);
+          trackEvent("scenario_complete_start", {
+            scenarioAgentId: scenarioAgent.id,
+            selectionCount: messageAttachments.length,
+          });
 
           try {
             const data = await completeScenarioAgentPrompt(content, messageAttachments, generationController.signal);
@@ -184,10 +189,22 @@
               ? `「${scenarioAgent.name}」已生成 Prompt，已回填正向 Prompt，并会在生成时使用智能体负面提示词：${data.promptNegative}`
               : `「${scenarioAgent.name}」已生成 Prompt，已回填到输入框。你可以继续修改，确认后再点击生成。`;
             selectionStatus.textContent = "场景智能体已补全 Prompt；普通风格套装和自由搭配已清空。";
+            trackEvent("scenario_complete_success", {
+              scenarioAgentId: scenarioAgent.id,
+              requestId: data.requestId,
+            });
           } catch (error) {
-            pending.textContent = isAbortError(error)
-              ? "已暂停场景智能体补全。"
-              : getReadableError(error);
+            if (isAbortError(error)) {
+              pending.textContent = "已暂停场景智能体补全。";
+            } else {
+              pending.remove();
+              addMessage("system", getReadableError(error));
+            }
+            trackEvent(isAbortError(error) ? "scenario_complete_abort" : "scenario_complete_fail", {
+              scenarioAgentId: scenarioAgent.id,
+              issueId: isAbortError(error) ? undefined : ensureIssueId(error),
+              requestId: error?.requestId,
+            });
           } finally {
             isSending = false;
             if (activeGenerationController === generationController) {
@@ -222,6 +239,13 @@
         resizeMessageInput();
         const pending = addMessage("system", `${loadingText} 已用 0 秒`);
         const startedAt = Date.now();
+        trackEvent("generation_start", {
+          batchSize: currentBatchSize,
+          inputType,
+          selectionCount: messageAttachments.length,
+          modelId: modelSelect.value,
+          agentId: agentSelect.value,
+        });
 
         renderTimer = window.setInterval(() => {
           const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
@@ -234,10 +258,23 @@
           activeConversationId = data.conversation.id;
           renderResults(data.task);
           clearSelectionsAfterGeneration();
+          trackEvent("generation_success", {
+            durationMs: Date.now() - startedAt,
+            resultCount: data.task?.results?.length || 0,
+            conversationId: data.conversation.id,
+          });
         } catch (error) {
-          pending.textContent = isAbortError(error)
-            ? "已暂停本次生成。"
-            : getReadableError(error);
+          if (isAbortError(error)) {
+            pending.textContent = "已暂停本次生成。";
+          } else {
+            pending.remove();
+            addMessage("system", getReadableError(error));
+          }
+          trackEvent(isAbortError(error) ? "generation_abort" : "generation_fail", {
+            durationMs: Date.now() - startedAt,
+            issueId: isAbortError(error) ? undefined : ensureIssueId(error),
+            requestId: error?.requestId,
+          });
         } finally {
           window.clearInterval(renderTimer);
           selectedOperationScenarioId = "";
@@ -252,5 +289,6 @@
       function syncCurrentSelection() {
         addSelectionButton.disabled = true;
         selectionStatus.textContent = "正在添加当前选中图...";
+        trackEvent("selection_start");
         parent.postMessage({ pluginMessage: { type: "sync-selection" } }, "*");
       }

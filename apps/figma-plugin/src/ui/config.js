@@ -4,6 +4,7 @@
         }
 
         isLoadingConfig = true;
+        trackEvent("config_load_start");
         const selectedModelId = modelSelect.value;
         const selectedAgentId = agentSelect.value;
         const selectedMaterialIds = [...materialPresetIds];
@@ -32,7 +33,7 @@
 
           if (failedResponse) {
             const errorData = await failedResponse.json().catch(() => ({}));
-            throw new Error(errorData.error || "加载配置失败。");
+            throw createApiError(failedResponse, errorData, "加载配置失败。");
           }
 
           const modelsData = await modelsResponse.json();
@@ -122,6 +123,14 @@
           renderPaletteInlineEditor();
           renderMaterialPanel();
           updateRunState();
+          trackEvent("config_load_success", {
+            modelCount: modelSelect.options.length,
+            styleCount: agentSelect.options.length,
+            materialCount: materials.length,
+          });
+        } catch (error) {
+          trackEvent("config_load_fail", { issueId: ensureIssueId(error), requestId: error?.requestId });
+          throw error;
         } finally {
           isLoadingConfig = false;
         }

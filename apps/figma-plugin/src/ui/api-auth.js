@@ -1,15 +1,37 @@
       async function apiFetch(path, options = {}) {
+        const clientRequestId = createTelemetryId("req_");
         const headers = {
           ...(options.headers || {}),
+          "x-client-session-id": clientSessionId,
+          "x-client-request-id": clientRequestId,
         };
 
-        if (memberSessionToken) {
+        if (memberSessionToken && !options.skipAuth) {
           headers.Authorization = `Bearer ${memberSessionToken}`;
         }
 
-        const response = await fetch(`${apiBase}${path}`, {
-          ...options,
-          headers,
+        const startedAt = Date.now();
+        addBreadcrumb("api_request", { path, method: options.method || "GET", clientRequestId });
+        let response;
+        try {
+          const { skipAuth, ...fetchOptions } = options;
+          response = await fetch(`${apiBase}${path}`, {
+            ...fetchOptions,
+            headers,
+          });
+        } catch (error) {
+          error.requestId = clientRequestId;
+          recordClientError(error, { operation: "api_fetch", path, clientRequestId });
+          throw error;
+        }
+
+        response.requestId = response.headers.get("x-request-id") || clientRequestId;
+        response.issueId = response.headers.get("x-issue-id") || undefined;
+        addBreadcrumb("api_response", {
+          path,
+          status: response.status,
+          requestId: response.requestId,
+          durationMs: Date.now() - startedAt,
         });
 
         if (response.status === 401 && path !== "/api/member/session/redeem") {

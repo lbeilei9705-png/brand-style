@@ -1,9 +1,15 @@
       function getReadableError(error) {
+        const issueId = ensureIssueId(error);
+        if (error && typeof error === "object" && !error.diagnosticRecorded) {
+          error.diagnosticRecorded = true;
+          recordClientError(error);
+        }
+        const suffix = `（问题编号：${issueId}${error?.requestId ? `，请求编号：${error.requestId}` : ""}）`;
         if (error instanceof TypeError && error.message === "Failed to fetch") {
-          return "无法连接 Brand Style 后端服务，请确认 https://brand-style.fintopia-social-media-ads-tools.tech 可访问，并重新打开插件后重试。";
+          return `无法连接 Brand Style 后端服务，请确认服务可访问，并重新打开插件后重试。${suffix}`;
         }
 
-        return error?.message || "发生未知错误，请稍后重试。";
+        return `${error?.message || "发生未知错误，请稍后重试。"}${suffix}`;
       }
 
       function getGreatestCommonDivisor(left, right) {

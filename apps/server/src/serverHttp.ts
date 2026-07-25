@@ -324,6 +324,8 @@ export function isProtectedPluginRequest(method: string | undefined, pathname: s
   if (method === "POST") {
     return pathname === "/api/conversations"
       || pathname === "/api/scenario-agent/complete"
+      || pathname === "/api/telemetry/events"
+      || pathname === "/api/diagnostics/export"
       || /^\/api\/conversations\/conv_[0-9a-f-]{36}\/messages$/i.test(pathname);
   }
 

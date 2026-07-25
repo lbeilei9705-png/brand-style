@@ -13,6 +13,7 @@ const uiParts = [
   "src/ui/styles/responsive.css",
   "src/ui/markup.html",
   "src/ui/state.js",
+  "src/ui/telemetry.js",
   "src/ui/api-auth.js",
   "src/ui/result.js",
   "src/ui/attachments.js",

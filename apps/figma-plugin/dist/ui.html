@@ -1800,6 +1800,35 @@
         min-width: 0;
       }
 
+      .legal-links button {
+        min-height: 0;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-decoration: underline;
+        box-shadow: none;
+      }
+
+      .diagnostic-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .diagnostic-actions button {
+        min-height: 24px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0 9px;
+        background: #ffffff;
+        color: var(--text);
+        font-size: 9px;
+        font-weight: 650;
+      }
+
       .control-section-label {
         gap: 4px;
         padding: 0;
@@ -2197,6 +2226,7 @@
         </section>
       </section>
       <nav class="legal-links" aria-label="法律信息">
+        <button id="diagnostics-button" type="button" title="默认不含图片、Token 或消息正文；按住 Option/Shift 可附最近消息与当前 Prompt">诊断</button>
         <a href="https://brand-style.fintopia-social-media-ads-tools.tech/privacy.html" target="_blank" rel="noreferrer">隐私政策</a>
         <a href="https://brand-style.fintopia-social-media-ads-tools.tech/terms.html" target="_blank" rel="noreferrer">使用条款</a>
       </nav>
@@ -2216,6 +2246,10 @@
           <button id="member-login-button" type="button" onclick="submitMemberLogin(); return false;">验证并进入</button>
         </form>
         <div id="member-login-status" class="member-login-status" role="status"></div>
+        <div class="diagnostic-actions">
+          <button id="login-copy-diagnostics" type="button">复制诊断信息</button>
+          <button id="login-export-diagnostics" type="button">导出诊断包</button>
+        </div>
       </div>
     </section>
 
@@ -2255,6 +2289,9 @@
       const memberSessionSummary = document.querySelector("#member-session-summary");
       const memberSessionLabel = document.querySelector("#member-session-label");
       const memberLogoutButton = document.querySelector("#member-logout-button");
+      const diagnosticsButton = document.querySelector("#diagnostics-button");
+      const loginCopyDiagnosticsButton = document.querySelector("#login-copy-diagnostics");
+      const loginExportDiagnosticsButton = document.querySelector("#login-export-diagnostics");
       const scenarioAgentDraftStorageKey = "brand-style-scenario-agent-draft";
       const memberSessionStorageKey = "brand-style-member-session";
       let selectedAssets = [];
@@ -2305,18 +2342,288 @@
       ];
       scenarioAgents = [...defaultScenarioAgents];
 
+      const telemetrySessionStorageKey = "brand-style-client-session-id";
+      const telemetryEndpoint = "/api/telemetry/events";
+      const telemetryBreadcrumbLimit = 80;
+      const telemetryQueueLimit = 12;
+      const telemetryFlushDelay = 4000;
+      const sensitiveTelemetryKey = /^(token|authorization|cookie|prompt|content|message|base64|dataurl|imageurl|assetdata|invite(code)?|api[-_]?key|secret)$/i;
+      let telemetryQueue = [];
+      let telemetryBreadcrumbs = [];
+      let telemetryFlushTimer = null;
+
+      function createTelemetryId(prefix = "") {
+        const uuid = globalThis.crypto?.randomUUID?.()
+          || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+        return `${prefix}${uuid}`;
+      }
+
+      function getClientSessionId() {
+        let id = "";
+        try {
+          id = localStorage.getItem(telemetrySessionStorageKey) || "";
+          if (!id) {
+            id = createTelemetryId();
+            localStorage.setItem(telemetrySessionStorageKey, id);
+          }
+        } catch {
+          id = createTelemetryId();
+        }
+        return id;
+      }
+
+      const clientSessionId = getClientSessionId();
+
+      function sanitizeTelemetryValue(value, depth = 0) {
+        if (depth > 4 || value == null || typeof value === "boolean" || typeof value === "number") {
+          return value;
+        }
+        if (typeof value === "string") {
+          if (/^data:/i.test(value) || /^bearer\s/i.test(value)) {
+            return "[REDACTED]";
+          }
+          if (/^https?:\/\//i.test(value)) {
+            try {
+              const url = new URL(value);
+              for (const key of [...url.searchParams.keys()]) {
+                if (/^(token|key|signature|sig|expires|credential)$/i.test(key)) {
+                  url.searchParams.set(key, "[REDACTED]");
+                }
+              }
+              return url.toString().slice(0, 240);
+            } catch {
+              return value.slice(0, 240);
+            }
+          }
+          return value.length > 240 ? `${value.slice(0, 240)}…` : value;
+        }
+        if (Array.isArray(value)) {
+          return value.slice(0, 20).map((item) => sanitizeTelemetryValue(item, depth + 1));
+        }
+        if (typeof value !== "object") {
+          return String(value);
+        }
+        const safe = {};
+        for (const [key, item] of Object.entries(value)) {
+          if (!sensitiveTelemetryKey.test(key) && item !== undefined) {
+            safe[key] = sanitizeTelemetryValue(item, depth + 1);
+          }
+        }
+        return safe;
+      }
+
+      function addBreadcrumb(name, metadata = {}) {
+        telemetryBreadcrumbs.push({
+          at: new Date().toISOString(),
+          name,
+          metadata: sanitizeTelemetryValue(metadata),
+        });
+        telemetryBreadcrumbs = telemetryBreadcrumbs.slice(-telemetryBreadcrumbLimit);
+      }
+
+      function scheduleTelemetryFlush() {
+        if (telemetryFlushTimer) {
+          return;
+        }
+        telemetryFlushTimer = window.setTimeout(() => {
+          telemetryFlushTimer = null;
+          flushTelemetry();
+        }, telemetryFlushDelay);
+      }
+
+      function trackEvent(name, metadata = {}) {
+        const event = {
+          eventId: createTelemetryId("evt_"),
+          clientSessionId,
+          at: new Date().toISOString(),
+          name,
+          metadata: sanitizeTelemetryValue(metadata),
+        };
+        addBreadcrumb(name, event.metadata);
+        telemetryQueue.push(event);
+        if (telemetryQueue.length >= telemetryQueueLimit) {
+          flushTelemetry();
+        } else {
+          scheduleTelemetryFlush();
+        }
+        return event;
+      }
+
+      function flushTelemetry() {
+        if (!telemetryQueue.length) {
+          return;
+        }
+        const events = telemetryQueue.splice(0, telemetryQueueLimit);
+        const body = JSON.stringify({ clientSessionId, events });
+        fetch(`${apiBase}${telemetryEndpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-client-session-id": clientSessionId,
+            ...(memberSessionToken ? { Authorization: `Bearer ${memberSessionToken}` } : {}),
+          },
+          body,
+          keepalive: true,
+        }).then((response) => {
+          if (!response.ok) {
+            throw new Error(`Telemetry HTTP ${response.status}`);
+          }
+        }).catch(() => {
+          telemetryQueue = [...events, ...telemetryQueue].slice(0, telemetryQueueLimit * 4);
+          scheduleTelemetryFlush();
+        });
+        if (telemetryQueue.length) {
+          scheduleTelemetryFlush();
+        }
+      }
+
+      function ensureIssueId(error) {
+        if (error && typeof error === "object") {
+          if (!error.issueId) {
+            error.issueId = createTelemetryId("issue_");
+          }
+          return error.issueId;
+        }
+        return createTelemetryId("issue_");
+      }
+
+      function recordClientError(error, context = {}) {
+        const issueId = ensureIssueId(error);
+        trackEvent("client_error", {
+          ...context,
+          issueId,
+          requestId: error?.requestId,
+          errorName: error?.name,
+        });
+        return issueId;
+      }
+
+      function createApiError(response, data, fallbackMessage) {
+        const error = new Error(data?.error || fallbackMessage);
+        error.requestId = response?.requestId || response?.headers?.get("x-request-id") || undefined;
+        error.issueId = data?.issueId || response?.issueId || response?.headers?.get("x-issue-id") || undefined;
+        error.status = response?.status;
+        ensureIssueId(error);
+        return error;
+      }
+
+      function getRecentDiagnosticMessages() {
+        return [...chat.querySelectorAll(".message")].slice(-12).map((node) => ({
+          role: node.classList.contains("user") ? "user" : node.classList.contains("assistant") ? "assistant" : "system",
+          text: (node.querySelector(".message-content")?.textContent || node.textContent || "").slice(0, 2000),
+        }));
+      }
+
+      function buildDiagnosticBundle(includeText = false) {
+        const bundle = {
+          schemaVersion: 1,
+          exportedAt: new Date().toISOString(),
+          clientSessionId,
+          environment: {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            viewport: { width: window.innerWidth, height: window.innerHeight },
+          },
+          state: {
+            authenticated: Boolean(memberSession),
+            conversationActive: Boolean(activeConversationId),
+            selectionCount: selectedAssets.length,
+            isSending,
+            modelId: modelSelect.value,
+            agentId: agentSelect.value,
+          },
+          breadcrumbs: telemetryBreadcrumbs,
+        };
+        if (includeText) {
+          bundle.recentMessages = getRecentDiagnosticMessages();
+          bundle.currentPrompt = messageInput.value;
+        }
+        return bundle;
+      }
+
+      function saveDiagnosticJson(json, suffix = "") {
+        const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `brand-style-diagnostics${suffix}-${Date.now()}.json`;
+        link.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      async function downloadDiagnosticBundle(includeText = false) {
+        const clientContext = buildDiagnosticBundle(includeText);
+        try {
+          const response = await apiFetch("/api/diagnostics/export", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ clientSessionId, clientContext }),
+          });
+          if (!response.ok) {
+            throw createApiError(response, await response.json().catch(() => ({})), "导出诊断包失败");
+          }
+          const result = await response.json();
+          saveDiagnosticJson(result.content || JSON.stringify(result.bundle || result, null, 2));
+        } catch (error) {
+          saveDiagnosticJson(JSON.stringify(clientContext, null, 2), "-local");
+          recordClientError(error, { operation: "diagnostics_export", localFallback: true });
+        }
+        trackEvent("diagnostics_export", { includeText, includesImages: false, includesToken: false });
+      }
+
+      async function copyDiagnosticInfo(issueId = "") {
+        const text = JSON.stringify({
+          issueId: issueId || undefined,
+          clientSessionId,
+          breadcrumbs: telemetryBreadcrumbs.slice(-20),
+        }, null, 2);
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const input = document.createElement("textarea");
+          input.value = text;
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand("copy");
+          input.remove();
+        }
+        trackEvent("diagnostics_copy", { issueId: issueId || undefined });
+      }
+
+      window.addEventListener("pagehide", flushTelemetry);
       async function apiFetch(path, options = {}) {
+        const clientRequestId = createTelemetryId("req_");
         const headers = {
           ...(options.headers || {}),
+          "x-client-session-id": clientSessionId,
+          "x-client-request-id": clientRequestId,
         };
 
-        if (memberSessionToken) {
+        if (memberSessionToken && !options.skipAuth) {
           headers.Authorization = `Bearer ${memberSessionToken}`;
         }
 
-        const response = await fetch(`${apiBase}${path}`, {
-          ...options,
-          headers,
+        const startedAt = Date.now();
+        addBreadcrumb("api_request", { path, method: options.method || "GET", clientRequestId });
+        let response;
+        try {
+          const { skipAuth, ...fetchOptions } = options;
+          response = await fetch(`${apiBase}${path}`, {
+            ...fetchOptions,
+            headers,
+          });
+        } catch (error) {
+          error.requestId = clientRequestId;
+          recordClientError(error, { operation: "api_fetch", path, clientRequestId });
+          throw error;
+        }
+
+        response.requestId = response.headers.get("x-request-id") || clientRequestId;
+        response.issueId = response.headers.get("x-issue-id") || undefined;
+        addBreadcrumb("api_response", {
+          path,
+          status: response.status,
+          requestId: response.requestId,
+          durationMs: Date.now() - startedAt,
         });
 
         if (response.status === 401 && path !== "/api/member/session/redeem") {
@@ -2438,6 +2745,7 @@
 
         if (result.imageUrl.startsWith("data:")) {
           downloadBlobUrl(result.imageUrl, filename);
+          trackEvent("result_download_success", { rank: result.rank, source: "data_url" });
           return;
         }
 
@@ -2452,7 +2760,13 @@
           const blobUrl = URL.createObjectURL(blob);
           downloadBlobUrl(blobUrl, filename);
           window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-        } catch {
+          trackEvent("result_download_success", { rank: result.rank, source: "remote" });
+        } catch (error) {
+          trackEvent("result_download_fail", {
+            rank: result.rank,
+            issueId: ensureIssueId(error),
+            fallbackOpened: true,
+          });
           window.open(result.imageUrl, "_blank");
         }
       }
@@ -2528,6 +2842,7 @@
 
         button.disabled = true;
         button.textContent = "插入中...";
+        trackEvent("result_insert_start", { rank: result.rank, requestId });
 
         try {
           const prepared = await prepareImageForFigma(result);
@@ -2545,6 +2860,11 @@
           button.disabled = false;
           button.textContent = originalText;
           addMessage("system", getReadableError(error));
+          trackEvent("result_insert_fail", {
+            rank: result.rank,
+            requestId,
+            issueId: ensureIssueId(error),
+          });
         }
       }
 
@@ -2558,6 +2878,7 @@
 
           event.dataTransfer.effectAllowed = "copy";
           event.dataTransfer.setData("text/plain", `generated-result-${result.rank}`);
+          trackEvent("result_drag_start", { rank: result.rank });
         });
         image.addEventListener("dragend", async (event) => {
           const endedInsidePlugin = event.clientX >= 0
@@ -2570,6 +2891,7 @@
           }
 
           try {
+            trackEvent("result_drop_start", { rank: result.rank });
             const prepared = await prepareImageForFigma(result);
             parent.postMessage({
               pluginDrop: {
@@ -2591,6 +2913,10 @@
             }, "*");
           } catch (error) {
             addMessage("system", getReadableError(error));
+            trackEvent("result_drop_fail", {
+              rank: result.rank,
+              issueId: ensureIssueId(error),
+            });
           }
         });
       }
@@ -2626,6 +2952,21 @@
         contentNode.textContent = content;
         node.appendChild(contentNode);
 
+        const issueMatch = role === "system" ? content.match(/问题编号：([^，）]+)/) : null;
+        if (issueMatch) {
+          const actions = document.createElement("div");
+          const copyButton = document.createElement("button");
+          const exportButton = document.createElement("button");
+          actions.className = "diagnostic-actions";
+          copyButton.type = exportButton.type = "button";
+          copyButton.textContent = "复制诊断信息";
+          exportButton.textContent = "导出诊断包";
+          copyButton.addEventListener("click", () => copyDiagnosticInfo(issueMatch[1]));
+          exportButton.addEventListener("click", () => downloadDiagnosticBundle(false));
+          actions.append(copyButton, exportButton);
+          node.appendChild(actions);
+        }
+
         if (role === "user" && content) {
           const reuseButton = document.createElement("button");
           reuseButton.className = "reuse-message-button";
@@ -2649,11 +2990,17 @@
       }
 
       function getReadableError(error) {
+        const issueId = ensureIssueId(error);
+        if (error && typeof error === "object" && !error.diagnosticRecorded) {
+          error.diagnosticRecorded = true;
+          recordClientError(error);
+        }
+        const suffix = `（问题编号：${issueId}${error?.requestId ? `，请求编号：${error.requestId}` : ""}）`;
         if (error instanceof TypeError && error.message === "Failed to fetch") {
-          return "无法连接 Brand Style 后端服务，请确认 https://brand-style.fintopia-social-media-ads-tools.tech 可访问，并重新打开插件后重试。";
+          return `无法连接 Brand Style 后端服务，请确认服务可访问，并重新打开插件后重试。${suffix}`;
         }
 
-        return error?.message || "发生未知错误，请稍后重试。";
+        return `${error?.message || "发生未知错误，请稍后重试。"}${suffix}`;
       }
 
       function getGreatestCommonDivisor(left, right) {
@@ -3665,6 +4012,7 @@
         }
 
         isLoadingConfig = true;
+        trackEvent("config_load_start");
         const selectedModelId = modelSelect.value;
         const selectedAgentId = agentSelect.value;
         const selectedMaterialIds = [...materialPresetIds];
@@ -3693,7 +4041,7 @@
 
           if (failedResponse) {
             const errorData = await failedResponse.json().catch(() => ({}));
-            throw new Error(errorData.error || "加载配置失败。");
+            throw createApiError(failedResponse, errorData, "加载配置失败。");
           }
 
           const modelsData = await modelsResponse.json();
@@ -3783,6 +4131,14 @@
           renderPaletteInlineEditor();
           renderMaterialPanel();
           updateRunState();
+          trackEvent("config_load_success", {
+            modelCount: modelSelect.options.length,
+            styleCount: agentSelect.options.length,
+            materialCount: materials.length,
+          });
+        } catch (error) {
+          trackEvent("config_load_fail", { issueId: ensureIssueId(error), requestId: error?.requestId });
+          throw error;
         } finally {
           isLoadingConfig = false;
         }
@@ -3806,7 +4162,7 @@
         });
         const data = await response.json();
         if (!response.ok || !data.conversation) {
-          throw new Error(data.error || "创建对话失败");
+          throw createApiError(response, data, "创建对话失败");
         }
         activeConversationId = data.conversation.id;
         return activeConversationId;
@@ -3855,7 +4211,7 @@
             };
             renderMemberSession();
           }
-          throw new Error(data.error || "生成失败");
+          throw createApiError(response, data, "生成失败");
         }
 
         refreshMemberSession().catch(() => {});
@@ -3877,7 +4233,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "场景智能体生成 Prompt 失败");
+          throw createApiError(response, data, "场景智能体生成 Prompt 失败");
         }
 
         return data;
@@ -3889,6 +4245,7 @@
 
       function stopGeneration() {
         if (activeGenerationController) {
+          trackEvent("generation_abort_requested");
           activeGenerationController.abort();
         }
       }
@@ -3953,6 +4310,10 @@
           clearStyleSelectionsForScenarioAgent();
           updateRunState();
           const pending = addMessage("system", `正在调用「${scenarioAgent.name}」补全 Prompt...`);
+          trackEvent("scenario_complete_start", {
+            scenarioAgentId: scenarioAgent.id,
+            selectionCount: messageAttachments.length,
+          });
 
           try {
             const data = await completeScenarioAgentPrompt(content, messageAttachments, generationController.signal);
@@ -3974,10 +4335,22 @@
               ? `「${scenarioAgent.name}」已生成 Prompt，已回填正向 Prompt，并会在生成时使用智能体负面提示词：${data.promptNegative}`
               : `「${scenarioAgent.name}」已生成 Prompt，已回填到输入框。你可以继续修改，确认后再点击生成。`;
             selectionStatus.textContent = "场景智能体已补全 Prompt；普通风格套装和自由搭配已清空。";
+            trackEvent("scenario_complete_success", {
+              scenarioAgentId: scenarioAgent.id,
+              requestId: data.requestId,
+            });
           } catch (error) {
-            pending.textContent = isAbortError(error)
-              ? "已暂停场景智能体补全。"
-              : getReadableError(error);
+            if (isAbortError(error)) {
+              pending.textContent = "已暂停场景智能体补全。";
+            } else {
+              pending.remove();
+              addMessage("system", getReadableError(error));
+            }
+            trackEvent(isAbortError(error) ? "scenario_complete_abort" : "scenario_complete_fail", {
+              scenarioAgentId: scenarioAgent.id,
+              issueId: isAbortError(error) ? undefined : ensureIssueId(error),
+              requestId: error?.requestId,
+            });
           } finally {
             isSending = false;
             if (activeGenerationController === generationController) {
@@ -4012,6 +4385,13 @@
         resizeMessageInput();
         const pending = addMessage("system", `${loadingText} 已用 0 秒`);
         const startedAt = Date.now();
+        trackEvent("generation_start", {
+          batchSize: currentBatchSize,
+          inputType,
+          selectionCount: messageAttachments.length,
+          modelId: modelSelect.value,
+          agentId: agentSelect.value,
+        });
 
         renderTimer = window.setInterval(() => {
           const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
@@ -4024,10 +4404,23 @@
           activeConversationId = data.conversation.id;
           renderResults(data.task);
           clearSelectionsAfterGeneration();
+          trackEvent("generation_success", {
+            durationMs: Date.now() - startedAt,
+            resultCount: data.task?.results?.length || 0,
+            conversationId: data.conversation.id,
+          });
         } catch (error) {
-          pending.textContent = isAbortError(error)
-            ? "已暂停本次生成。"
-            : getReadableError(error);
+          if (isAbortError(error)) {
+            pending.textContent = "已暂停本次生成。";
+          } else {
+            pending.remove();
+            addMessage("system", getReadableError(error));
+          }
+          trackEvent(isAbortError(error) ? "generation_abort" : "generation_fail", {
+            durationMs: Date.now() - startedAt,
+            issueId: isAbortError(error) ? undefined : ensureIssueId(error),
+            requestId: error?.requestId,
+          });
         } finally {
           window.clearInterval(renderTimer);
           selectedOperationScenarioId = "";
@@ -4042,6 +4435,7 @@
       function syncCurrentSelection() {
         addSelectionButton.disabled = true;
         selectionStatus.textContent = "正在添加当前选中图...";
+        trackEvent("selection_start");
         parent.postMessage({ pluginMessage: { type: "sync-selection" } }, "*");
       }
 
@@ -4177,19 +4571,21 @@
         memberLoginButton.disabled = true;
         memberLoginButton.textContent = "验证中...";
         memberLoginStatus.textContent = "";
+        trackEvent("login_start");
 
         try {
-          const response = await fetch(`${apiBase}/api/member/session/redeem`, {
+          const response = await apiFetch("/api/member/session/redeem", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ code }),
+            skipAuth: true,
           });
           const data = await response.json().catch(() => ({}));
 
           if (!response.ok || !data.sessionToken || !data.session) {
-            throw new Error(data.error || "邀请码验证失败。");
+            throw createApiError(response, data, "邀请码验证失败。");
           }
 
           saveMemberSession(data.sessionToken, data.session);
@@ -4200,6 +4596,7 @@
           collapseButton.setAttribute("aria-label", "收起插件");
           chat.innerHTML = "";
           addMessage("system", "登录成功。请选择画布对象并描述本轮需求。");
+          trackEvent("login_success");
 
           try {
             await loadConfig();
@@ -4210,6 +4607,7 @@
           updateRunState();
           scheduleInitialComposerActionsScroll();
         } catch (error) {
+          trackEvent("login_fail", { issueId: ensureIssueId(error), requestId: error?.requestId });
           showMemberLogin(getReadableError(error));
           memberLoginStatus.textContent = getReadableError(error);
         } finally {
@@ -4222,6 +4620,14 @@
       memberInviteCodeInput.addEventListener("input", () => {
         memberLoginStatus.textContent = "";
       });
+      diagnosticsButton.addEventListener("click", (event) => {
+        downloadDiagnosticBundle(event.altKey || event.shiftKey);
+      });
+      loginCopyDiagnosticsButton.addEventListener("click", () => {
+        const issueId = memberLoginStatus.textContent.match(/问题编号：([^，）]+)/)?.[1] || "";
+        copyDiagnosticInfo(issueId);
+      });
+      loginExportDiagnosticsButton.addEventListener("click", () => downloadDiagnosticBundle(false));
 
       memberLogoutButton.addEventListener("click", async () => {
         memberLogoutButton.disabled = true;
@@ -4382,12 +4788,20 @@
             : message.payload.message;
           addSelectionButton.disabled = false;
           updateRunState();
+          trackEvent("selection_success", {
+            incomingCount: incomingAssets.length,
+            totalCount: selectedAssets.length,
+          });
         }
 
         if (message.type === "selection-error") {
           selectionBar.textContent = message.message;
           selectionStatus.textContent = message.message;
           addSelectionButton.disabled = false;
+          trackEvent("selection_fail", {
+            issueId: message.issueId,
+            errorMessage: message.message,
+          });
         }
 
         if (message.type === "insert-result-finished") {
@@ -4399,6 +4813,7 @@
             pendingInsertButtons.delete(message.requestId);
 
             if (message.ok) {
+              trackEvent("result_insert_success", { requestId: message.requestId });
               window.setTimeout(() => {
                 pending.button.textContent = pending.originalText;
               }, 1200);
@@ -4406,7 +4821,22 @@
           }
 
           if (!message.ok) {
-            addMessage("system", message.message || "插入 Figma 失败。");
+            trackEvent("result_insert_fail", {
+              requestId: message.requestId,
+              issueId: message.issueId,
+            });
+            const error = new Error(message.message || "插入 Figma 失败。");
+            error.issueId = message.issueId;
+            addMessage("system", getReadableError(error));
+          }
+        }
+
+        if (message.type === "controller-diagnostic") {
+          trackEvent(message.eventName, message.metadata || {});
+          if (!message.ok && message.message) {
+            const error = new Error(message.message);
+            error.issueId = message.issueId;
+            addMessage("system", getReadableError(error));
           }
         }
       };

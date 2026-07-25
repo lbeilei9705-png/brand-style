@@ -34,6 +34,9 @@
       const memberSessionSummary = document.querySelector("#member-session-summary");
       const memberSessionLabel = document.querySelector("#member-session-label");
       const memberLogoutButton = document.querySelector("#member-logout-button");
+      const diagnosticsButton = document.querySelector("#diagnostics-button");
+      const loginCopyDiagnosticsButton = document.querySelector("#login-copy-diagnostics");
+      const loginExportDiagnosticsButton = document.querySelector("#login-export-diagnostics");
       const scenarioAgentDraftStorageKey = "brand-style-scenario-agent-draft";
       const memberSessionStorageKey = "brand-style-member-session";
       let selectedAssets = [];

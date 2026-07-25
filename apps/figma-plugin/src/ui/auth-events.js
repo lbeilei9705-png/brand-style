@@ -59,19 +59,21 @@
         memberLoginButton.disabled = true;
         memberLoginButton.textContent = "验证中...";
         memberLoginStatus.textContent = "";
+        trackEvent("login_start");
 
         try {
-          const response = await fetch(`${apiBase}/api/member/session/redeem`, {
+          const response = await apiFetch("/api/member/session/redeem", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ code }),
+            skipAuth: true,
           });
           const data = await response.json().catch(() => ({}));
 
           if (!response.ok || !data.sessionToken || !data.session) {
-            throw new Error(data.error || "邀请码验证失败。");
+            throw createApiError(response, data, "邀请码验证失败。");
           }
 
           saveMemberSession(data.sessionToken, data.session);
@@ -82,6 +84,7 @@
           collapseButton.setAttribute("aria-label", "收起插件");
           chat.innerHTML = "";
           addMessage("system", "登录成功。请选择画布对象并描述本轮需求。");
+          trackEvent("login_success");
 
           try {
             await loadConfig();
@@ -92,6 +95,7 @@
           updateRunState();
           scheduleInitialComposerActionsScroll();
         } catch (error) {
+          trackEvent("login_fail", { issueId: ensureIssueId(error), requestId: error?.requestId });
           showMemberLogin(getReadableError(error));
           memberLoginStatus.textContent = getReadableError(error);
         } finally {

@@ -50,9 +50,30 @@ for (const path of maintained) {
 }
 
 const adminHtml = await readFile(resolve(publicDir, "admin.html"), "utf8");
-for (const required of ["id=\"models-page\"", "id=\"member-access-page\"", "id=\"scenario-agent-case-modal\""]) {
+for (const required of [
+  "id=\"models-page\"",
+  "id=\"member-access-page\"",
+  "id=\"scenario-agent-case-modal\"",
+  "id=\"telemetry-page\"",
+  "id=\"telemetry-filter-form\"",
+  "id=\"telemetry-events-table\"",
+  "id=\"telemetry-detail-modal\"",
+  "id=\"export-diagnostics-button\"",
+]) {
   if (!adminHtml.includes(required)) {
     throw new Error(`Generated admin.html is missing ${required}`);
+  }
+}
+
+const moduleConnections = [
+  ["admin.js", "./admin/events.js"],
+  ["admin/events.js", "./telemetry-events.js"],
+  ["admin/telemetry-events.js", "./telemetry.js"],
+];
+for (const [name, dependency] of moduleConnections) {
+  const source = await readFile(resolve(publicDir, name), "utf8");
+  if (!source.includes(dependency)) {
+    throw new Error(`${name} is missing module connection ${dependency}`);
   }
 }
 

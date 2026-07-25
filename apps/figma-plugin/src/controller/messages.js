@@ -8,7 +8,16 @@ figma.ui.onmessage = async (message) => {
   }
 
   if (message.type === "sync-selection") {
-    await exportSelection();
+    try {
+      await exportSelection();
+    } catch (error) {
+      const issueId = createControllerIssueId();
+      figma.ui.postMessage({
+        type: "selection-error",
+        issueId,
+        message: error instanceof Error ? error.message : "读取 Figma 选区失败。",
+      });
+    }
     return;
   }
 
@@ -23,12 +32,14 @@ figma.ui.onmessage = async (message) => {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "插入 Figma 失败。";
+      const issueId = createControllerIssueId();
       figma.notify(errorMessage, { error: true });
       figma.ui.postMessage({
         type: "insert-result-finished",
         requestId: message.requestId,
         ok: false,
         message: errorMessage,
+        issueId,
       });
     }
   }

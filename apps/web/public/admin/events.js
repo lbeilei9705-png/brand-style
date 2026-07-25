@@ -2,6 +2,7 @@ import { escapeHtml, openModal, closeModals, qs, state } from "./core.js";
 import { createMemberInvite, deleteAgent, deleteModel, fillAgentForm, fillModelForm, importAgentFromMarkdown, loadConfig, loadMemberAccess, resetAgentForm, resetModelForm, revokeMember, revokeMemberInvite, saveAgent, saveModel } from "./config.js";
 import { addPaletteColorRow, deleteMaterial, deletePalette, deleteShapeArchitecture, fillMaterialForm, fillPaletteForm, fillShapeArchitectureForm, resetMaterialForm, resetPaletteForm, resetShapeArchitectureForm, saveMaterial, savePalette, saveShapeArchitecture } from "./resources-basic.js";
 import { deleteScenario, deleteScenarioAgent, deleteScenarioAgentCase, fillScenarioAgentCaseForm, fillScenarioAgentForm, fillScenarioForm, resetScenarioAgentCaseForm, resetScenarioAgentForm, resetScenarioForm, saveScenario, saveScenarioAgent, saveScenarioAgentCase } from "./resources-scenarios.js";
+import { bindTelemetryEvents, handleTelemetryClick } from "./telemetry-events.js";
 
 document.addEventListener("click", async (event) => {
   const target = event.target;
@@ -10,6 +11,7 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
+  handleTelemetryClick(target);
   const pageId = target.dataset.page;
 
   if (pageId) {
@@ -201,6 +203,7 @@ qs("#agent-md-file").addEventListener("change", async (event) => {
     event.target.value = "";
   }
 });
+bindTelemetryEvents();
 
 loadConfig().catch((error) => {
   qs("#models-table").innerHTML = `<tr><td colspan="5">${escapeHtml(error.message)}</td></tr>`;

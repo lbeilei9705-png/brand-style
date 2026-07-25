@@ -1,5 +1,6 @@
 import http from "http";
 import path from "path";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "url";
 import { getAppConfig, loadDotEnv } from "./config.ts";
 import { ConfigStore, type StoredConfig } from "./configStore.ts";
@@ -7,6 +8,7 @@ import { ConversationService } from "./conversationService.ts";
 import { ConversationStore } from "./conversationStore.ts";
 import { sendJson } from "./http/response.ts";
 import { handleConfigRoutes } from "./routes/configRoutes.ts";
+import { handleTelemetryRoutes } from "./routes/telemetryRoutes.ts";
 import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, serveStatic } from "./serverHttp.ts";
 import { MemberAccessStore } from "./memberAccessStore.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
@@ -15,6 +17,7 @@ import { OssAssetStorage } from "./storage/ossAssetStorage.ts";
 import { SupabaseConfigStore } from "./storage/supabaseConfigStore.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
+import { createTelemetryService } from "./telemetry/index.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,7 +38,9 @@ const memberSessionTtlDays = Math.max(
   1,
   Number(process.env.BRAND_STYLE_MEMBER_SESSION_TTL_DAYS || 30),
 );
-const dataDir = path.resolve(projectRoot, "data");
+const dataDir = path.resolve(projectRoot, process.env.BRAND_STYLE_DATA_DIR || "data");
+appConfig.telemetry.localDir = path.resolve(projectRoot, appConfig.telemetry.localDir);
+const telemetry = createTelemetryService(appConfig.telemetry);
 const remoteConfigStore = appConfig.supabase
   ? new SupabaseConfigStore<StoredConfig>({
     url: appConfig.supabase.url,
@@ -74,12 +79,17 @@ const conversationService = new ConversationService(conversationStore, configSto
 
 
 const server = http.createServer(async (req, res) => {
-  const requestId = `req_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+  const requestId = `req_${randomUUID()}`;
+  const issueId = `issue_${randomUUID()}`;
+  const clientSessionId = stringHeader(req.headers["x-client-session-id"]);
+  let actorId: string | undefined;
   const startedAt = Date.now();
   const url = new URL(req.url || "/", `http://localhost:${port}`);
   const pathname = url.pathname;
   res.setHeader("x-request-id", requestId);
+  res.setHeader("x-issue-id", issueId);
   res.on("finish", () => {
+    const failed = res.statusCode >= 400;
     logInfo("http", "request completed", {
       requestId,
       method: req.method,
@@ -87,6 +97,25 @@ const server = http.createServer(async (req, res) => {
       statusCode: res.statusCode,
       durationMs: Date.now() - startedAt,
     });
+    void telemetry.record({
+      name: routeEventName(pathname, res.statusCode),
+      category: "http",
+      source: "server",
+      level: res.statusCode >= 500 ? "error" : res.statusCode >= 400 ? "warn" : "info",
+      requestId,
+      issueId: failed ? issueId : undefined,
+      clientSessionId,
+      actorId,
+      properties: {
+        method: req.method || "GET",
+        pathname,
+        statusCode: res.statusCode,
+        durationMs: Date.now() - startedAt,
+      },
+    }).catch((error) => logError("telemetry", "failed to record request", {
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+    }));
   });
   logInfo("http", "request received", {
     requestId,
@@ -111,6 +140,7 @@ const server = http.createServer(async (req, res) => {
         storage: {
           supabase: Boolean(remoteConfigStore?.enabled),
           oss: assetStorage.enabled,
+          telemetry: appConfig.telemetry.store,
         },
       });
       return;
@@ -148,6 +178,7 @@ const server = http.createServer(async (req, res) => {
     const memberSession = isProtectedPluginApi
       ? memberAccessStore.resolveSession(getMemberToken(req))
       : undefined;
+    actorId = memberSession?.memberId;
 
     if (isProtectedPluginApi && !memberSession && !hasAdminCredentials(req)) {
       sendJson(res, 401, {
@@ -162,7 +193,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (isProtectedPluginApi && req.method !== "GET") {
+    if (isProtectedPluginApi && req.method !== "GET" && pathname !== "/api/telemetry/events") {
       const retryAfterSeconds = consumePluginRateLimit(req);
 
       if (retryAfterSeconds) {
@@ -172,6 +203,19 @@ const server = http.createServer(async (req, res) => {
         });
         return;
       }
+    }
+
+    if (await handleTelemetryRoutes({
+      req,
+      res,
+      url,
+      telemetry,
+      actorId,
+      requestId,
+      clientSessionId,
+      isAdmin: hasAdminCredentials(req),
+    })) {
+      return;
     }
 
     if (req.method === "GET" && pathname === "/api/member/session/me" && memberSession) {
@@ -298,10 +342,37 @@ const server = http.createServer(async (req, res) => {
       }
 
       try {
+        void telemetry.record({
+          name: "generation.started",
+          category: "generation",
+          source: "server",
+          requestId,
+          clientSessionId,
+          actorId,
+          conversationId: conversationMessageMatch[1],
+          properties: {
+            modelId: messageRequest.modelId,
+            skillId: messageRequest.agentId,
+            attachmentCount: messageRequest.selectionAssets?.length || 0,
+          },
+        }).catch(() => undefined);
         response = await conversationService.addMessage(
           conversationMessageMatch[1],
           messageRequest,
         );
+        void telemetry.record({
+          name: "generation.succeeded",
+          category: "generation",
+          source: "server",
+          requestId,
+          clientSessionId,
+          actorId,
+          conversationId: conversationMessageMatch[1],
+          properties: {
+            durationMs: Date.now() - startedAt,
+            taskId: response.task?.id,
+          },
+        }).catch(() => undefined);
       } catch (error) {
         if (memberSession && quotaReservation?.allowed) {
           memberAccessStore.refundQuota(memberSession.id, 1);
@@ -312,6 +383,22 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
+        await telemetry.recordDiagnostic({
+          name: "generation.failed",
+          level: "error",
+          source: "server",
+          requestId,
+          issueId,
+          clientSessionId,
+          actorId,
+          conversationId: conversationMessageMatch[1],
+          diagnostic: {
+            code: "GENERATION_FAILED",
+            component: "conversation",
+            message: error instanceof Error ? error.message : "Generation failed",
+            recoverable: true,
+          },
+        }).catch(() => undefined);
         throw error;
       }
 
@@ -365,8 +452,27 @@ const server = http.createServer(async (req, res) => {
       pathname,
       error: error instanceof Error ? error.message : String(error),
     });
+    await telemetry.recordDiagnostic({
+      name: "server.request_failed",
+      level: "error",
+      source: "server",
+      requestId,
+      issueId,
+      clientSessionId,
+      actorId,
+      diagnostic: {
+        code: "INTERNAL_SERVER_ERROR",
+        component: "http",
+        message: error instanceof Error ? error.message : "Internal server error",
+        recoverable: true,
+      },
+      properties: { method: req.method || "GET", pathname },
+    }).catch(() => undefined);
     sendJson(res, 500, {
-      error: error instanceof Error ? error.message : "Internal server error.",
+      error: "Internal server error.",
+      code: "INTERNAL_SERVER_ERROR",
+      issueId,
+      requestId,
     });
   }
 });
@@ -374,3 +480,16 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(`3D Icon Style Engine listening on http://localhost:${port}`);
 });
+
+function stringHeader(value: string | string[] | undefined): string | undefined {
+  const text = Array.isArray(value) ? value[0] : value;
+  return text && text.length <= 160 ? text : undefined;
+}
+
+function routeEventName(pathname: string, statusCode: number): string {
+  if (pathname === "/api/scenario-agent/complete") return statusCode < 400 ? "scenario.completed" : "scenario.failed";
+  if (pathname === "/api/assets") return statusCode < 400 ? "asset.uploaded" : "asset.upload_failed";
+  if (pathname.startsWith("/api/config")) return statusCode < 400 ? "config.accessed" : "config.failed";
+  if (pathname.startsWith("/api/tasks")) return statusCode < 400 ? "task.completed" : "task.failed";
+  return "http.completed";
+}

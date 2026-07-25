@@ -34,6 +34,7 @@
 
         if (result.imageUrl.startsWith("data:")) {
           downloadBlobUrl(result.imageUrl, filename);
+          trackEvent("result_download_success", { rank: result.rank, source: "data_url" });
           return;
         }
 
@@ -48,7 +49,13 @@
           const blobUrl = URL.createObjectURL(blob);
           downloadBlobUrl(blobUrl, filename);
           window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-        } catch {
+          trackEvent("result_download_success", { rank: result.rank, source: "remote" });
+        } catch (error) {
+          trackEvent("result_download_fail", {
+            rank: result.rank,
+            issueId: ensureIssueId(error),
+            fallbackOpened: true,
+          });
           window.open(result.imageUrl, "_blank");
         }
       }
@@ -124,6 +131,7 @@
 
         button.disabled = true;
         button.textContent = "插入中...";
+        trackEvent("result_insert_start", { rank: result.rank, requestId });
 
         try {
           const prepared = await prepareImageForFigma(result);
@@ -141,6 +149,11 @@
           button.disabled = false;
           button.textContent = originalText;
           addMessage("system", getReadableError(error));
+          trackEvent("result_insert_fail", {
+            rank: result.rank,
+            requestId,
+            issueId: ensureIssueId(error),
+          });
         }
       }
 
@@ -154,6 +167,7 @@
 
           event.dataTransfer.effectAllowed = "copy";
           event.dataTransfer.setData("text/plain", `generated-result-${result.rank}`);
+          trackEvent("result_drag_start", { rank: result.rank });
         });
         image.addEventListener("dragend", async (event) => {
           const endedInsidePlugin = event.clientX >= 0
@@ -166,6 +180,7 @@
           }
 
           try {
+            trackEvent("result_drop_start", { rank: result.rank });
             const prepared = await prepareImageForFigma(result);
             parent.postMessage({
               pluginDrop: {
@@ -187,6 +202,10 @@
             }, "*");
           } catch (error) {
             addMessage("system", getReadableError(error));
+            trackEvent("result_drop_fail", {
+              rank: result.rank,
+              issueId: ensureIssueId(error),
+            });
           }
         });
       }
@@ -221,6 +240,21 @@
         contentNode.className = "message-content";
         contentNode.textContent = content;
         node.appendChild(contentNode);
+
+        const issueMatch = role === "system" ? content.match(/问题编号：([^，）]+)/) : null;
+        if (issueMatch) {
+          const actions = document.createElement("div");
+          const copyButton = document.createElement("button");
+          const exportButton = document.createElement("button");
+          actions.className = "diagnostic-actions";
+          copyButton.type = exportButton.type = "button";
+          copyButton.textContent = "复制诊断信息";
+          exportButton.textContent = "导出诊断包";
+          copyButton.addEventListener("click", () => copyDiagnosticInfo(issueMatch[1]));
+          exportButton.addEventListener("click", () => downloadDiagnosticBundle(false));
+          actions.append(copyButton, exportButton);
+          node.appendChild(actions);
+        }
 
         if (role === "user" && content) {
           const reuseButton = document.createElement("button");

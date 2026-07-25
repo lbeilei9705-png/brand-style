@@ -2,6 +2,14 @@
       memberInviteCodeInput.addEventListener("input", () => {
         memberLoginStatus.textContent = "";
       });
+      diagnosticsButton.addEventListener("click", (event) => {
+        downloadDiagnosticBundle(event.altKey || event.shiftKey);
+      });
+      loginCopyDiagnosticsButton.addEventListener("click", () => {
+        const issueId = memberLoginStatus.textContent.match(/问题编号：([^，）]+)/)?.[1] || "";
+        copyDiagnosticInfo(issueId);
+      });
+      loginExportDiagnosticsButton.addEventListener("click", () => downloadDiagnosticBundle(false));
 
       memberLogoutButton.addEventListener("click", async () => {
         memberLogoutButton.disabled = true;
@@ -162,12 +170,20 @@
             : message.payload.message;
           addSelectionButton.disabled = false;
           updateRunState();
+          trackEvent("selection_success", {
+            incomingCount: incomingAssets.length,
+            totalCount: selectedAssets.length,
+          });
         }
 
         if (message.type === "selection-error") {
           selectionBar.textContent = message.message;
           selectionStatus.textContent = message.message;
           addSelectionButton.disabled = false;
+          trackEvent("selection_fail", {
+            issueId: message.issueId,
+            errorMessage: message.message,
+          });
         }
 
         if (message.type === "insert-result-finished") {
@@ -179,6 +195,7 @@
             pendingInsertButtons.delete(message.requestId);
 
             if (message.ok) {
+              trackEvent("result_insert_success", { requestId: message.requestId });
               window.setTimeout(() => {
                 pending.button.textContent = pending.originalText;
               }, 1200);
@@ -186,7 +203,22 @@
           }
 
           if (!message.ok) {
-            addMessage("system", message.message || "插入 Figma 失败。");
+            trackEvent("result_insert_fail", {
+              requestId: message.requestId,
+              issueId: message.issueId,
+            });
+            const error = new Error(message.message || "插入 Figma 失败。");
+            error.issueId = message.issueId;
+            addMessage("system", getReadableError(error));
+          }
+        }
+
+        if (message.type === "controller-diagnostic") {
+          trackEvent(message.eventName, message.metadata || {});
+          if (!message.ok && message.message) {
+            const error = new Error(message.message);
+            error.issueId = message.issueId;
+            addMessage("system", getReadableError(error));
           }
         }
       };

@@ -104,6 +104,28 @@ BRAND_STYLE_MEMBER_SESSION_TTL_DAYS=30
 - `POST /api/tasks`
 - `GET /api/tasks/:taskId`
 - `POST /api/tasks/:taskId/results/:resultId/select`
+- `POST /api/telemetry/events`
+- `GET /api/admin/telemetry/events`
+- `POST /api/diagnostics/export`
+
+## 使用监测与快速排障
+
+监测默认只保存事件、状态、耗时、关联 ID 和脱敏错误摘要，不保存 Token、API key、完整 Prompt、用户正文、base64 图片或签名 URL。远端使用 Supabase `brand_style_telemetry` 表；写入失败时自动降级到权限为 `0600` 的本地 JSONL。建表语句见 `docs/telemetry.sql`。
+
+插件错误会显示 `issueId`。复制该编号后可在项目根目录运行：
+
+```bash
+npm run diagnose -- issue_xxx
+npm run verify
+```
+
+也可以把用户主动下载的诊断 JSON 交给脚本：
+
+```bash
+npm run diagnose -- /path/to/brand-style-diagnostics.json
+```
+
+只有主动导出时才会在本地诊断包中包含用户选择提供的 Prompt/最近对话；诊断包不会自动上传或持久化正文，默认不包含图片。
 
 ## 后续扩展真实生图 API
 

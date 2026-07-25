@@ -50,6 +50,7 @@
         flex-direction: column;
         gap: 22px;
         height: 100vh;
+        overflow-y: auto;
         border-right: 1px solid var(--admin-line);
         padding: 22px 18px;
         background: var(--admin-sidebar-bg);

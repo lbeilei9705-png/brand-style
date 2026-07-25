@@ -6,6 +6,7 @@ const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const publicDir = resolve(appRoot, "public");
 const fragmentNames = [
   "admin-shell.html",
+  "admin-telemetry.html",
   "admin-modals-basic.html",
   "admin-modals-skills.html",
 ];
@@ -22,6 +23,7 @@ const documentStart = `<!doctype html>
     <link rel="stylesheet" href="/admin-base.css" />
     <link rel="stylesheet" href="/admin-tables.css" />
     <link rel="stylesheet" href="/admin-forms.css" />
+    <link rel="stylesheet" href="/admin-telemetry.css" />
   </head>
   <body>
 `;

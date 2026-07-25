@@ -2546,45 +2546,74 @@
         const link = document.createElement("a");
         link.href = url;
         link.download = `brand-style-diagnostics${suffix}-${Date.now()}.json`;
+        link.hidden = true;
+        document.body.appendChild(link);
         link.click();
+        link.remove();
         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
 
-      async function downloadDiagnosticBundle(includeText = false) {
+      function showDiagnosticFeedback(message, failed = false) {
+        if (!memberLoginOverlay.hidden) {
+          memberLoginStatus.textContent = message;
+          memberLoginStatus.classList.toggle("error", failed);
+          return;
+        }
+        const original = diagnosticsButton.textContent;
+        diagnosticsButton.textContent = message;
+        window.setTimeout(() => {
+          diagnosticsButton.textContent = original;
+        }, 2200);
+      }
+
+      function downloadDiagnosticBundle(includeText = false) {
         const clientContext = buildDiagnosticBundle(includeText);
-        try {
-          const response = await apiFetch("/api/diagnostics/export", {
+        saveDiagnosticJson(JSON.stringify(clientContext, null, 2));
+        showDiagnosticFeedback("已下载");
+        void apiFetch("/api/diagnostics/export", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ clientSessionId, clientContext }),
-          });
+          }).then(async (response) => {
           if (!response.ok) {
             throw createApiError(response, await response.json().catch(() => ({})), "导出诊断包失败");
           }
-          const result = await response.json();
-          saveDiagnosticJson(result.content || JSON.stringify(result.bundle || result, null, 2));
-        } catch (error) {
-          saveDiagnosticJson(JSON.stringify(clientContext, null, 2), "-local");
+        }).catch((error) => {
           recordClientError(error, { operation: "diagnostics_export", localFallback: true });
-        }
+        });
         trackEvent("diagnostics_export", { includeText, includesImages: false, includesToken: false });
       }
 
-      async function copyDiagnosticInfo(issueId = "") {
+      function copyDiagnosticInfo(issueId = "") {
         const text = JSON.stringify({
           issueId: issueId || undefined,
           clientSessionId,
           breadcrumbs: telemetryBreadcrumbs.slice(-20),
         }, null, 2);
+        const input = document.createElement("textarea");
+        input.value = text;
+        input.readOnly = true;
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+        input.setSelectionRange(0, input.value.length);
+        let copied = false;
         try {
-          await navigator.clipboard.writeText(text);
+          copied = document.execCommand("copy");
         } catch {
-          const input = document.createElement("textarea");
-          input.value = text;
-          document.body.appendChild(input);
-          input.select();
-          document.execCommand("copy");
-          input.remove();
+          copied = false;
+        }
+        input.remove();
+        if (copied) {
+          showDiagnosticFeedback("已复制");
+        } else if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(() => showDiagnosticFeedback("已复制"))
+            .catch(() => showDiagnosticFeedback("复制失败，请使用导出诊断包", true));
+        } else {
+          showDiagnosticFeedback("复制失败，请使用导出诊断包", true);
         }
         trackEvent("diagnostics_copy", { issueId: issueId || undefined });
       }

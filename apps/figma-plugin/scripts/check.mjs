@@ -76,6 +76,8 @@ const requiredUiProtocol = [
   'downloadDiagnosticBundle(false)',
   'memberLoginForm.addEventListener("submit"',
   'memberLoginButton.addEventListener("click"',
+  'let memberSessionToken = ""',
+  'type: "auth-storage-get"',
 ];
 for (const snippet of requiredUiProtocol) {
   if (!ui.includes(snippet)) {
@@ -94,7 +96,7 @@ if (!(stateIndex >= 0 && telemetryIndex > stateIndex && apiFetchIndex > telemetr
 }
 
 const controller = await readFile(resolve(appRoot, "dist/code.js"), "utf8");
-for (const snippet of ["createControllerIssueId", 'type: "controller-diagnostic"', 'type: "selection-error"']) {
+for (const snippet of ["createControllerIssueId", 'type: "controller-diagnostic"', 'type: "selection-error"', "figma.clientStorage.getAsync", "figma.clientStorage.setAsync"]) {
   if (!controller.includes(snippet)) {
     throw new Error(`Controller diagnostic protocol assertion failed: ${snippet}`);
   }

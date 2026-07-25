@@ -62,7 +62,7 @@
       let materialPanelCloseTimer = null;
       let palettePanelCloseTimer = null;
       let palettePanelDeletePointer = null;
-      let memberSessionToken = localStorage.getItem(memberSessionStorageKey) || "";
+      let memberSessionToken = "";
       let memberSession = null;
       const fixedWindowHeight = 780;
       const fixedWindowWidth = 300;

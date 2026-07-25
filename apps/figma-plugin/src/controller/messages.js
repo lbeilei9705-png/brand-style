@@ -1,4 +1,24 @@
 figma.ui.onmessage = async (message) => {
+  if (message.type === "auth-storage-get") {
+    const token = await figma.clientStorage.getAsync(memberSessionStorageKey);
+    figma.ui.postMessage({
+      type: "auth-storage-value",
+      requestId: message.requestId,
+      token: typeof token === "string" ? token : "",
+    });
+    return;
+  }
+
+  if (message.type === "auth-storage-set") {
+    await figma.clientStorage.setAsync(memberSessionStorageKey, String(message.token || ""));
+    return;
+  }
+
+  if (message.type === "auth-storage-remove") {
+    await figma.clientStorage.deleteAsync(memberSessionStorageKey);
+    return;
+  }
+
   if (message.type === "resize-ui") {
     figma.ui.resize(
       clamp(Number(message.width) || 560, 72, 1200),

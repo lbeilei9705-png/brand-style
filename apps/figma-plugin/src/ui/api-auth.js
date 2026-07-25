@@ -42,6 +42,60 @@
         return response;
       }
 
+      function requestStoredMemberSessionToken() {
+        try {
+          const localToken = localStorage.getItem(memberSessionStorageKey) || "";
+          if (localToken) {
+            return Promise.resolve(localToken);
+          }
+        } catch {
+          // Figma renders plugin UI from a data: URL where localStorage is disabled.
+        }
+        return new Promise((resolve) => {
+          const requestId = createTelemetryId("storage_");
+          let settled = false;
+          const finish = (token = "") => {
+            if (settled) return;
+            settled = true;
+            window.removeEventListener("message", onStorageMessage);
+            resolve(token);
+          };
+          const onStorageMessage = (event) => {
+            const message = event.data?.pluginMessage;
+            if (message?.type === "auth-storage-value" && message.requestId === requestId) {
+              finish(typeof message.token === "string" ? message.token : "");
+            }
+          };
+          window.addEventListener("message", onStorageMessage);
+          parent.postMessage({
+            pluginMessage: { type: "auth-storage-get", requestId },
+          }, "*");
+          window.setTimeout(() => finish(""), 1500);
+        });
+      }
+
+      function persistMemberSessionToken(token) {
+        try {
+          localStorage.setItem(memberSessionStorageKey, token);
+        } catch {
+          // Persist through figma.clientStorage below.
+        }
+        parent.postMessage({
+          pluginMessage: { type: "auth-storage-set", token },
+        }, "*");
+      }
+
+      function removePersistedMemberSessionToken() {
+        try {
+          localStorage.removeItem(memberSessionStorageKey);
+        } catch {
+          // Persist through figma.clientStorage below.
+        }
+        parent.postMessage({
+          pluginMessage: { type: "auth-storage-remove" },
+        }, "*");
+      }
+
       function renderMemberSession() {
         if (!memberSession) {
           memberSessionSummary.hidden = true;
@@ -56,7 +110,7 @@
       function saveMemberSession(token, session) {
         memberSessionToken = token;
         memberSession = session;
-        localStorage.setItem(memberSessionStorageKey, token);
+        persistMemberSessionToken(token);
         renderMemberSession();
       }
 
@@ -64,7 +118,7 @@
         memberSessionToken = "";
         memberSession = null;
         activeConversationId = null;
-        localStorage.removeItem(memberSessionStorageKey);
+        removePersistedMemberSessionToken();
         renderMemberSession();
         updateRunState();
       }
@@ -82,6 +136,9 @@
       }
 
       async function initializeMemberSession() {
+        if (!memberSessionToken) {
+          memberSessionToken = await requestStoredMemberSessionToken();
+        }
         if (!memberSessionToken) {
           showMemberLogin();
           return false;

@@ -4,6 +4,8 @@ figma.showUI(__html__, {
   themeColors: true,
 });
 
+const memberSessionStorageKey = "brand-style-member-session";
+
 function createControllerIssueId() {
   return `issue_${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
@@ -352,6 +354,26 @@ figma.on("drop", (event) => {
 });
 
 figma.ui.onmessage = async (message) => {
+  if (message.type === "auth-storage-get") {
+    const token = await figma.clientStorage.getAsync(memberSessionStorageKey);
+    figma.ui.postMessage({
+      type: "auth-storage-value",
+      requestId: message.requestId,
+      token: typeof token === "string" ? token : "",
+    });
+    return;
+  }
+
+  if (message.type === "auth-storage-set") {
+    await figma.clientStorage.setAsync(memberSessionStorageKey, String(message.token || ""));
+    return;
+  }
+
+  if (message.type === "auth-storage-remove") {
+    await figma.clientStorage.deleteAsync(memberSessionStorageKey);
+    return;
+  }
+
   if (message.type === "resize-ui") {
     figma.ui.resize(
       clamp(Number(message.width) || 560, 72, 1200),

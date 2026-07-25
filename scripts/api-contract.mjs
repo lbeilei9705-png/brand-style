@@ -127,6 +127,20 @@ async function main() {
   assert.equal(health.body.provider, "mock");
   assert.equal(health.body.storage.telemetry, "local");
 
+  const preflight = await fetch(`${baseUrl}/api/member/session/redeem`, {
+    method: "OPTIONS",
+    headers: {
+      Origin: "null",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type,x-client-session-id,x-client-request-id",
+    },
+  });
+  const allowedHeaders = preflight.headers.get("access-control-allow-headers")?.toLowerCase() || "";
+  assert.equal(preflight.status, 204);
+  assert.ok(allowedHeaders.includes("x-client-session-id"));
+  assert.ok(allowedHeaders.includes("x-client-request-id"));
+  assert.ok(preflight.headers.get("access-control-expose-headers")?.includes("x-request-id"));
+
   const unauthorized = await request(baseUrl, "/api/admin/member-access");
   assert.equal(unauthorized.response.status, 401);
   assert.equal(unauthorized.body.error, "Unauthorized.");

@@ -1,4 +1,12 @@
 
+      memberLoginForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitMemberLogin();
+      });
+      memberLoginButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        submitMemberLogin();
+      });
       memberInviteCodeInput.addEventListener("input", () => {
         memberLoginStatus.textContent = "";
       });

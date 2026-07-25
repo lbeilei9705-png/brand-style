@@ -74,11 +74,16 @@ const requiredUiProtocol = [
   'trackEvent("generation_start"',
   'trackEvent("generation_success"',
   'downloadDiagnosticBundle(false)',
+  'memberLoginForm.addEventListener("submit"',
+  'memberLoginButton.addEventListener("click"',
 ];
 for (const snippet of requiredUiProtocol) {
   if (!ui.includes(snippet)) {
     throw new Error(`UI telemetry protocol assertion failed: ${snippet}`);
   }
+}
+if (ui.includes('onclick="submitMemberLogin') || ui.includes('onsubmit="submitMemberLogin')) {
+  throw new Error("Member login must not depend on inline event handlers.");
 }
 
 const stateIndex = ui.indexOf('const apiBase = "');

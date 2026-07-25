@@ -2241,9 +2241,9 @@
         <div class="member-login-mark" aria-hidden="true">B</div>
         <h1>Brand Style</h1>
         <p>仅供内部设计团队使用。请输入管理员为你创建的一次性成员邀请码。</p>
-        <form id="member-login-form" class="member-login-form" onsubmit="submitMemberLogin(); return false;">
+        <form id="member-login-form" class="member-login-form">
           <input id="member-invite-code" type="text" autocomplete="one-time-code" placeholder="BS-XXXXX-XXXXX-XXXXX-XXXXX" aria-label="成员邀请码" required />
-          <button id="member-login-button" type="button" onclick="submitMemberLogin(); return false;">验证并进入</button>
+          <button id="member-login-button" type="submit">验证并进入</button>
         </form>
         <div id="member-login-status" class="member-login-status" role="status"></div>
         <div class="diagnostic-actions">
@@ -4646,6 +4646,14 @@
         }
       }
 
+      memberLoginForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitMemberLogin();
+      });
+      memberLoginButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        submitMemberLogin();
+      });
       memberInviteCodeInput.addEventListener("input", () => {
         memberLoginStatus.textContent = "";
       });

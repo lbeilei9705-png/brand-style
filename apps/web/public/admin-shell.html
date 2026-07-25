@@ -1,0 +1,302 @@
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="admin-brand">
+          <div class="brand-mark" aria-hidden="true">BS</div>
+          <div>
+            <h1>Brand Style Admin</h1>
+            <p>AI visual workspace</p>
+          </div>
+        </div>
+        <nav class="admin-nav">
+          <span class="nav-section-label">Configuration</span>
+          <button class="nav-button active" data-page="models-page" type="button">模型管理</button>
+          <button class="nav-button" data-page="agents-page" type="button">风格套装管理</button>
+          <button class="nav-button" data-page="materials-page" type="button">材质管理</button>
+          <button class="nav-button" data-page="palettes-page" type="button">配色管理</button>
+          <button class="nav-button" data-page="shape-architectures-page" type="button">形状管理</button>
+          <span class="nav-section-label">Access Control</span>
+          <button class="nav-button" data-page="member-access-page" type="button">成员访问管理</button>
+          <span class="nav-section-label">Prompt Assets</span>
+          <button class="nav-button" data-page="scenarios-page" type="button">运营场景管理</button>
+          <button class="nav-button" data-page="scenario-agents-page" type="button">场景 Skill 管理</button>
+          <button class="nav-button" data-page="scenario-agent-cases-page" type="button">Skill 案例库</button>
+        </nav>
+      </aside>
+
+      <section class="admin-main">
+        <header class="admin-topbar">
+          <div>
+            <strong>Brand Style workspace</strong>
+            <span>Manage model routing, prompt skills, and reusable visual assets.</span>
+          </div>
+          <span class="admin-topbar-badge">Runtime config active</span>
+        </header>
+
+        <section class="admin-overview" aria-label="后台概览">
+          <article class="overview-card">
+            <span>Routing</span>
+            <strong>Models</strong>
+            <p>统一管理图片模型、语言模型和 API key 来源。</p>
+          </article>
+          <article class="overview-card">
+            <span>Prompt System</span>
+            <strong>Skills</strong>
+            <p>维护 / 触发的场景 Skill、固定规则和输出契约。</p>
+          </article>
+          <article class="overview-card">
+            <span>Memory</span>
+            <strong>Cases</strong>
+            <p>沉淀优秀案例，用于后续检索参考和质量迭代。</p>
+          </article>
+        </section>
+
+        <section id="models-page" class="resource-page active">
+          <header class="page-header">
+            <div>
+              <h2>模型管理</h2>
+              <p class="muted">配置插件和风格套装可选择的模型，包含 provider、版本、quality 和 API key。</p>
+            </div>
+            <button id="new-model-button" class="primary-button" type="button">新建模型</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>模型</th>
+                  <th>Provider</th>
+                  <th>接口 / 版本 / Quality</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="models-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="agents-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>风格套装管理</h2>
+              <p class="muted">通过编辑或上传 Markdown 创建搭配好的整体视觉方案，并指定驱动模型。</p>
+            </div>
+            <div class="toolbar">
+              <input id="agent-md-file" type="file" accept=".md,text/markdown,text/plain" hidden />
+              <select id="import-driver-model" title="Markdown 解析驱动模型"></select>
+              <button id="import-agent-button" class="secondary-button" type="button">从 Markdown 导入套装</button>
+              <button id="new-agent-button" class="primary-button" type="button">新建风格套装</button>
+            </div>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>风格套装</th>
+                  <th>驱动模型</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="agents-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="materials-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>材质管理</h2>
+              <p class="muted">配置插件前台可自由搭配的材质提示词。</p>
+            </div>
+            <button id="new-material-button" class="primary-button" type="button">新建材质</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>材质</th>
+                  <th>提示词</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="materials-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="palettes-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>配色管理</h2>
+              <p class="muted">配置插件前台可选择的配色方案。</p>
+            </div>
+            <button id="new-palette-button" class="primary-button" type="button">新建配色</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>配色</th>
+                  <th>色值</th>
+                  <th>提示词</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="palettes-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="shape-architectures-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>形状管理</h2>
+              <p class="muted">配置插件前台可选择的形状，用于控制原图保留、体块、层叠、软体等形状转译方式。</p>
+            </div>
+            <button id="new-shape-architecture-button" class="primary-button" type="button">新建形状</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>形状</th>
+                  <th>提示词</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="shape-architectures-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="scenarios-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>运营场景管理</h2>
+              <p class="muted">配置插件输入框中可通过 @ 调用的运营场景文案。</p>
+            </div>
+            <button id="new-scenario-button" class="primary-button" type="button">新建运营场景</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>场景</th>
+                  <th>固定规则</th>
+                  <th>场景变量</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="scenarios-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="scenario-agents-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>场景 Skill 管理</h2>
+              <p class="muted">配置插件输入框中可通过 / 调用的场景 Prompt Skill。</p>
+            </div>
+            <button id="new-scenario-agent-button" class="primary-button" type="button">新建场景 Skill</button>
+          </header>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Skill</th>
+                  <th>触发词 / 版本</th>
+                  <th>输出格式</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="scenario-agents-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="scenario-agent-cases-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>Skill 案例库</h2>
+              <p class="muted">沉淀场景 Skill 的优秀、一般和失败案例，用于上下文记忆和生成参考。</p>
+            </div>
+            <button id="new-scenario-agent-case-button" class="primary-button" type="button">新建案例</button>
+          </header>
+          <div id="scenario-agent-cases-groups" class="case-group-list"></div>
+        </section>
+
+        <section id="member-access-page" class="resource-page">
+          <header class="page-header">
+            <div>
+              <h2>成员访问管理</h2>
+              <p class="muted">创建一次性邀请码、查看成员额度，并立即撤销离职或异常成员的访问权限。</p>
+            </div>
+          </header>
+          <form id="member-invite-form" class="admin-card member-access-form">
+            <label class="admin-field">
+              <span>成员名称</span>
+              <input id="member-invite-name" type="text" placeholder="例如：张三 / 品牌设计组" required />
+            </label>
+            <label class="admin-field">
+              <span>每日生成额度</span>
+              <input id="member-invite-daily-limit" type="number" min="1" max="100" value="20" required />
+            </label>
+            <label class="admin-field">
+              <span>邀请码有效期</span>
+              <select id="member-invite-expiry">
+                <option value="1">1 小时</option>
+                <option value="24" selected>24 小时</option>
+                <option value="72">3 天</option>
+                <option value="168">7 天</option>
+              </select>
+            </label>
+            <button class="primary-button" type="submit">生成邀请码</button>
+          </form>
+          <div id="generated-invite" class="generated-invite" hidden>
+            <div>
+              <span class="muted">邀请码仅在本次显示，请复制后发送给成员</span>
+              <strong id="generated-invite-code"></strong>
+            </div>
+            <button id="copy-generated-invite" class="secondary-button" type="button">复制邀请码</button>
+          </div>
+
+          <h3 class="access-section-title">成员</h3>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>成员</th>
+                  <th>今日额度</th>
+                  <th>活跃会话</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="member-access-members-table"></tbody>
+            </table>
+          </div>
+
+          <h3 class="access-section-title">邀请码记录</h3>
+          <div class="admin-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>成员</th>
+                  <th>额度</th>
+                  <th>有效期</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="member-access-invites-table"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>

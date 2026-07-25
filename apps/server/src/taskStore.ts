@@ -15,7 +15,7 @@ export class TaskStore {
   selectResult(taskId: string, resultId: string): GenerationTask | undefined {
     const task = this.tasks.get(taskId);
 
-    if (!task) {
+    if (!task || !task.results.some((result) => result.id === resultId)) {
       return undefined;
     }
 

@@ -1,0 +1,450 @@
+        background: transparent;
+      }
+
+      body.is-collapsed .chat,
+      body.is-collapsed .selection-bar,
+      body.is-collapsed .agent-console,
+      body.is-collapsed .legal-links,
+      body.is-collapsed .member-session-summary,
+      body.is-collapsed .resize-handle {
+        display: none;
+      }
+
+      body.is-collapsed .collapse-button {
+        position: fixed;
+        top: 76px;
+        left: 50%;
+        right: auto;
+        width: 22px;
+        min-width: 22px;
+        height: 22px;
+        min-height: 22px;
+        border: 0.559701px solid #e5e5e8;
+        background: #ffffff;
+        color: #636366;
+        box-shadow: 0 1.1194px 3.35821px -1.1194px rgba(0, 0, 0, 0.0392157);
+        transform: translate(-50%, -50%);
+      }
+
+      body.is-collapsed .collapse-button::before {
+        content: "";
+        width: 9px;
+        height: 1.6px;
+        border-radius: 999px;
+        background: currentColor;
+      }
+
+      body.is-collapsed .collapse-button::after {
+        display: none;
+      }
+
+      body.resizing {
+        cursor: nwse-resize;
+        user-select: none;
+      }
+
+      @media (max-width: 520px) {
+        .chat {
+          gap: 10px;
+          padding: 44px 10px 10px;
+        }
+
+        .message {
+          max-width: 100%;
+          padding: 12px 13px;
+        }
+
+        .agent-console {
+          padding: 8px;
+        }
+
+        .results {
+          grid-template-columns: 1fr;
+        }
+
+        .control-strip {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 5px;
+        }
+
+        .control-section-label {
+          font-size: 8.5px;
+        }
+
+        .control-select,
+        .multi-select-button {
+          min-height: 28px;
+          padding-right: 28px;
+          padding-left: 10px;
+          font-size: 8.5px;
+        }
+
+        #agent-select {
+          grid-column: 1 / -1;
+          min-width: 0;
+          font-size: 10px;
+        }
+
+        .composer-card {
+          min-height: 0;
+          padding-top: 18px;
+          padding-bottom: 18px;
+        }
+
+        .composer-footer {
+          grid-template-columns: minmax(54px, 0.72fr) minmax(54px, 0.72fr) minmax(92px, 1.45fr) 32px;
+          gap: 5px;
+          padding: 0 8px;
+        }
+
+        .pill-select,
+        .icon-button,
+        .run-button {
+          min-height: 30px;
+          font-size: 9px;
+        }
+
+        #model-select {
+          font-size: 8.5px;
+        }
+
+        #new-chat-button {
+          width: 32px;
+          min-width: 32px;
+          padding: 0;
+          font-size: 13px;
+        }
+
+        .run-button {
+          grid-column: 1 / -1;
+        }
+      }
+
+      /* Minimal premium light theme for the Figma plugin surface. */
+      :root {
+        color: #1d1d1f;
+        background: #f5f5f7;
+        --surface: #ffffff;
+        --surface-soft: #f5f5f7;
+        --surface-raised: #fbfbfd;
+        --line: rgba(60, 60, 67, 0.14);
+        --line-strong: rgba(60, 60, 67, 0.26);
+        --text: #1d1d1f;
+        --muted: rgba(60, 60, 67, 0.62);
+        --accent: #1d1d1f;
+        --accent-hover: #000000;
+        --success: #34c759;
+      }
+
+      body {
+        background: #f5f5f7;
+      }
+
+      .app {
+        background: #f5f5f7;
+      }
+
+      button,
+      select {
+        border-color: var(--line);
+        background-color: #ffffff;
+        color: var(--text);
+        box-shadow: none;
+      }
+
+      button:hover:not(:disabled),
+      select:hover {
+        border-color: var(--line-strong);
+        background-color: #fdfdfd;
+      }
+
+      button:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible {
+        outline: none;
+      }
+
+      .chat {
+        padding: 18px 16px 12px;
+      }
+
+      .message {
+        border-color: var(--line);
+        background: #ffffff;
+        color: var(--text);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+
+      .message.user {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #ffffff;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+      }
+
+      .message.system {
+        border-color: transparent;
+        background: rgba(255, 255, 255, 0.72);
+        color: var(--muted);
+      }
+
+      .message-attachment,
+      .thumb {
+        border-color: var(--line);
+        background: var(--surface-soft);
+        box-shadow: none;
+      }
+
+      .reuse-message-button {
+        color: rgba(255, 255, 255, 0.82);
+      }
+
+      .reuse-message-button:hover {
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .reuse-message-button::after {
+        background: var(--accent);
+      }
+
+      .history-panel,
+      .scenario-panel,
+      .multi-select-panel {
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(22px);
+      }
+
+      .history-item {
+        border-bottom-color: var(--line);
+        color: var(--text);
+      }
+
+      .history-item:hover,
+      .scenario-option:hover,
+      .scenario-option.active,
+      .material-option:hover {
+        background: rgba(60, 60, 67, 0.08);
+      }
+
+      .result-card,
+      .debug-panel,
+      .composer-card {
+        border-color: var(--line);
+        background: #ffffff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 22px rgba(0, 0, 0, 0.05);
+      }
+
+      .debug-panel {
+        color: var(--muted);
+      }
+
+      .debug-panel summary {
+        color: var(--text);
+      }
+
+      .debug-copy-button,
+      .add-selection-button,
+      .pill-select,
+      .multi-select-button,
+      .icon-button,
+      .control-select {
+        border-color: var(--line);
+        background-color: #ffffff;
+        color: var(--text);
+      }
+
+      .debug-copy-button:hover,
+      .add-selection-button:hover,
+      .pill-select:hover,
+      .multi-select-button:hover,
+      .icon-button:hover,
+      .control-select:hover {
+        background-color: #ffffff;
+        border-color: var(--line-strong);
+      }
+
+      .debug-section {
+        border-top-color: var(--line);
+      }
+
+      .debug-section strong {
+        color: var(--accent);
+      }
+
+      .debug-section pre {
+        color: var(--text);
+      }
+
+      .agent-console {
+        border-top-color: var(--line);
+        background: rgba(245, 245, 247, 0.86);
+        box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(24px);
+      }
+
+      .composer-card {
+        border-radius: 24px;
+        background: #ffffff;
+      }
+
+      .selection-status,
+      .quantity-label,
+      .control-section-label,
+      .scenario-option span {
+        color: var(--muted);
+      }
+
+      .control-section-label {
+        padding: 1px 6px 0;
+        letter-spacing: 0.01em;
+      }
+
+      textarea {
+        color: var(--text);
+        padding: 11px 18px 10px;
+        font-weight: 500;
+        line-height: 1.65;
+      }
+
+      textarea::placeholder {
+        color: #a0a2a8;
+      }
+
+      .selection-tools {
+        padding-right: 18px;
+        padding-left: 18px;
+      }
+
+      .attachment-row {
+        padding-right: 18px;
+        padding-left: 18px;
+      }
+
+      .add-selection-button {
+        border-color: var(--line);
+        background: #f9f9fb;
+        color: var(--text);
+        box-shadow: none;
+      }
+
+      .add-selection-button:hover {
+        background: #ffffff;
+        border-color: var(--line-strong);
+      }
+
+      .scenario-option,
+      .material-option {
+        color: var(--text);
+      }
+
+      .multi-select-clear-button {
+        border-color: var(--line);
+        background: #f9f9fb;
+        color: var(--muted);
+      }
+
+      .run-button {
+        background: rgba(60, 60, 67, 0.12);
+        color: rgba(60, 60, 67, 0.48);
+      }
+
+      .run-button:not(:disabled) {
+        background: var(--accent);
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+      }
+
+      .run-button:not(:disabled):hover {
+        background: var(--accent-hover);
+      }
+
+      .resize-handle {
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+      }
+
+      .resize-handle::before,
+      .resize-handle::after {
+        background: #92949a;
+      }
+
+      select,
+      .control-select,
+      .pill-select,
+      .multi-select-button,
+      .icon-button {
+        border: 1px solid var(--line);
+        background-color: #ffffff;
+        box-shadow: none;
+      }
+
+      select:hover,
+      .control-select:hover,
+      .pill-select:hover,
+      .multi-select-button:hover,
+      .icon-button:hover {
+        border-color: var(--line-strong);
+        background-color: #ffffff;
+        box-shadow: none;
+      }
+
+      .composer-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 0 18px;
+      }
+
+      .composer-footer .pill-select {
+        flex: 1 1 64px;
+        height: 30px;
+        min-width: 64px;
+      }
+
+      #model-select {
+        flex: 1 1 132px;
+        min-width: 118px;
+      }
+
+      #new-chat-button {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 30px;
+        min-width: 32px;
+        min-height: 30px;
+      }
+
+      .run-button {
+        flex: 1 1 92px;
+        height: 30px;
+        min-width: 88px;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      @media (max-width: 520px) {
+        .composer-footer {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 7px;
+          padding: 0 14px;
+        }
+
+        .composer-footer .pill-select,
+        #model-select,
+        #new-chat-button,
+        .run-button {
+          width: 100%;
+          min-width: 0;
+        }
+
+        #model-select {
+          grid-column: span 3;
+        }
+
+        #new-chat-button {
+          grid-column: span 1;
+          justify-self: stretch;

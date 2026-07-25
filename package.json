@@ -7,6 +7,10 @@
     "packages/*"
   ],
   "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "check": "npm run check:server && npm run check --workspaces --if-present && npm run check:lines",
+    "check:lines": "node scripts/check-lines.mjs",
+    "test": "node --experimental-strip-types --test apps/server/src/*.test.ts",
     "dev:server": "node --experimental-strip-types apps/server/src/index.ts",
     "dev": "node --experimental-strip-types apps/server/src/index.ts",
     "check:server": "node --experimental-strip-types --check apps/server/src/index.ts",

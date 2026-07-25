@@ -1,0 +1,450 @@
+        }
+
+        .run-button {
+          grid-column: span 2;
+        }
+      }
+
+      .agent-console {
+        display: grid;
+        align-content: start;
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .control-strip {
+        gap: 8px;
+      }
+
+      .composer-card {
+        display: grid;
+        gap: 10px;
+        overflow: visible;
+        border-radius: 28px;
+        padding: 12px;
+      }
+
+      .selection-tools {
+        padding: 0;
+      }
+
+      .attachment-row {
+        padding: 0;
+      }
+
+      textarea {
+        height: 128px;
+        min-height: 128px;
+        max-height: clamp(160px, 30vh, 260px);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 16px 18px;
+        background: #fbfbfd;
+      }
+
+      .composer-footer {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        padding: 0;
+      }
+
+      .composer-footer .pill-select,
+      #model-select,
+      #new-chat-button,
+      .run-button {
+        width: 100%;
+        min-width: 0;
+        height: 30px;
+        min-height: 30px;
+        border-radius: 18px;
+      }
+
+      #model-select {
+        grid-column: 1 / -1;
+      }
+
+      #new-chat-button {
+        grid-column: 1;
+      }
+
+      .run-button {
+        grid-column: 2 / -1;
+      }
+
+      @media (max-width: 520px) {
+        .agent-console {
+          gap: 12px;
+          padding: 12px;
+        }
+
+        .composer-card {
+          padding: 12px;
+        }
+
+        .composer-footer {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          padding: 0;
+        }
+      }
+
+      button,
+      select {
+        font-size: 11px;
+      }
+
+      .message {
+        font-size: 13px;
+      }
+
+      .control-section-label,
+      .selection-status,
+      .scenario-option span,
+      .quantity-label {
+        font-size: 11px;
+      }
+
+      .tooltip-trigger {
+        font-size: 10px;
+      }
+
+      .tooltip-trigger::after {
+        font-size: 11px;
+      }
+
+      textarea {
+        font-size: 13px;
+      }
+
+      .composer-footer .pill-select,
+      #model-select,
+      #new-chat-button,
+      .run-button {
+        height: 30px;
+        min-height: 30px;
+      }
+
+      .control-select,
+      .multi-select-button,
+      .add-selection-button {
+        min-height: 32px;
+      }
+
+      .run-button {
+        font-size: 11px;
+      }
+
+      #new-chat-button {
+        font-size: 14px;
+      }
+
+      .app,
+      .agent-console,
+      .control-strip,
+      .composer-card,
+      .selection-tools,
+      .attachment-row,
+      .composer-footer {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .agent-console,
+      .composer-card {
+        overflow-x: hidden;
+      }
+
+      .selection-tools {
+        flex-wrap: wrap;
+      }
+
+      .selection-status {
+        flex: 1 1 150px;
+        white-space: normal;
+      }
+
+      .control-select,
+      .palette-select-wrap,
+      .multi-select-wrap,
+      .multi-select-button,
+      .pill-select {
+        max-width: 100%;
+      }
+
+      #material-panel.open {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      @media (min-width: 380px) {
+        #material-panel.open {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 540px) {
+        #material-panel.open {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+      }
+
+      @media (min-width: 720px) {
+        #material-panel.open {
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+      }
+
+      #material-panel .multi-select-panel-header {
+        grid-column: 1 / -1;
+      }
+
+      #material-panel .material-option {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        align-items: stretch;
+        gap: 6px;
+        border: 1px solid rgba(60, 60, 67, 0.12);
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.76);
+      }
+
+      #material-panel .material-option:hover {
+        border-color: rgba(29, 29, 31, 0.22);
+        background: #ffffff;
+      }
+
+      #material-panel .material-option.selected {
+        border-color: #1d1d1f;
+        background: rgba(29, 29, 31, 0.06);
+      }
+
+      #material-panel .material-option span {
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      #material-panel {
+        grid-column: 1 / -1;
+        position: static;
+        width: 100%;
+        max-width: 100%;
+        max-height: 248px;
+        margin-top: 8px;
+        border-color: rgba(60, 60, 67, 0.12);
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: none;
+      }
+
+      #material-panel .material-option {
+        min-height: 124px;
+        border-radius: 14px;
+      }
+
+      #material-panel .material-preview {
+        justify-self: center;
+        width: 84px;
+        height: 84px;
+        aspect-ratio: auto;
+        border-radius: 12px;
+      }
+
+      #material-panel .material-preview-fallback {
+        width: 58px;
+        height: 58px;
+      }
+
+      #material-panel .material-option.selected::before {
+        width: 20px;
+        height: 20px;
+        border-radius: 7px;
+        font-size: 13px;
+      }
+
+      .palette-inline-editor {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        z-index: 21;
+        display: none;
+        width: min(292px, calc(100vw - 20px));
+        max-width: calc(100vw - 20px);
+        max-height: 360px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        gap: 8px;
+        border: 1px solid rgba(60, 60, 67, 0.1);
+        border-radius: 16px;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.64);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(16px);
+        transform: translateX(-50%);
+      }
+
+      .palette-inline-editor.open {
+        display: grid;
+      }
+
+      .palette-inline-editor[hidden] {
+        display: none;
+      }
+
+      .palette-swatch-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-width: 0;
+      }
+
+      .palette-swatch {
+        width: 22px;
+        height: 22px;
+        border: 1px solid rgba(60, 60, 67, 0.16);
+        border-radius: 999px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+      }
+
+      .palette-editor-toggle,
+      .palette-editor-add {
+        min-height: 28px;
+        border: 1px solid rgba(60, 60, 67, 0.16);
+        border-radius: 999px;
+        background: #ffffff;
+        color: #1d1d1f;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .palette-editor-panel {
+        display: grid;
+        gap: 8px;
+      }
+
+      .palette-editor-panel[hidden] {
+        display: none;
+      }
+
+      .plugin-palette-color-list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .plugin-palette-color-row {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) 44px;
+        gap: 7px;
+        align-items: center;
+      }
+
+      .plugin-palette-color-row input[type="color"] {
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 10px;
+        padding: 0;
+        background: transparent;
+      }
+
+      .plugin-palette-color-row input[type="text"] {
+        min-width: 0;
+        height: 32px;
+        border: 1px solid rgba(60, 60, 67, 0.14);
+        border-radius: 10px;
+        padding: 0 9px;
+        background: #ffffff;
+        color: #1d1d1f;
+        font-size: 12px;
+      }
+
+      .plugin-palette-color-remove {
+        min-height: 30px;
+        border: 1px solid rgba(60, 60, 67, 0.14);
+        border-radius: 10px;
+        background: #f5f5f7;
+        color: #6e6e73;
+        font-size: 11px;
+      }
+
+      /* Light card treatment based on the compact Figma reference. */
+      :root {
+        --plugin-card-bg: #ffffff;
+        --plugin-page-bg: #f4f4f6;
+        --plugin-card-border: #e5e5e8;
+        --plugin-text: #1c1c1e;
+        --plugin-muted: #7c7c80;
+        --plugin-placeholder: #aeaeb2;
+        --plugin-control-shadow: 0 1px 1px rgba(0, 0, 0, 0.03);
+      }
+
+      body,
+      .app {
+        background: var(--plugin-page-bg);
+      }
+
+      .app {
+        display: block;
+        grid-template-rows: 296px minmax(0, 1fr);
+        overflow-x: hidden;
+        overflow-y: auto;
+        background: var(--plugin-page-bg);
+      }
+
+      .chat {
+        min-height: 296px;
+        border-bottom: 0;
+        background: transparent;
+      }
+
+      .agent-console {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 14px;
+        max-height: none;
+        overflow: visible;
+        border-top: 0;
+        padding: 14px 10px 10px;
+        background: var(--plugin-page-bg);
+        box-shadow: none;
+        backdrop-filter: none;
+      }
+
+      .control-strip {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      .config-section,
+      .composer-card {
+        flex: 0 0 auto;
+        border: 0;
+        background: var(--plugin-card-bg);
+        box-shadow: none;
+      }
+
+      .config-section {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+        min-height: 68px;
+        border-radius: 15px;
+        padding: 10px;
+      }
+
+      .free-mix-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        align-items: flex-start;
+        min-width: 0;
+        width: 100%;
+      }
+
+      .free-mix-row > .control-select,
+      .free-mix-row > .palette-select-wrap,
+      .free-mix-row > .multi-select-wrap {
+        width: 100%;
+        min-width: 0;

@@ -1,0 +1,190 @@
+    <div id="scenario-agent-modal" class="modal-backdrop">
+      <form id="scenario-agent-form" class="modal">
+        <header class="modal-header">
+          <h2 id="scenario-agent-modal-title">新建场景 Skill</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="scenario-agent-id" type="hidden" />
+
+          <section class="form-section">
+            <div class="form-section-header">
+              <h3>基础信息</h3>
+              <p>控制插件里如何展示、如何触发，以及使用哪个语言模型来生成场景 Prompt。</p>
+            </div>
+            <div class="form-section-grid">
+              <label class="admin-field">
+                <span>Skill 名称</span>
+                <input id="scenario-agent-name" type="text" required />
+              </label>
+              <label class="admin-field">
+                <span>触发词</span>
+                <input id="scenario-agent-trigger" type="text" placeholder="/微缩世界" required />
+              </label>
+              <label class="admin-field full">
+                <span>描述</span>
+                <input id="scenario-agent-description" type="text" required />
+              </label>
+              <label class="admin-field">
+                <span>输出格式</span>
+                <select id="scenario-agent-output-mode">
+                  <option value="json_final_prompt">JSON finalPrompt</option>
+                  <option value="prompt_sections">prompt_main / prompt_negative</option>
+                </select>
+              </label>
+              <label class="admin-field">
+                <span>驱动模型</span>
+                <select id="scenario-agent-driver-model"></select>
+              </label>
+              <label class="admin-field">
+                <span>版本</span>
+                <input id="scenario-agent-version" type="text" placeholder="v1.0" />
+              </label>
+              <label class="admin-field">
+                <span>启用</span>
+                <select id="scenario-agent-enabled">
+                  <option value="true">启用</option>
+                  <option value="false">停用</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-header">
+              <h3>固定生图规则</h3>
+              <p>不回填到输入框，但会和 Skill 生成的场景 Prompt 一起发送给生图模型。</p>
+            </div>
+            <div class="form-section-grid">
+              <label class="admin-field full">
+                <span>固定正向规则 / Base Prompt</span>
+                <textarea id="scenario-agent-fixed-positive-prompt" placeholder="例如 Base Prompt v1.0"></textarea>
+              </label>
+              <label class="admin-field full">
+                <span>固定负向规则</span>
+                <textarea id="scenario-agent-fixed-negative-prompt" placeholder="例如 不要真实人类；不要文字Logo；不要复杂剧情"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-header">
+              <h3>Skill 指令结构</h3>
+              <p>约束语言模型如何理解场景、组织内容、遵守输出契约，并避免错误输出。</p>
+            </div>
+            <div class="form-section-grid">
+              <label class="admin-field full">
+                <span>Skill 定位 / 角色</span>
+                <textarea id="scenario-agent-skill-role" placeholder="说明这个场景 Skill 要解决什么视觉生成任务"></textarea>
+              </label>
+              <label class="admin-field full">
+                <span>核心硬规则（每行一条）</span>
+                <textarea id="scenario-agent-core-rules" placeholder="例如：超级符号必须作为世界本体，体量明显大于 IP"></textarea>
+              </label>
+              <label class="admin-field full">
+                <span>输出契约 / Output Contract</span>
+                <textarea id="scenario-agent-output-contract" placeholder="例如：只返回 JSON，不要解释；字段固定为 {&quot;finalPrompt&quot;:&quot;...&quot;}"></textarea>
+              </label>
+              <label class="admin-field full">
+                <span>正向 Prompt 组织模板</span>
+                <textarea id="scenario-agent-positive-template" placeholder="例如：按画幅镜头、主体关系、道具组织、材质灯光顺序组织"></textarea>
+              </label>
+              <label class="admin-field full">
+                <span>禁止项（每行一条）</span>
+                <textarea id="scenario-agent-forbidden-rules" placeholder="例如：不要输出 Base Prompt 原文"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <div class="form-section-header">
+              <h3>记忆与兼容</h3>
+              <p>控制案例库如何参与生成；原始 System Prompt 仅作为旧配置兜底。</p>
+            </div>
+            <div class="form-section-grid">
+              <label class="admin-field full">
+                <span>上下文记忆策略</span>
+                <textarea id="scenario-agent-memory-policy" placeholder="说明如何使用历史案例记忆"></textarea>
+              </label>
+              <label class="admin-field full">
+                <span>案例参考策略</span>
+                <textarea id="scenario-agent-case-reference-policy" placeholder="说明命中案例应该如何参考，如何避免照抄"></textarea>
+              </label>
+              <label class="admin-field full">
+                <span>兼容字段：原始 System Prompt（老配置兜底用）</span>
+                <textarea id="scenario-agent-system-prompt" required></textarea>
+              </label>
+            </div>
+          </section>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存场景 Skill</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="scenario-agent-case-modal" class="modal-backdrop">
+      <form id="scenario-agent-case-form" class="modal">
+        <header class="modal-header">
+          <h2 id="scenario-agent-case-modal-title">新建 Skill 案例</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="scenario-agent-case-id" type="hidden" />
+          <label class="admin-field">
+            <span>案例标题</span>
+            <input id="scenario-agent-case-title" type="text" placeholder="例如 教师节圆形舞台" required />
+          </label>
+          <label class="admin-field">
+            <span>所属 Skill</span>
+            <select id="scenario-agent-case-agent" required></select>
+          </label>
+          <label class="admin-field">
+            <span>评分</span>
+            <select id="scenario-agent-case-rating">
+              <option value="excellent">优秀</option>
+              <option value="neutral">一般</option>
+              <option value="failed">失败</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="scenario-agent-case-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>案例图 / 缩略图 URL</span>
+            <input id="scenario-agent-case-image-url" type="url" placeholder="https://.../case-preview.png" />
+            <input id="scenario-agent-case-image-file" type="file" accept="image/*" />
+            <span class="muted">优秀案例图会存入 OSS，并可在后台案例库中预览。</span>
+          </label>
+          <label class="admin-field full">
+            <span>用户输入主题</span>
+            <textarea id="scenario-agent-case-user-input" placeholder="/单体舞台 教师节" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>正向 Prompt</span>
+            <textarea id="scenario-agent-case-positive-prompt" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>负向 Prompt</span>
+            <textarea id="scenario-agent-case-negative-prompt"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>标签（一行一个或逗号分隔）</span>
+            <textarea id="scenario-agent-case-tags" placeholder="教师节&#10;教育&#10;花束"></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>备注</span>
+            <textarea id="scenario-agent-case-notes" placeholder="记录为什么好、哪里需要规避、是否来自人工修正版"></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存案例</button>
+        </footer>
+      </form>
+    </div>

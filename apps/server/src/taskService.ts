@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import type { AspectRatio, CreateTaskRequest, CreateTaskResponse, GeneratedImage, GenerationConstraints, GenerationResult, GenerationTask, GenerateImageRequest, OutputResolution } from "../../../packages/shared/src/index.ts";
 import { parseInputAsset, parseReferenceAssets } from "./pipeline/inputParser.ts";
 import { preprocessInput } from "./pipeline/preprocessor.ts";
@@ -151,7 +152,7 @@ export class TaskService {
 
   async createTask(request: CreateTaskRequest): Promise<CreateTaskResponse> {
     const now = new Date().toISOString();
-    const taskId = `task_${Date.now()}`;
+    const taskId = `task_${randomUUID()}`;
     const { providerRequest, preprocess } = await this.buildGenerateImageRequest(request, taskId);
     const { inputAsset: primaryInputAsset, referenceAssets, stylePreset, prompt, constraints } = providerRequest;
     const generatedImages = await this.imageProvider.generate(providerRequest);

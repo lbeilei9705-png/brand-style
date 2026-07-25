@@ -1,0 +1,277 @@
+    <div id="model-modal" class="modal-backdrop">
+      <form id="model-form" class="modal">
+        <header class="modal-header">
+          <h2 id="model-modal-title">新建模型</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="model-id" type="hidden" />
+          <label class="admin-field">
+            <span>显示名称</span>
+            <input id="model-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>Provider</span>
+            <select id="model-provider">
+              <option value="mock">mock</option>
+              <option value="fintopia">fintopia</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>模型 ID</span>
+            <input id="model-value" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>Quality</span>
+            <select id="model-quality">
+              <option value="auto">auto</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>用途</span>
+            <select id="model-purpose">
+              <option value="image">生图模型</option>
+              <option value="language">语言模型</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>接口风格</span>
+            <select id="model-api-style">
+              <option value="azure">Azure/OpenAI Deployment（拼 deployments 和 api-version）</option>
+              <option value="openai">OpenAI 兼容（/v1/images/generations）</option>
+              <option value="custom">自定义 Path</option>
+            </select>
+          </label>
+          <label class="admin-field">
+            <span>API Version（可留空）</span>
+            <input id="model-api-version" type="text" placeholder="例如 2024-02-01；无则留空" />
+          </label>
+          <label class="admin-field full">
+            <span>API URL</span>
+            <input id="model-api-url" type="text" placeholder="例如 https://api.openai.com 或中转站 base URL" />
+          </label>
+          <label class="admin-field full">
+            <span>自定义 API Path（仅 custom 或特殊中转站需要）</span>
+            <input id="model-api-path" type="text" placeholder="/v1/images/generations，可用 {model} 作为模型占位" />
+          </label>
+          <label class="admin-field">
+            <span>API Key</span>
+            <input id="model-api-key" type="password" autocomplete="off" />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="model-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存模型</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="agent-modal" class="modal-backdrop">
+      <form id="agent-form" class="modal">
+        <header class="modal-header">
+          <h2 id="agent-modal-title">新建风格套装</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="agent-id" type="hidden" />
+          <label class="admin-field">
+            <span>风格套装名称</span>
+            <input id="agent-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <input id="agent-style-preset" type="hidden" value="" />
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="agent-description" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>驱动模型</span>
+            <select id="agent-driver-model"></select>
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="agent-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>风格规则提示词</span>
+            <textarea id="agent-system-prompt" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>默认负向规则（一行一个）</span>
+            <textarea id="agent-negative-rules"></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存风格套装</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="material-modal" class="modal-backdrop">
+      <form id="material-form" class="modal">
+        <header class="modal-header">
+          <h2 id="material-modal-title">新建材质</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="material-id" type="hidden" />
+          <label class="admin-field">
+            <span>材质名称</span>
+            <input id="material-name" type="text" required />
+          </label>
+          <label class="admin-field full">
+            <span>预览图 URL</span>
+            <input id="material-preview-image-url" type="text" placeholder="https://.../material-ball.png 或 /assets/oss/..." />
+            <input id="material-preview-image-file" type="file" accept="image/*" />
+            <span class="muted">可直接填写外链，或上传图片到 OSS 后自动回填。</span>
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="material-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>Prompt</span>
+            <textarea id="material-prompt" required></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存材质</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="palette-modal" class="modal-backdrop">
+      <form id="palette-form" class="modal">
+        <header class="modal-header">
+          <h2 id="palette-modal-title">新建配色</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="palette-id" type="hidden" />
+          <label class="admin-field">
+            <span>配色名称</span>
+            <input id="palette-name" type="text" required />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="palette-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="palette-description" type="text" required />
+          </label>
+          <label class="admin-field full">
+            <span>色值（一行一个或逗号分隔）</span>
+            <input id="palette-colors" type="hidden" />
+            <div id="palette-color-editor" class="palette-color-editor"></div>
+            <div class="palette-color-actions">
+              <button id="add-palette-color-button" class="secondary-button" type="button">添加颜色</button>
+            </div>
+          </label>
+          <label class="admin-field full">
+            <span>配色提示词</span>
+            <textarea id="palette-prompt"></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存配色</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="shape-architecture-modal" class="modal-backdrop">
+      <form id="shape-architecture-form" class="modal">
+        <header class="modal-header">
+          <h2 id="shape-architecture-modal-title">新建形状</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="shape-architecture-id" type="hidden" />
+          <label class="admin-field">
+            <span>形状名称</span>
+            <input id="shape-architecture-name" type="text" placeholder="例如 2-圆润体块" required />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="shape-architecture-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="shape-architecture-description" type="text" required />
+          </label>
+          <label class="admin-field full">
+            <span>形状提示词</span>
+            <textarea id="shape-architecture-prompt" placeholder="描述如何保留或转译主体轮廓、层级、厚度、圆角、构图等形状关系" required></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存形状</button>
+        </footer>
+      </form>
+    </div>
+
+    <div id="scenario-modal" class="modal-backdrop">
+      <form id="scenario-form" class="modal">
+        <header class="modal-header">
+          <h2 id="scenario-modal-title">新建运营场景</h2>
+          <button class="secondary-button" data-close-modal type="button">关闭</button>
+        </header>
+        <section class="modal-body admin-form-grid">
+          <input id="scenario-id" type="hidden" />
+          <label class="admin-field">
+            <span>场景名称</span>
+            <input id="scenario-name" type="text" placeholder="例如 新客增长" required />
+          </label>
+          <label class="admin-field">
+            <span>启用</span>
+            <select id="scenario-enabled">
+              <option value="true">启用</option>
+              <option value="false">停用</option>
+            </select>
+          </label>
+          <label class="admin-field full">
+            <span>描述</span>
+            <input id="scenario-description" type="text" required />
+          </label>
+          <label class="admin-field full">
+            <span>固定规则</span>
+            <textarea id="scenario-fixed-prompt" placeholder="每次调用该运营场景都会保留的基础规则" required></textarea>
+          </label>
+          <label class="admin-field full">
+            <span>场景变量</span>
+            <textarea id="scenario-variable-prompt" placeholder="该场景特有的业务目标、对象、信息点或限制" required></textarea>
+          </label>
+        </section>
+        <footer class="modal-footer">
+          <button class="secondary-button" data-close-modal type="button">取消</button>
+          <button class="primary-button" type="submit">保存运营场景</button>
+        </footer>
+      </form>
+    </div>

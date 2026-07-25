@@ -1,0 +1,100 @@
+    <main class="app">
+      <button id="collapse-button" class="collapse-button" type="button" title="收起插件" aria-label="收起插件"></button>
+      <section id="chat" class="chat"></section>
+
+      <div id="selection-bar" class="selection-bar">正在读取当前选区...</div>
+
+      <section class="agent-console">
+        <div class="control-strip">
+          <div class="config-section free-mix-section">
+            <div class="control-section-label">
+              <span>自由搭配</span>
+              <span class="tooltip-trigger" tabindex="0" data-tooltip="形状、配色、材质可以单独选择，像积木一样自由组合。">?</span>
+            </div>
+            <div class="free-mix-row">
+              <select id="shape-architecture-select" class="control-select" title="自由搭配：形状"></select>
+              <div class="palette-select-wrap">
+                <select id="color-palette-select" class="control-select" title="自由搭配：配色方案"></select>
+                <div id="palette-inline-editor" class="palette-inline-editor" hidden>
+                  <div id="palette-swatch-row" class="palette-swatch-row"></div>
+                  <div id="palette-editor-panel" class="palette-editor-panel">
+                    <div id="plugin-palette-color-list" class="plugin-palette-color-list"></div>
+                    <button id="plugin-add-palette-color-button" class="palette-editor-add" type="button">添加颜色</button>
+                  </div>
+                </div>
+              </div>
+              <div class="multi-select-wrap">
+                <button id="material-select-button" class="multi-select-button" type="button" title="自由搭配：多选材质">未选择材质</button>
+              </div>
+            </div>
+            <div id="material-panel" class="multi-select-panel"></div>
+          </div>
+          <div class="config-section style-set-section">
+            <div class="control-section-label">
+              <span>风格套装</span>
+              <span class="tooltip-trigger" tabindex="0" data-tooltip="风格套装是已经搭好的整体视觉方案，可直接套用，也可以再用上方选项微调。">?</span>
+            </div>
+            <select id="agent-select" class="control-select" title="选择风格套装"></select>
+          </div>
+        </div>
+
+        <section class="composer-card">
+          <div class="selection-tools">
+            <button id="add-selection-button" class="add-selection-button" type="button">添加选中图</button>
+            <span id="selection-status" class="selection-status">打开插件不会自动读取选区。</span>
+          </div>
+          <div id="attachment-row" class="attachment-row"></div>
+          <textarea id="message-input" placeholder="画得比甲方变心还快"></textarea>
+          <div id="scenario-panel" class="scenario-panel"></div>
+          <div class="composer-footer">
+            <select id="aspect-ratio-select" class="pill-select" title="生成比例">
+              <option value="auto" selected>自动</option>
+              <option value="1:1">1:1</option>
+              <option value="1:2">1:2</option>
+              <option value="2:1">2:1</option>
+              <option value="2:3">2:3</option>
+              <option value="3:2">3:2</option>
+              <option value="3:4">3:4</option>
+              <option value="4:3">4:3</option>
+              <option value="16:9">16:9</option>
+              <option value="9:16">9:16</option>
+            </select>
+            <select id="resolution-select" class="pill-select" title="清晰度">
+              <option value="1k">1K</option>
+              <option value="2k" selected>2K</option>
+              <option value="4k">4K</option>
+            </select>
+            <select id="batch-size-select" class="pill-select" title="生成数量">
+              <option value="1" selected>1张</option>
+              <option value="2">2张</option>
+              <option value="4">4张</option>
+            </select>
+            <select id="model-select" class="pill-select" title="选择模型"></select>
+            <button id="new-chat-button" class="icon-button" type="button" title="清空当前面板" aria-label="清空当前面板">↺</button>
+            <button id="send-button" class="run-button" type="button" disabled>没活</button>
+          </div>
+        </section>
+      </section>
+      <nav class="legal-links" aria-label="法律信息">
+        <a href="https://brand-style.fintopia-social-media-ads-tools.tech/privacy.html" target="_blank" rel="noreferrer">隐私政策</a>
+        <a href="https://brand-style.fintopia-social-media-ads-tools.tech/terms.html" target="_blank" rel="noreferrer">使用条款</a>
+      </nav>
+      <div id="member-session-summary" class="member-session-summary" hidden>
+        <span id="member-session-label"></span>
+        <button id="member-logout-button" type="button">退出</button>
+      </div>
+      <button id="resize-handle" class="resize-handle" type="button" title="拖拽调整窗口大小" aria-label="拖拽调整窗口大小"></button>
+    </main>
+    <section id="member-login-overlay" class="member-login-overlay" aria-label="成员登录">
+      <div class="member-login-card">
+        <div class="member-login-mark" aria-hidden="true">B</div>
+        <h1>Brand Style</h1>
+        <p>仅供内部设计团队使用。请输入管理员为你创建的一次性成员邀请码。</p>
+        <form id="member-login-form" class="member-login-form" onsubmit="submitMemberLogin(); return false;">
+          <input id="member-invite-code" type="text" autocomplete="one-time-code" placeholder="BS-XXXXX-XXXXX-XXXXX-XXXXX" aria-label="成员邀请码" required />
+          <button id="member-login-button" type="button" onclick="submitMemberLogin(); return false;">验证并进入</button>
+        </form>
+        <div id="member-login-status" class="member-login-status" role="status"></div>
+      </div>
+    </section>
+

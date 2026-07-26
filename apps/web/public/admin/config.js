@@ -150,7 +150,7 @@ export async function deleteModel(modelId) {
 }
 
 export function resetAgentForm() {
-  qs("#agent-modal-title").textContent = "新建风格套装";
+  qs("#agent-modal-title").textContent = "新建品牌预设";
   qs("#agent-form").reset();
   qs("#agent-id").value = "";
   qs("#agent-style-preset").value = "";
@@ -159,7 +159,7 @@ export function resetAgentForm() {
 }
 
 export function fillAgentForm(agent) {
-  qs("#agent-modal-title").textContent = "编辑风格套装";
+  qs("#agent-modal-title").textContent = "编辑品牌预设";
   qs("#agent-id").value = agent.id;
   qs("#agent-name").value = agent.name;
   qs("#agent-description").value = agent.description;
@@ -195,7 +195,7 @@ export async function saveAgent(event) {
 export async function deleteAgent(agentId) {
   const agent = state.agents.find((item) => item.id === agentId);
 
-  if (!agent || !confirm(`确认删除风格套装「${agent.name}」？`)) {
+  if (!agent || !confirm(`确认删除品牌预设「${agent.name}」？`)) {
     return;
   }
 
@@ -223,6 +223,6 @@ export async function importAgentFromMarkdown(file) {
   fillAgentForm(data.draft);
   qs("#agent-id").value = "";
   qs("#agent-driver-model").value = data.draft.driverModelId || driverModelId;
-  qs("#agent-modal-title").textContent = `导入风格套装草稿（${data.draft.parseMode}）`;
+  qs("#agent-modal-title").textContent = `导入品牌预设草稿（${data.draft.parseMode}）`;
   openModal("agent-modal");
 }

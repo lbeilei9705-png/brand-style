@@ -1,7 +1,7 @@
 export const scenarios = [
   {
     id: "style-only",
-    name: "只选风格套装",
+    name: "只选品牌预设",
     content: "生成一个金融活动用的3D图标",
     referenceCount: 0,
     expect: [
@@ -40,7 +40,7 @@ export const scenarios = [
     pickMaterial: true,
     expect: [
       { label: "应该追加材质要求", includes: "材质要求" },
-      { label: "应该剔除风格套装低优先级材质段", removedReason: "manualMaterials" },
+      { label: "应该剔除品牌预设低优先级材质段", removedReason: "manualMaterials" },
     ],
   },
   {
@@ -109,7 +109,7 @@ export const scenarios = [
     pickShape: true,
     expect: [
       { label: "应该追加形状/结构要求", includes: "结构要求" },
-      { label: "应该剔除风格套装低优先级形状段", removedReason: "manualShape" },
+      { label: "应该剔除品牌预设低优先级形状段", removedReason: "manualShape" },
     ],
   },
   {

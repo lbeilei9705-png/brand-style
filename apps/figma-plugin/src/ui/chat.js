@@ -188,7 +188,7 @@
             pending.textContent = data.promptNegative
               ? `「${scenarioAgent.name}」已生成 Prompt，已回填正向 Prompt，并会在生成时使用智能体负面提示词：${data.promptNegative}`
               : `「${scenarioAgent.name}」已生成 Prompt，已回填到输入框。你可以继续修改，确认后再点击生成。`;
-            selectionStatus.textContent = "场景智能体已补全 Prompt；普通风格套装和自由搭配已清空。";
+            selectionStatus.textContent = "场景智能体已补全 Prompt；普通品牌预设和自由搭配已清空。";
             trackEvent("scenario_complete_success", {
               scenarioAgentId: scenarioAgent.id,
               requestId: data.requestId,

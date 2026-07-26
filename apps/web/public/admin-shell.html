@@ -10,7 +10,7 @@
         <nav class="admin-nav">
           <span class="nav-section-label">Configuration</span>
           <button class="nav-button active" data-page="models-page" type="button">模型管理</button>
-          <button class="nav-button" data-page="agents-page" type="button">风格套装管理</button>
+          <button class="nav-button" data-page="agents-page" type="button">品牌预设管理</button>
           <button class="nav-button" data-page="materials-page" type="button">材质管理</button>
           <button class="nav-button" data-page="palettes-page" type="button">配色管理</button>
           <button class="nav-button" data-page="shape-architectures-page" type="button">形状管理</button>
@@ -56,7 +56,7 @@
           <header class="page-header">
             <div>
               <h2>模型管理</h2>
-              <p class="muted">配置插件和风格套装可选择的模型，包含 provider、版本、quality 和 API key。</p>
+              <p class="muted">配置插件和品牌预设可选择的模型，包含 provider、版本、quality 和 API key。</p>
             </div>
             <button id="new-model-button" class="primary-button" type="button">新建模型</button>
           </header>
@@ -79,21 +79,21 @@
         <section id="agents-page" class="resource-page">
           <header class="page-header">
             <div>
-              <h2>风格套装管理</h2>
+              <h2>品牌预设管理</h2>
               <p class="muted">通过编辑或上传 Markdown 创建搭配好的整体视觉方案，并指定驱动模型。</p>
             </div>
             <div class="toolbar">
               <input id="agent-md-file" type="file" accept=".md,text/markdown,text/plain" hidden />
               <select id="import-driver-model" title="Markdown 解析驱动模型"></select>
-              <button id="import-agent-button" class="secondary-button" type="button">从 Markdown 导入套装</button>
-              <button id="new-agent-button" class="primary-button" type="button">新建风格套装</button>
+              <button id="import-agent-button" class="secondary-button" type="button">从 Markdown 导入品牌预设</button>
+              <button id="new-agent-button" class="primary-button" type="button">新建品牌预设</button>
             </div>
           </header>
           <div class="admin-card">
             <table>
               <thead>
                 <tr>
-                  <th>风格套装</th>
+                  <th>品牌预设</th>
                   <th>驱动模型</th>
                   <th>状态</th>
                   <th>操作</th>

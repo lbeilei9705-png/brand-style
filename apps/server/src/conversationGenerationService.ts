@@ -111,7 +111,7 @@ export class ConversationGenerationService {
     const isOriginalColorPalette = Boolean(colorPalette?.name.includes("原图色彩"));
     const activeColorPrompt = colorPalette
       ? isOriginalColorPalette
-        ? colorPalette.prompt || "保持参考图原有色彩关系，不按风格套装中的颜色描述改色。"
+        ? colorPalette.prompt || "保持参考图原有色彩关系，不按品牌预设中的颜色描述改色。"
         : colorPalette.prompt
       : undefined;
     const shapeArchitecture = request.shapeArchitectureId

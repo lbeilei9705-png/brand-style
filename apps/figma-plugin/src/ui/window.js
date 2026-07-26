@@ -68,5 +68,5 @@
         document.body.classList.add("is-collapsed");
         collapseButton.title = "展开插件";
         collapseButton.setAttribute("aria-label", "展开插件");
-        postResize(96, 116);
+        postResize(72, 72);
       });

@@ -57,7 +57,7 @@ function splitNegativeRules(rules: string[]): string[] {
 
 function stripConfigLabel(value: string): string {
   return value
-    .replace(/^(形状|材质球|手动配色方案|风格套装默认配色)「[^」]+」[:：]\s*/, "")
+    .replace(/^(形状|材质球|手动配色方案|品牌预设默认配色)「[^」]+」[:：]\s*/, "")
     .replace(/\s*色值[:：][\s\S]*$/u, "")
     .trim();
 }

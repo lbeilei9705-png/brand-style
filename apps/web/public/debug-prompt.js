@@ -474,7 +474,7 @@ async function loadConfig() {
   state.operationScenarios = operationScenarios.operationScenarios || [];
 
   fillSelect(qs("#model-select"), enabled(state.models).filter((model) => (model.purpose || "image") === "image"), "");
-  fillSelect(qs("#agent-select"), enabled(state.agents), "不选择风格套装");
+  fillSelect(qs("#agent-select"), enabled(state.agents), "不选择品牌预设");
   fillSelect(qs("#palette-select"), enabled(state.colorPalettes), "不选择配色");
   fillSelect(qs("#shape-select"), enabled(state.shapeArchitectures), "不选择形状");
   fillSelect(qs("#material-select"), enabled(state.materials), "");

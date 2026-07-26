@@ -58,7 +58,7 @@
 
           const emptyAgentOption = document.createElement("option");
           emptyAgentOption.value = "";
-          emptyAgentOption.textContent = "未选择风格套装";
+          emptyAgentOption.textContent = "未选择品牌预设";
           agentSelect.appendChild(emptyAgentOption);
 
           for (const agent of (agentsData.styleSkills || agentsData.agents || []).filter((item) => item.enabled)) {

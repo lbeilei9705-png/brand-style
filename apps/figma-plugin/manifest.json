@@ -1,10 +1,11 @@
 {
   "name": "Brand Style",
-  "id": "3d-icon-style-mvp-local",
+  "id": "1663404735445003703",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "dist/ui.html",
   "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
       "https://brand-style.fintopia-social-media-ads-tools.tech",

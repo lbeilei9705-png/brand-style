@@ -46,7 +46,7 @@
     {
       "apiStyle": "custom",
       "id": "model_1778388177536",
-      "name": " nano- banana-2",
+      "name": "Nano Banana 2",
       "provider": "fintopia",
       "model": "gemini-3.1-flash-image",
       "apiUrl": "https://zbhvoeakhrvzahmmades.supabase.co/functions/v1/gemini-proxy",

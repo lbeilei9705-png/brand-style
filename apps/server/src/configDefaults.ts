@@ -155,6 +155,9 @@ function normalizeNanoImageModel(model: ModelConfig): ModelConfig {
 
   return {
     ...model,
+    name: normalizedModel === "gemini-3.1-flash-image"
+      ? "Nano Banana 2"
+      : "Nano Banana Pro",
     model: normalizedModel,
     apiUrl: getGoogleGeminiProxyUrl(),
     apiVersion: "",

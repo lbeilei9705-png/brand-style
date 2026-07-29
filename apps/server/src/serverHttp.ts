@@ -304,6 +304,19 @@ export function hasAdminCredentials(req: http.IncomingMessage): boolean {
     && req.headers["x-brand-style-token"] === adminAccessToken;
 }
 
+export function stringHeader(value: string | string[] | undefined): string | undefined {
+  const text = Array.isArray(value) ? value[0] : value;
+  return text && text.length <= 160 ? text : undefined;
+}
+
+export function routeEventName(pathname: string, statusCode: number): string {
+  if (pathname === "/api/scenario-agent/complete") return statusCode < 400 ? "scenario.completed" : "scenario.failed";
+  if (pathname === "/api/assets") return statusCode < 400 ? "asset.uploaded" : "asset.upload_failed";
+  if (pathname.startsWith("/api/config")) return statusCode < 400 ? "config.accessed" : "config.failed";
+  if (pathname.startsWith("/api/tasks")) return statusCode < 400 ? "task.completed" : "task.failed";
+  return "http.completed";
+}
+
 const protectedPluginGetRoutes = new Set([
   "/api/style-presets",
   "/api/config/models",

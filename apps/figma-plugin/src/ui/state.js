@@ -57,7 +57,10 @@
       let isSending = false;
       let isLoadingConfig = false;
       let activeConversationId = null;
+      let activeConversationPromise = null;
       let activeGenerationController = null;
+      const activeGenerations = new Map();
+      const maxParallelGenerations = 3;
       let isCollapsed = false;
       let materialPanelCloseTimer = null;
       let palettePanelCloseTimer = null;

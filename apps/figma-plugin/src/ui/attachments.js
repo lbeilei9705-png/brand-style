@@ -243,6 +243,19 @@
           return;
         }
 
+        const activeGenerationCount = activeGenerations.size;
+        const parallelGenerationLimit = getParallelGenerationLimit();
+        if (activeGenerationCount >= parallelGenerationLimit) {
+          sendButton.disabled = true;
+          sendButton.textContent = parallelGenerationLimit
+            ? `${activeGenerationCount} 个任务进行中`
+            : "今日额度已用完";
+          sendButton.title = parallelGenerationLimit
+            ? "已达到并行任务上限，请等待任一任务完成。"
+            : "请联系管理员增加今日生成额度。";
+          return;
+        }
+
         const hasText = Boolean(messageInput.value.trim());
         const isScenarioAgentPrompt = Boolean(getScenarioAgentFromContent(messageInput.value));
         const hasConfig = Boolean(
@@ -256,7 +269,15 @@
         const canRun = hasText || (selectedAssets.length > 0 && !hasOnlyImageWithoutDirection);
         const directionHint = "请描述要怎么处理这张图，或选择一个风格/形状/配色/材质。";
         sendButton.disabled = !canRun;
-        sendButton.textContent = canRun ? isScenarioAgentPrompt ? "生成Prompt" : "整活" : "没活";
+        sendButton.textContent = canRun
+          ? isScenarioAgentPrompt
+            ? "生成Prompt"
+            : activeGenerationCount
+              ? `继续整活（${activeGenerationCount} 进行中）`
+              : "整活"
+          : activeGenerationCount
+            ? `${activeGenerationCount} 个任务进行中`
+            : "没活";
         sendButton.title = hasOnlyImageWithoutDirection
           ? directionHint
           : canRun

@@ -9,8 +9,9 @@ import { ConversationStore } from "./conversationStore.ts";
 import { sendJson } from "./http/response.ts";
 import { handleConfigRoutes } from "./routes/configRoutes.ts";
 import { handleTelemetryRoutes } from "./routes/telemetryRoutes.ts";
-import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, serveStatic } from "./serverHttp.ts";
+import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, serveStatic, stringHeader } from "./serverHttp.ts";
 import { MemberAccessStore } from "./memberAccessStore.ts";
+import { GenerationConcurrencyLimiter } from "./generationConcurrency.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
 import { OssAssetStorage } from "./storage/ossAssetStorage.ts";
@@ -38,6 +39,7 @@ const memberSessionTtlDays = Math.max(
   1,
   Number(process.env.BRAND_STYLE_MEMBER_SESSION_TTL_DAYS || 30),
 );
+const maxParallelGenerations = Math.max(1, Number(process.env.BRAND_STYLE_MAX_PARALLEL_GENERATIONS || 3));
 const dataDir = path.resolve(projectRoot, process.env.BRAND_STYLE_DATA_DIR || "data");
 appConfig.telemetry.localDir = path.resolve(projectRoot, appConfig.telemetry.localDir);
 const telemetry = createTelemetryService(appConfig.telemetry);
@@ -54,6 +56,7 @@ await configStore.syncFromRemote().catch((error) => {
 });
 const conversationStore = new ConversationStore(dataDir, conversationRetentionDays);
 const memberAccessStore = new MemberAccessStore(dataDir, memberDailyLimit, memberSessionTtlDays);
+const generationConcurrency = new GenerationConcurrencyLimiter(maxParallelGenerations);
 conversationStore.list();
 const conversationCleanupTimer = setInterval(() => {
   conversationStore.list();
@@ -328,20 +331,32 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && conversationMessageMatch) {
       let response: Awaited<ReturnType<ConversationService["addMessage"]>>;
       const messageRequest = await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1];
-      const quotaReservation = memberSession
-        ? memberAccessStore.consumeQuota(memberSession.id, 1)
-        : undefined;
+      const concurrencyKey = memberSession?.id || clientSessionId || actorId || req.socket.remoteAddress || "anonymous";
 
-      if (memberSession && (!quotaReservation || !quotaReservation.allowed)) {
+      if (!generationConcurrency.tryAcquire(concurrencyKey)) {
         sendJson(res, 429, {
-          error: "今日生成额度已用完，请联系管理员。",
-          code: "MEMBER_DAILY_LIMIT_REACHED",
-          quota: quotaReservation?.quota,
+          error: `最多可同时运行 ${maxParallelGenerations} 个生图任务。`,
+          code: "GENERATION_CONCURRENCY_LIMIT",
+          active: generationConcurrency.active(concurrencyKey),
         });
         return;
       }
 
+      let quotaReservation: ReturnType<MemberAccessStore["consumeQuota"]>;
       try {
+        quotaReservation = memberSession
+          ? memberAccessStore.consumeQuota(memberSession.id, 1)
+          : undefined;
+
+        if (memberSession && (!quotaReservation || !quotaReservation.allowed)) {
+          sendJson(res, 429, {
+            error: "今日生成额度已用完，请联系管理员。",
+            code: "MEMBER_DAILY_LIMIT_REACHED",
+            quota: quotaReservation?.quota,
+          });
+          return;
+        }
+
         void telemetry.record({
           name: "generation.started",
           category: "generation",
@@ -400,6 +415,8 @@ const server = http.createServer(async (req, res) => {
           },
         }).catch(() => undefined);
         throw error;
+      } finally {
+        generationConcurrency.release(concurrencyKey);
       }
 
       sendJson(res, 201, response);
@@ -480,16 +497,3 @@ const server = http.createServer(async (req, res) => {
 server.listen(port, () => {
   console.log(`3D Icon Style Engine listening on http://localhost:${port}`);
 });
-
-function stringHeader(value: string | string[] | undefined): string | undefined {
-  const text = Array.isArray(value) ? value[0] : value;
-  return text && text.length <= 160 ? text : undefined;
-}
-
-function routeEventName(pathname: string, statusCode: number): string {
-  if (pathname === "/api/scenario-agent/complete") return statusCode < 400 ? "scenario.completed" : "scenario.failed";
-  if (pathname === "/api/assets") return statusCode < 400 ? "asset.uploaded" : "asset.upload_failed";
-  if (pathname.startsWith("/api/config")) return statusCode < 400 ? "config.accessed" : "config.failed";
-  if (pathname.startsWith("/api/tasks")) return statusCode < 400 ? "task.completed" : "task.failed";
-  return "http.completed";
-}

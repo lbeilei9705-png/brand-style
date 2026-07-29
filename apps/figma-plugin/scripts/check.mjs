@@ -78,6 +78,9 @@ const requiredUiProtocol = [
   'memberLoginButton.addEventListener("click"',
   'let memberSessionToken = ""',
   'type: "auth-storage-get"',
+  "const activeGenerations = new Map()",
+  "activeGenerations.set(generationId, generationController)",
+  "activeGenerationCount: activeGenerations.size",
 ];
 for (const snippet of requiredUiProtocol) {
   if (!ui.includes(snippet)) {

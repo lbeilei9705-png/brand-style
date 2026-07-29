@@ -254,13 +254,19 @@ export class ConversationGenerationService {
       taskId: taskResponse.taskId,
       resultIds: taskResponse.task.results.map((result) => result.id),
     };
+    const latestConversation = this.conversationStore.get(conversationId);
+
+    if (!latestConversation) {
+      throw new Error("Conversation expired while generation was running.");
+    }
+
     const updated: Conversation = {
-      ...conversation,
-      title: conversation.messages.length ? conversation.title : titleFromMessage(request.content),
+      ...latestConversation,
+      title: latestConversation.messages.length ? latestConversation.title : titleFromMessage(request.content),
       modelId: activeModel.id,
       agentId: request.agentId,
-      messages: [...conversation.messages, userMessage, assistantMessage],
-      taskIds: [...conversation.taskIds, taskResponse.taskId],
+      messages: [...latestConversation.messages, userMessage, assistantMessage],
+      taskIds: [...latestConversation.taskIds, taskResponse.taskId],
       updatedAt: timestamp,
     };
 

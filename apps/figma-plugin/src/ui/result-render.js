@@ -1,4 +1,5 @@
-      function renderResults(task) {
+      function renderResults(task, anchor) {
+        const shouldFollowLatest = chat.scrollHeight - chat.scrollTop - chat.clientHeight < 48;
         const wrapper = document.createElement("article");
         wrapper.className = "message assistant";
         const title = document.createElement("strong");
@@ -32,7 +33,13 @@
         }
 
         wrapper.append(title, grid, createPromptDebugPanel(task));
-        chat.appendChild(wrapper);
-        chat.scrollTop = chat.scrollHeight;
+        if (anchor?.parentNode === chat) {
+          anchor.after(wrapper);
+        } else {
+          chat.appendChild(wrapper);
+        }
+        if (shouldFollowLatest) {
+          chat.scrollTop = chat.scrollHeight;
+        }
       }
 

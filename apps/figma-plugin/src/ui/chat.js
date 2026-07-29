@@ -148,9 +148,23 @@
         };
       }
 
-      function addGenerationPending(loadingText) {
+      function addGenerationPending(loadingText, generationId, generationController) {
         const pending = addMessage("system", `${loadingText} 已用 0 秒`);
         const status = pending.querySelector(".message-content");
+        const actions = document.createElement("div");
+        const pauseButton = document.createElement("button");
+        actions.className = "diagnostic-actions";
+        pauseButton.type = "button";
+        pauseButton.textContent = "暂停任务";
+        pauseButton.addEventListener("click", () => {
+          pauseButton.disabled = true;
+          pauseButton.textContent = "正在暂停";
+          status.textContent = "正在停止本次生成并退回额度...";
+          trackEvent("generation_abort_requested", { generationId });
+          generationController.abort();
+        });
+        actions.appendChild(pauseButton);
+        pending.appendChild(actions);
         return { pending, status };
       }
 
@@ -285,7 +299,7 @@
           return;
         }
         snapshot.inputType = inputType;
-        const { pending, status } = addGenerationPending(loadingText);
+        const { pending, status } = addGenerationPending(loadingText, generationId, generationController);
         const startedAt = Date.now();
         trackEvent("generation_start", {
           generationId,
@@ -317,7 +331,7 @@
           });
         } catch (error) {
           if (isAbortError(error)) {
-            pending.textContent = "已暂停本次生成。";
+            pending.textContent = "已暂停本次生成，本次额度已退回。";
           } else {
             pending.remove();
             addMessage("system", getReadableError(error));

@@ -111,8 +111,9 @@ export class TaskService {
           referenceAssets,
           userMessage: request.userMessage,
           context: request.orchestrationContext,
-        });
+        }, signal);
       } catch (error) {
+        signal?.throwIfAborted();
         // Prompt orchestration is an enhancement; generation should still work without it.
         return {
           providerRequest: {
@@ -150,12 +151,14 @@ export class TaskService {
     return this.buildGenerateImageRequest(request, `debug_${Date.now()}`);
   }
 
-  async createTask(request: CreateTaskRequest): Promise<CreateTaskResponse> {
+  async createTask(request: CreateTaskRequest, signal?: AbortSignal): Promise<CreateTaskResponse> {
+    signal?.throwIfAborted();
     const now = new Date().toISOString();
     const taskId = `task_${randomUUID()}`;
     const { providerRequest, preprocess } = await this.buildGenerateImageRequest(request, taskId);
+    signal?.throwIfAborted();
     const { inputAsset: primaryInputAsset, referenceAssets, stylePreset, prompt, constraints } = providerRequest;
-    const generatedImages = await this.imageProvider.generate(providerRequest);
+    const generatedImages = await this.imageProvider.generate(providerRequest, signal);
     const results = buildDirectResults(generatedImages, providerRequest);
 
     const task: GenerationTask = {

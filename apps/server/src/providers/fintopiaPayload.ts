@@ -150,7 +150,7 @@ function parseImageSize(bytes: Uint8Array): { width: number; height: number } | 
   return undefined;
 }
 
-export async function getActualImageSize(imageUrl: string): Promise<{ width: number; height: number } | undefined> {
+export async function getActualImageSize(imageUrl: string, signal?: AbortSignal): Promise<{ width: number; height: number } | undefined> {
   try {
     if (imageUrl.startsWith("data:")) {
       const base64 = imageUrl.split(",")[1] || "";
@@ -158,7 +158,9 @@ export async function getActualImageSize(imageUrl: string): Promise<{ width: num
     }
 
     const response = await fetch(imageUrl, {
-      signal: AbortSignal.timeout(15000),
+      signal: signal
+        ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
+        : AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
@@ -167,6 +169,7 @@ export async function getActualImageSize(imageUrl: string): Promise<{ width: num
 
     return parseImageSize(new Uint8Array(await response.arrayBuffer()));
   } catch {
+    signal?.throwIfAborted();
     return undefined;
   }
 }

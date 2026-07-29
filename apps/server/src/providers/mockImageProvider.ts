@@ -67,7 +67,8 @@ function createMockSvg(request: GenerateImageRequest, rank: number): string {
 }
 
 export class MockImageProvider implements ImageProvider {
-  async generate(request: GenerateImageRequest): Promise<GeneratedImage[]> {
+  async generate(request: GenerateImageRequest, signal?: AbortSignal): Promise<GeneratedImage[]> {
+    signal?.throwIfAborted();
     const outputSize = buildOutputSize(request);
 
     return Array.from({ length: request.constraints.batchSize }, (_, index) => {

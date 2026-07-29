@@ -18,7 +18,7 @@ export class PromptOrchestrator {
     this.fallbackConfig = fallbackConfig;
   }
 
-  private async analyzeReferenceRolePlan(request: OptimizePromptRequest): Promise<ValidatedReferenceRolePlan | undefined> {
+  private async analyzeReferenceRolePlan(request: OptimizePromptRequest, signal?: AbortSignal): Promise<ValidatedReferenceRolePlan | undefined> {
     if (!shouldAnalyzeReferenceRoles(request)) {
       return undefined;
     }
@@ -34,7 +34,9 @@ export class PromptOrchestrator {
           buildReferenceRolePlanContent(request),
           0,
         )),
-        signal: AbortSignal.timeout(12000),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(12000)])
+          : AbortSignal.timeout(12000),
       });
       const payload = await response.json() as ChatCompletionResponse;
 
@@ -47,12 +49,15 @@ export class PromptOrchestrator {
 
       return validateReferenceRolePlan(parsed, request.referenceAssets || []);
     } catch {
+      signal?.throwIfAborted();
       return undefined;
     }
   }
 
-  async optimize(request: OptimizePromptRequest): Promise<PromptBundle> {
-    const referenceRolePlan = await this.analyzeReferenceRolePlan(request);
+  async optimize(request: OptimizePromptRequest, signal?: AbortSignal): Promise<PromptBundle> {
+    signal?.throwIfAborted();
+    const referenceRolePlan = await this.analyzeReferenceRolePlan(request, signal);
+    signal?.throwIfAborted();
     const referenceRoleRule = formatReferenceRoleRule(referenceRolePlan);
     const referenceRoleNegativeRule = formatReferenceRoleNegativeRule(referenceRolePlan);
     const requestForOptimization: OptimizePromptRequest = referenceRoleRule
@@ -77,9 +82,12 @@ export class PromptOrchestrator {
           buildUserContent(requestForOptimization),
           0.2,
         )),
-        signal: AbortSignal.timeout(20000),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+          : AbortSignal.timeout(20000),
       });
     } catch (error) {
+      signal?.throwIfAborted();
       throw new Error(getReadableLanguageModelError(error));
     }
     const payload = await response.json() as ChatCompletionResponse;

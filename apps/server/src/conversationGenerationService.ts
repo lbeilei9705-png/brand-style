@@ -52,7 +52,7 @@ export class ConversationGenerationService {
     return this.conversationStore.save(conversation);
   }
 
-  async addMessage(conversationId: string, request: AddConversationMessageRequest): Promise<AddConversationMessageResponse> {
+  async addMessage(conversationId: string, request: AddConversationMessageRequest, signal?: AbortSignal): Promise<AddConversationMessageResponse> {
     const conversation = this.conversationStore.get(conversationId);
 
     if (!conversation) {
@@ -217,8 +217,9 @@ export class ConversationGenerationService {
 
     try {
       const taskService = new TaskService(this.taskStore, this.createProvider(model), this.createPromptOrchestrator());
-      taskResponse = await taskService.createTask(taskRequest);
+      taskResponse = await taskService.createTask(taskRequest, signal);
     } catch (error) {
+      signal?.throwIfAborted();
       const fallbackModel = this.getFallbackModel(model);
 
       if (!fallbackModel) {
@@ -230,8 +231,9 @@ export class ConversationGenerationService {
       const fallbackTaskService = new TaskService(this.taskStore, this.createProvider(fallbackModel), this.createPromptOrchestrator());
 
       try {
-        taskResponse = await fallbackTaskService.createTask(taskRequest);
+        taskResponse = await fallbackTaskService.createTask(taskRequest, signal);
       } catch (fallbackError) {
+        signal?.throwIfAborted();
         const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : "备用模型调用失败。";
         throw new Error(`当前模型「${model.name}」调用失败：${fallbackReason} 备用模型「${fallbackModel.name}」也失败：${fallbackMessage}`);
       }

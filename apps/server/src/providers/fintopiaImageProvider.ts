@@ -14,7 +14,7 @@ export class FintopiaImageProvider implements ImageProvider {
     this.config = config;
   }
 
-  async generate(request: GenerateImageRequest): Promise<GeneratedImage[]> {
+  async generate(request: GenerateImageRequest, signal?: AbortSignal): Promise<GeneratedImage[]> {
     const attempts = buildEndpointAttempts(this.config);
     const hasYunwuCredentials = Boolean(this.config.apiUrl && this.config.apiKey);
     const hasGoogleProxy = attempts.some((attempt) => attempt.googleProxy && attempt.bearerToken);
@@ -89,7 +89,9 @@ export class FintopiaImageProvider implements ImageProvider {
                 googleProxy: attempt.googleProxy,
               },
             )),
-            signal: AbortSignal.timeout(attempt.timeoutMs),
+            signal: signal
+              ? AbortSignal.any([signal, AbortSignal.timeout(attempt.timeoutMs)])
+              : AbortSignal.timeout(attempt.timeoutMs),
           });
           logProviderInfo("model response received", {
             taskId: request.taskId,
@@ -251,7 +253,7 @@ export class FintopiaImageProvider implements ImageProvider {
     }
 
     const outputSize = buildOutputSize(request);
-    const actualSizes = await Promise.all(imageUrls.map((imageUrl) => getActualImageSize(imageUrl)));
+    const actualSizes = await Promise.all(imageUrls.map((imageUrl) => getActualImageSize(imageUrl, signal)));
 
     return imageUrls.map((imageUrl, index) => ({
       id: `fintopia_${index + 1}`,

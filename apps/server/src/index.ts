@@ -11,6 +11,7 @@ import { handleConfigRoutes } from "./routes/configRoutes.ts";
 import { handleTelemetryRoutes } from "./routes/telemetryRoutes.ts";
 import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, serveStatic, stringHeader } from "./serverHttp.ts";
 import { MemberAccessStore } from "./memberAccessStore.ts";
+import { bindGenerationCancellation } from "./generationCancellation.ts";
 import { GenerationConcurrencyLimiter } from "./generationConcurrency.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import { MockImageProvider } from "./providers/mockImageProvider.ts";
@@ -19,7 +20,6 @@ import { SupabaseConfigStore } from "./storage/supabaseConfigStore.ts";
 import { TaskService } from "./taskService.ts";
 import { TaskStore } from "./taskStore.ts";
 import { createTelemetryService } from "./telemetry/index.ts";
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "../../..");
@@ -342,6 +342,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      const cancellation = bindGenerationCancellation(res);
       let quotaReservation: ReturnType<MemberAccessStore["consumeQuota"]>;
       try {
         quotaReservation = memberSession
@@ -371,10 +372,7 @@ const server = http.createServer(async (req, res) => {
             attachmentCount: messageRequest.selectionAssets?.length || 0,
           },
         }).catch(() => undefined);
-        response = await conversationService.addMessage(
-          conversationMessageMatch[1],
-          messageRequest,
-        );
+        response = await conversationService.addMessage(conversationMessageMatch[1], messageRequest, cancellation.signal);
         void telemetry.record({
           name: "generation.succeeded",
           category: "generation",
@@ -392,6 +390,8 @@ const server = http.createServer(async (req, res) => {
         if (memberSession && quotaReservation?.allowed) {
           memberAccessStore.refundQuota(memberSession.id, 1);
         }
+
+        if (cancellation.signal.aborted) return;
 
         if (error instanceof Error && error.message === "Conversation not found.") {
           sendJson(res, 404, { error: error.message });
@@ -416,6 +416,7 @@ const server = http.createServer(async (req, res) => {
         }).catch(() => undefined);
         throw error;
       } finally {
+        cancellation.cleanup();
         generationConcurrency.release(concurrencyKey);
       }
 

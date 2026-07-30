@@ -1,4 +1,5 @@
 import type { GenerateImageRequest } from "../../../../packages/shared/src/index.ts";
+import { mergeAbortSignals } from "../abortSignal.ts";
 import type { FintopiaConfig } from "../config.ts";
 import type { EndpointKind } from "./fintopiaEndpoint.ts";
 
@@ -159,7 +160,7 @@ export async function getActualImageSize(imageUrl: string, signal?: AbortSignal)
 
     const response = await fetch(imageUrl, {
       signal: signal
-        ? AbortSignal.any([signal, AbortSignal.timeout(15000)])
+        ? mergeAbortSignals(signal, AbortSignal.timeout(15000))
         : AbortSignal.timeout(15000),
     });
 

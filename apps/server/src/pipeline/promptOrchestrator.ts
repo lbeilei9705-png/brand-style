@@ -1,4 +1,5 @@
 import type { ModelConfig, PromptBundle } from "../../../../packages/shared/src/index.ts";
+import { mergeAbortSignals } from "../abortSignal.ts";
 import type { FintopiaConfig } from "../config.ts";
 import { buildEndpoint, buildHeaders, buildLanguagePayload, extractJsonObject, extractLanguageText, getReadableLanguageModelError } from "./promptLanguageClient.ts";
 import { buildReferenceRolePlanContent, buildUserContent, cleanPositivePrompt, dedupeNegativePrompt, formatReferenceRoleNegativeRule, formatReferenceRoleRule, shouldAnalyzeReferenceRoles, validateReferenceRolePlan } from "./promptOrchestrationSupport.ts";
@@ -35,7 +36,7 @@ export class PromptOrchestrator {
           0,
         )),
         signal: signal
-          ? AbortSignal.any([signal, AbortSignal.timeout(12000)])
+          ? mergeAbortSignals(signal, AbortSignal.timeout(12000))
           : AbortSignal.timeout(12000),
       });
       const payload = await response.json() as ChatCompletionResponse;
@@ -83,7 +84,7 @@ export class PromptOrchestrator {
           0.2,
         )),
         signal: signal
-          ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+          ? mergeAbortSignals(signal, AbortSignal.timeout(20000))
           : AbortSignal.timeout(20000),
       });
     } catch (error) {

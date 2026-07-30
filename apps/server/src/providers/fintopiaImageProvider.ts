@@ -1,4 +1,5 @@
 import type { GeneratedImage, GenerateImageRequest } from "../../../../packages/shared/src/index.ts";
+import { mergeAbortSignals } from "../abortSignal.ts";
 import type { FintopiaConfig } from "../config.ts";
 import { buildEndpointAttempts, getEndpointLabel, logProviderError, logProviderInfo, summarizeGenerateRequest } from "./fintopiaEndpoint.ts";
 import { buildHeaders, buildImagePayload, buildOutputSize, getActualImageSize } from "./fintopiaPayload.ts";
@@ -90,7 +91,7 @@ export class FintopiaImageProvider implements ImageProvider {
               },
             )),
             signal: signal
-              ? AbortSignal.any([signal, AbortSignal.timeout(attempt.timeoutMs)])
+              ? mergeAbortSignals(signal, AbortSignal.timeout(attempt.timeoutMs))
               : AbortSignal.timeout(attempt.timeoutMs),
           });
           logProviderInfo("model response received", {

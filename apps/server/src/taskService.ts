@@ -76,7 +76,7 @@ export class TaskService {
     this.promptOrchestrator = promptOrchestrator;
   }
 
-  private async buildGenerateImageRequest(request: CreateTaskRequest, taskId: string): Promise<{
+  private async buildGenerateImageRequest(request: CreateTaskRequest, taskId: string, signal?: AbortSignal): Promise<{
     providerRequest: GenerateImageRequest;
     preprocess: ReturnType<typeof preprocessInput>;
     promptOrchestratorError?: string;
@@ -155,7 +155,7 @@ export class TaskService {
     signal?.throwIfAborted();
     const now = new Date().toISOString();
     const taskId = `task_${randomUUID()}`;
-    const { providerRequest, preprocess } = await this.buildGenerateImageRequest(request, taskId);
+    const { providerRequest, preprocess } = await this.buildGenerateImageRequest(request, taskId, signal);
     signal?.throwIfAborted();
     const { inputAsset: primaryInputAsset, referenceAssets, stylePreset, prompt, constraints } = providerRequest;
     const generatedImages = await this.imageProvider.generate(providerRequest, signal);

@@ -192,7 +192,8 @@ function truncateText(value: string | undefined, maxLength = 1200): string {
 }
 
 export function summarizeGenerateRequest(request: GenerateImageRequest, config: FintopiaConfig): Record<string, unknown> {
-  const references = request.referenceAssets?.length ? request.referenceAssets : [request.inputAsset];
+  const candidates = request.referenceAssets?.length ? request.referenceAssets : [request.inputAsset];
+  const references = candidates.filter((asset) => asset.mimeType.startsWith("image/") && Boolean(asset.dataUrl));
 
   return {
     taskId: request.taskId,

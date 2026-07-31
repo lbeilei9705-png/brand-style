@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { CreateTaskRequest, GenerateImageRequest, InputAsset, PreprocessResult } from "../../../packages/shared/src/index.ts";
 import { importAgentFromMarkdown } from "./agentMarkdownImporter.ts";
+import { defaultConfig, hydrateConfig } from "./configDefaults.ts";
 import {
   applyPriorityDedupeToStylePrompt,
   getHighestReferencedImageIndex,
@@ -10,7 +11,7 @@ import {
   titleFromMessage,
 } from "./conversationUtils.ts";
 import { parseInputAsset, parseReferenceAssets } from "./pipeline/inputParser.ts";
-import { buildOperationScenarioPromptBundle, buildPromptBundle } from "./pipeline/promptBuilder.ts";
+import { buildOperationScenarioPromptBundle, buildPromptBundle, lockedStyleRenderingPrompt } from "./pipeline/promptBuilder.ts";
 import { buildHeaders, buildImagePayload, buildOutputSize, getActualImageSize } from "./providers/fintopiaPayload.ts";
 
 const constraints = {
@@ -140,6 +141,34 @@ test("prompt builder honors cross-image material transfer and dedupes negatives"
   assert.match(bundle.negative, /不要迁移材质来源图的颜色/);
 });
 
+test("semantic planning adds the locked rendering baseline without choosing material or color", () => {
+  const bundle = buildPromptBundle(imageAsset, preprocess, {}, constraints, {
+    userMessage: "钱包主体，硬币沿箭头落入钱包，右上角显示到账确认勾",
+    semanticPlanning: true,
+  });
+
+  assert.equal(bundle.positive.includes(lockedStyleRenderingPrompt), true);
+  assert.equal(bundle.positive.includes("钱包主体"), true);
+});
+
+test("default config includes the finance icon semantic planner", () => {
+  const planner = defaultConfig().scenarioAgents?.find((agent) => agent.id === "finance-app-icon-planner");
+
+  assert.equal(planner?.trigger, "/金融图标");
+  assert.equal(planner?.mergeWithStyleConfig, true);
+  assert.equal(planner?.outputMode, "prompt_sections");
+});
+
+test("config hydration restores the built-in finance planner", () => {
+  const config = defaultConfig();
+  config.scenarioAgents = [];
+
+  assert.equal(
+    hydrateConfig(config).scenarioAgents?.some((agent) => agent.id === "finance-app-icon-planner"),
+    true,
+  );
+});
+
 test("operation scenario prompt keeps fixed and variable sections separate", () => {
   const bundle = buildOperationScenarioPromptBundle(imageAsset, preprocess, {}, {
     name: "春节",
@@ -251,6 +280,28 @@ test("Fintopia payloads preserve image order, dimensions and auth conventions", 
     "Content-Type": "application/json",
     Authorization: "Bearer secret",
   });
+});
+
+test("text-only generation does not send a synthetic reference image", () => {
+  const request = imageRequest();
+  request.inputAsset = {
+    ...request.inputAsset,
+    id: "text-only",
+    filename: "text-prompt.txt",
+    mimeType: "text/plain",
+    dataUrl: undefined,
+  };
+  request.referenceAssets = [];
+  const payload = buildImagePayload(request, {
+    apiUrl: "https://example.test",
+    apiKey: "secret",
+    model: "image-model",
+    version: "",
+  }, "gemini-generate-content", 0, 1, { googleProxy: true });
+  const serialized = JSON.stringify(payload);
+
+  assert.equal(serialized.includes("text-prompt.txt"), false);
+  assert.equal(serialized.includes("参考图编号"), false);
 });
 
 test("Fintopia image metadata parser reads a PNG data URL without network", async () => {

@@ -107,10 +107,19 @@ export class ConversationService extends ConversationGenerationService {
     const shapeArchitecture = request.shapeArchitectureId
       ? this.configStore.listShapeArchitectures().find((item) => item.id === request.shapeArchitectureId && item.enabled)
       : undefined;
-    const operationScenario = request.operationScenarioId
+    const semanticPlan = request.semanticPlanId
+      ? scenarioAgents.find((item) => item.id === request.semanticPlanId && item.enabled && item.mergeWithStyleConfig)
+      : undefined;
+    const semanticFixedPositivePrompt = semanticPlan
+      ? request.semanticFixedPositivePrompt?.trim().slice(0, 2_000)
+      : undefined;
+    const semanticNegativePrompt = semanticPlan ? request.semanticNegativePrompt?.trim().slice(0, 1_000) : undefined;
+    const operationScenario = !semanticPlan && request.operationScenarioId
       ? this.configStore.listOperationScenarios().find((item) => item.id === request.operationScenarioId && item.enabled)
       : undefined;
-    const hasGenerationConfig = Boolean(agent.id || materials.length || colorPalette || shapeArchitecture || operationScenario);
+    const hasGenerationConfig = Boolean(
+      agent.id || materials.length || colorPalette || shapeArchitecture || operationScenario || semanticPlan,
+    );
     const dedupedStylePrompt = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
       hasManualPalette: Boolean(colorPalette),
       hasManualMaterials: materials.length > 0,
@@ -128,7 +137,7 @@ export class ConversationService extends ConversationGenerationService {
       sizeBytes: primaryAsset.sizeBytes,
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
-      userMessage: request.content,
+      userMessage: [semanticFixedPositivePrompt, request.content].filter(Boolean).join("\n\n"),
       directPrompt: request.directPrompt,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
@@ -144,17 +153,23 @@ export class ConversationService extends ConversationGenerationService {
           negativeRules: agent.defaultNegativeRules,
         }
         : undefined,
-      extraNegativeRules: operationScenario || !hasGenerationConfig ? [] : agent.defaultNegativeRules,
+      extraNegativeRules: [
+        ...(operationScenario || !hasGenerationConfig ? [] : agent.defaultNegativeRules),
+        ...(semanticNegativePrompt ? [semanticNegativePrompt] : []),
+      ],
+      semanticPlanning: Boolean(semanticPlan),
       usePromptOrchestrator: hasGenerationConfig && !operationScenario && request.usePromptOrchestrator !== false,
       orchestrationContext: {
-        selectedImage: {
-          referenceLabel: primaryAsset.referenceLabel,
-          filename: primaryAsset.filename,
-          mimeType: primaryAsset.mimeType,
-          width: primaryAssetWidth,
-          height: primaryAssetHeight,
-          sizeBytes: primaryAsset.sizeBytes,
-        },
+        selectedImage: selectionAssets.length
+          ? {
+            referenceLabel: primaryAsset.referenceLabel,
+            filename: primaryAsset.filename,
+            mimeType: primaryAsset.mimeType,
+            width: primaryAssetWidth,
+            height: primaryAssetHeight,
+            sizeBytes: primaryAsset.sizeBytes,
+          }
+          : undefined,
         selectedImages: selectionAssets.map((asset, index) => ({
           referenceLabel: asset.referenceLabel || `图${index + 1}`,
           filename: asset.filename,
@@ -217,6 +232,7 @@ export class ConversationService extends ConversationGenerationService {
         colorPalette: colorPalette ? { id: colorPalette.id, name: colorPalette.name } : undefined,
         shapeArchitecture: shapeArchitecture ? { id: shapeArchitecture.id, name: shapeArchitecture.name } : undefined,
         operationScenario: operationScenario ? { id: operationScenario.id, name: operationScenario.name } : undefined,
+        semanticPlan: semanticPlan ? { id: semanticPlan.id, name: semanticPlan.name } : undefined,
         usePromptOrchestrator: taskRequest.usePromptOrchestrator,
         referenceImageCount: selectionAssets.length,
         batchSize,
@@ -227,7 +243,9 @@ export class ConversationService extends ConversationGenerationService {
       finalModelPayload: {
         ...preview.providerRequest,
         inputAsset: stripAssetData(preview.providerRequest.inputAsset as unknown as Record<string, unknown>),
-        referenceAssets: preview.providerRequest.referenceAssets?.map((asset) => stripAssetData(asset as unknown as Record<string, unknown>)),
+        referenceAssets: preview.providerRequest.referenceAssets
+          ?.filter((asset) => asset.mimeType.startsWith("image/"))
+          .map((asset) => stripAssetData(asset as unknown as Record<string, unknown>)),
       },
       scenarioAgent,
       promptOrchestratorError: preview.promptOrchestratorError,
@@ -265,7 +283,7 @@ export class ConversationService extends ConversationGenerationService {
     });
 
     if (!scenarioAgent.isScenarioAgentApplied) {
-      throw new Error("没有识别到场景智能体，请先用 /微缩世界 或 /单体舞台 触发。");
+      throw new Error("没有识别到场景智能体，请先输入一个可用的 /Skill 触发词。");
     }
 
     if (scenarioAgent.error) {

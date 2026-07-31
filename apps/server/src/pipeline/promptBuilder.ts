@@ -8,7 +8,7 @@ const templateIntro = {
   illustration_to_icon: "基于参考图生成目标视觉结果。",
 };
 
-const lightweightStyleRenderingPrompt = "渲染方式：3D品牌视觉渲染，柔和均匀主光，商业产品光效，反射受控，不过曝高光，阴影柔和，AO极轻。";
+export const lockedStyleRenderingPrompt = "渲染方式：3D品牌视觉渲染，柔和均匀主光，商业产品光效，反射受控，不过曝高光，阴影柔和，AO极轻。";
 
 function hasReferenceMaterialTransferIntent(message?: string): boolean {
   const text = message || "";
@@ -118,6 +118,7 @@ export function buildPromptBundle(
     colorPrompt?: string;
     shapeArchitecturePrompt?: string;
     extraNegativeRules?: string[];
+    semanticPlanning?: boolean;
   } = {},
 ): PromptBundle {
   const { stylePreset } = stylePack;
@@ -146,7 +147,9 @@ export function buildPromptBundle(
   const referenceTransferRule = shouldTransferReferenceMaterial
     ? "跨图参考规则：严格按用户本轮输入中的图号关系执行，不要混淆图1、图2、图3等参考图的职责。"
     : "";
-  const shouldUseLightweightStyleRenderingPrompt = Boolean(context.materialPrompt || context.colorPrompt)
+  const shouldUseLightweightStyleRenderingPrompt = Boolean(
+    context.materialPrompt || context.colorPrompt || context.semanticPlanning,
+  )
     && !context.agentSystemPrompt
     && !stylePreset;
   const outputRule = isSketchTo3d
@@ -177,7 +180,7 @@ export function buildPromptBundle(
   return {
     positive: [
       context.agentSystemPrompt ? `风格渲染方向：${context.agentSystemPrompt}` : "",
-      shouldUseLightweightStyleRenderingPrompt ? lightweightStyleRenderingPrompt : "",
+      shouldUseLightweightStyleRenderingPrompt ? lockedStyleRenderingPrompt : "",
       context.userMessage ? `用户本轮要求：${context.userMessage}` : "",
       structureRule,
       formatMaterialRule(context.materialPrompt),

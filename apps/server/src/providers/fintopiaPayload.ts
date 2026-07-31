@@ -3,8 +3,14 @@ import { mergeAbortSignals } from "../abortSignal.ts";
 import type { FintopiaConfig } from "../config.ts";
 import type { EndpointKind } from "./fintopiaEndpoint.ts";
 
-function formatReferenceSummary(request: GenerateImageRequest): string {
+function getImageReferenceAssets(request: GenerateImageRequest) {
   const assets = request.referenceAssets?.length ? request.referenceAssets : [request.inputAsset];
+
+  return assets.filter((asset) => asset.mimeType.startsWith("image/") && Boolean(asset.dataUrl));
+}
+
+function formatReferenceSummary(request: GenerateImageRequest): string {
+  const assets = getImageReferenceAssets(request);
 
   return assets.map((asset, index) => {
     const size = asset.width && asset.height ? `，尺寸 ${asset.width}x${asset.height}` : "";
@@ -18,6 +24,7 @@ function hasExplicitColorPreservation(message?: string): boolean {
 }
 
 function buildPrompt(request: GenerateImageRequest): string {
+  const referenceAssets = getImageReferenceAssets(request);
   const materialTransferRule = hasExplicitColorPreservation(request.prompt.positive)
     ? "跨图材质迁移规则：如果用户要求保持图1结构和颜色、把图2的材质用到图1上，图1提供结构、轮廓、布局、图标语义和原始颜色；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。必须保留图1的色相和局部颜色映射，但把这些颜色渲染成图2那种材质表面。不要复制图2的物体形状、图标内容或绿色配色。"
     : "跨图材质迁移规则：如果用户要求把图2的材质用到图1上，图1只提供结构、轮廓、布局和图标语义；图2只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影。不要复制图2的物体形状，也不要只保留图1的扁平原色而忽略图2材质。";
@@ -28,8 +35,10 @@ function buildPrompt(request: GenerateImageRequest): string {
   return [
     request.prompt.positive,
     `负向约束：${request.prompt.negative}`,
-    `参考图编号：${formatReferenceSummary(request)}。如果用户提示词提到图1、图2等编号，必须严格对应同编号参考图，不要混淆。`,
-    materialTransferRule,
+    referenceAssets.length
+      ? `参考图编号：${formatReferenceSummary(request)}。如果用户提示词提到图1、图2等编号，必须严格对应同编号参考图，不要混淆。`
+      : "",
+    referenceAssets.length ? materialTransferRule : "",
     referencePack,
   ].filter(Boolean).join("\n\n");
 }
@@ -258,7 +267,7 @@ export function buildImagePayload(
         ].join("\n\n"),
       },
     ];
-    const referenceAssets = request.referenceAssets?.length ? request.referenceAssets : [request.inputAsset];
+    const referenceAssets = getImageReferenceAssets(request);
 
     for (const [index, asset] of referenceAssets.entries()) {
       const inlineData = asset.dataUrl ? dataUrlToInlineData(asset.dataUrl) : undefined;
@@ -314,7 +323,7 @@ export function buildImagePayload(
       },
     ];
 
-    const referenceAssets = request.referenceAssets?.length ? request.referenceAssets : [request.inputAsset];
+    const referenceAssets = getImageReferenceAssets(request);
 
     for (const [index, asset] of referenceAssets.entries()) {
       if (!asset.dataUrl) {

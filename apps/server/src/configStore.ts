@@ -94,6 +94,8 @@ export class ConfigStore {
           forbiddenRules: agent.forbiddenRules || defaultAgent?.forbiddenRules || [],
           memoryPolicy: agent.memoryPolicy ?? defaultAgent?.memoryPolicy ?? "",
           caseReferencePolicy: agent.caseReferencePolicy ?? defaultAgent?.caseReferencePolicy ?? "",
+          mergeWithStyleConfig: agent.mergeWithStyleConfig ?? defaultAgent?.mergeWithStyleConfig ?? false,
+          builtIn: agent.builtIn ?? defaultAgent?.builtIn ?? false,
           outputMode: agent.outputMode || (agent.id === "miniature-world" ? "json_final_prompt" : "prompt_sections"),
           version: agent.version || "v1.0",
           enabled: agent.enabled ?? true,
@@ -381,6 +383,8 @@ export class ConfigStore {
       forbiddenRules: agent.forbiddenRules ?? existing?.forbiddenRules ?? [],
       memoryPolicy: agent.memoryPolicy ?? existing?.memoryPolicy ?? "",
       caseReferencePolicy: agent.caseReferencePolicy ?? existing?.caseReferencePolicy ?? "",
+      mergeWithStyleConfig: agent.mergeWithStyleConfig ?? existing?.mergeWithStyleConfig ?? false,
+      builtIn: agent.builtIn ?? existing?.builtIn ?? false,
       fixedPositivePrompt: agent.fixedPositivePrompt ?? existing?.fixedPositivePrompt ?? "",
       fixedNegativePrompt: agent.fixedNegativePrompt ?? existing?.fixedNegativePrompt ?? "",
       outputMode: agent.outputMode || existing?.outputMode || "prompt_sections",
@@ -401,6 +405,9 @@ export class ConfigStore {
   deleteScenarioAgent(agentId: string): boolean {
     const config = this.read();
     const scenarioAgents = config.scenarioAgents || [];
+    if (scenarioAgents.some((agent) => agent.id === agentId && agent.builtIn)) {
+      return false;
+    }
     const before = scenarioAgents.length;
     config.scenarioAgents = scenarioAgents.filter((agent) => agent.id !== agentId);
     this.write(config);

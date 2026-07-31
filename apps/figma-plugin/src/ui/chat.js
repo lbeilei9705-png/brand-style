@@ -128,6 +128,8 @@
       }
 
       function createGenerationSnapshot(content, messageAttachments, inputType, currentBatchSize) {
+        const scenarioDraft = getScenarioAgentDraftForContent(content);
+        const shouldMergeScenarioDraft = shouldMergeScenarioAgentWithStyle(scenarioDraft);
         const directPrompt = buildDirectPromptFromScenarioDraft(content);
         return {
           content,
@@ -143,8 +145,12 @@
           customColorPalette: getCustomColorPalettePayload(),
           shapeArchitectureId,
           operationScenarioId: selectedOperationScenarioId,
+          semanticPlanId: shouldMergeScenarioDraft ? scenarioDraft.scenarioAgentId : undefined,
+          semanticFixedPositivePrompt: shouldMergeScenarioDraft ? scenarioDraft.promptFixedPositive : undefined,
+          semanticNegativePrompt: shouldMergeScenarioDraft ? scenarioDraft.promptNegative : undefined,
+          scenarioAgentDraftId: scenarioDraft?.scenarioAgentId,
           directPrompt,
-          usePromptOrchestrator: directPrompt ? false : hasPromptOrchestrationConfig(),
+          usePromptOrchestrator: directPrompt ? false : shouldMergeScenarioDraft || hasPromptOrchestrationConfig(),
         };
       }
 
@@ -215,7 +221,11 @@
           const generationController = new AbortController();
           activeGenerationController = generationController;
           isSending = true;
-          clearStyleSelectionsForScenarioAgent();
+          if (!shouldMergeScenarioAgentWithStyle(scenarioAgent)) {
+            clearStyleSelectionsForScenarioAgent();
+          } else {
+            clearOperationScenarioForSemanticPlanning();
+          }
           updateRunState();
           const pending = addMessage("system", `正在调用「${scenarioAgent.name}」补全 Prompt...`);
           trackEvent("scenario_complete_start", {
@@ -231,6 +241,7 @@
               promptMain: data.prompt,
               promptFixedPositive: data.promptFixedPositive || "",
               promptNegative: data.promptNegative || "",
+              mergeWithStyleConfig: shouldMergeScenarioAgentWithStyle(scenarioAgent),
             });
             const preferredAspectRatio = getPreferredAspectRatioForScenarioAgent(scenarioAgent, data.prompt);
 
@@ -242,7 +253,9 @@
             pending.textContent = data.promptNegative
               ? `「${scenarioAgent.name}」已生成 Prompt，已回填正向 Prompt，并会在生成时使用智能体负面提示词：${data.promptNegative}`
               : `「${scenarioAgent.name}」已生成 Prompt，已回填到输入框。你可以继续修改，确认后再点击生成。`;
-            selectionStatus.textContent = "场景智能体已补全 Prompt；普通品牌预设和自由搭配已清空。";
+            selectionStatus.textContent = shouldMergeScenarioAgentWithStyle(scenarioAgent)
+              ? "金融图标语义规划已完成；品牌预设、材质、配色和形状将继续参与最终编排。"
+              : "场景智能体已补全 Prompt；普通品牌预设和自由搭配已清空。";
             trackEvent("scenario_complete_success", {
               scenarioAgentId: scenarioAgent.id,
               requestId: data.requestId,
@@ -323,6 +336,12 @@
           }
           renderResults(data.task, pending);
           clearSelectionsAfterGeneration();
+          if (
+            scenarioAgentDraft?.scenarioAgentId === snapshot.scenarioAgentDraftId
+            && isScenarioDraftRelatedContent(scenarioAgentDraft, snapshot.content)
+          ) {
+            clearScenarioAgentDraft();
+          }
           trackEvent("generation_success", {
             generationId,
             durationMs: Date.now() - startedAt,

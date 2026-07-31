@@ -1,6 +1,7 @@
 import type { ModelConfig, PromptBundle } from "../../../../packages/shared/src/index.ts";
 import { mergeAbortSignals } from "../abortSignal.ts";
 import type { FintopiaConfig } from "../config.ts";
+import { lockedStyleRenderingPrompt } from "./promptBuilder.ts";
 import { buildEndpoint, buildHeaders, buildLanguagePayload, extractJsonObject, extractLanguageText, getReadableLanguageModelError } from "./promptLanguageClient.ts";
 import { buildReferenceRolePlanContent, buildUserContent, cleanPositivePrompt, dedupeNegativePrompt, formatReferenceRoleNegativeRule, formatReferenceRoleRule, shouldAnalyzeReferenceRoles, validateReferenceRolePlan } from "./promptOrchestrationSupport.ts";
 import type { OptimizePromptRequest, ReferenceRolePlan, ValidatedReferenceRolePlan } from "./promptOrchestratorTypes.ts";
@@ -71,6 +72,7 @@ export class PromptOrchestrator {
         },
       }
       : request;
+    const shouldLockRenderingPrompt = requestForOptimization.prompt.positive.includes(lockedStyleRenderingPrompt);
     const endpoint = buildEndpoint(this.model, this.fallbackConfig);
     let response: Response;
     try {
@@ -105,14 +107,21 @@ export class PromptOrchestrator {
       throw new Error("语言模型未返回可用的 positive prompt。");
     }
 
-    const positive = cleanPositivePrompt(parsed.positive);
+    const optimizedPositive = cleanPositivePrompt(parsed.positive);
+    const positive = shouldLockRenderingPrompt
+      ? `${lockedStyleRenderingPrompt} ${optimizedPositive.split(lockedStyleRenderingPrompt).join("").trim()}`.trim()
+      : optimizedPositive;
 
     return {
       ...requestForOptimization.prompt,
       positive: referenceRoleRule && !positive.includes(referenceRoleRule)
         ? `${positive} ${referenceRoleRule}`
         : positive,
-      negative: dedupeNegativePrompt([parsed.negative || requestForOptimization.prompt.negative, referenceRoleNegativeRule].filter(Boolean).join("；")),
+      negative: dedupeNegativePrompt([
+        requestForOptimization.prompt.negative,
+        parsed.negative,
+        referenceRoleNegativeRule,
+      ].filter(Boolean).join("；")),
     };
   }
 }

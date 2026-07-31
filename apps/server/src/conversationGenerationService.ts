@@ -117,10 +117,24 @@ export class ConversationGenerationService {
     const shapeArchitecture = request.shapeArchitectureId
       ? this.configStore.listShapeArchitectures().find((item) => item.id === request.shapeArchitectureId && item.enabled)
       : undefined;
-    const operationScenario = request.operationScenarioId
+    const semanticPlan = request.semanticPlanId
+      ? this.configStore.listScenarioAgents().find((item) => (
+        item.id === request.semanticPlanId && item.enabled && item.mergeWithStyleConfig
+      ))
+      : undefined;
+    if (request.semanticPlanId && !semanticPlan) {
+      throw new Error("金融图标语义规划 Skill 已失效或被停用，请重新输入 /金融图标 生成 Prompt。");
+    }
+    const semanticFixedPositivePrompt = semanticPlan
+      ? request.semanticFixedPositivePrompt?.trim().slice(0, 2_000)
+      : undefined;
+    const semanticNegativePrompt = semanticPlan ? request.semanticNegativePrompt?.trim().slice(0, 1_000) : undefined;
+    const operationScenario = !semanticPlan && request.operationScenarioId
       ? this.configStore.listOperationScenarios().find((item) => item.id === request.operationScenarioId && item.enabled)
       : undefined;
-    const hasGenerationConfig = Boolean(agent.id || materials.length || colorPalette || shapeArchitecture || operationScenario);
+    const hasGenerationConfig = Boolean(
+      agent.id || materials.length || colorPalette || shapeArchitecture || operationScenario || semanticPlan,
+    );
     const dedupedStylePrompt = applyPriorityDedupeToStylePrompt(agent.systemPrompt, {
       hasManualPalette: Boolean(colorPalette),
       hasManualMaterials: materials.length > 0,
@@ -138,7 +152,7 @@ export class ConversationGenerationService {
       sizeBytes: primaryAsset.sizeBytes,
       assetDataUrl: primaryAsset.assetDataUrl,
       referenceAssets: selectionAssets,
-      userMessage: request.content,
+      userMessage: [semanticFixedPositivePrompt, request.content].filter(Boolean).join("\n\n"),
       directPrompt: request.directPrompt,
       agentSystemPrompt: operationScenario ? undefined : agentSystemPromptForGeneration,
       materialPrompt: !operationScenario && materials.length
@@ -154,17 +168,23 @@ export class ConversationGenerationService {
           negativeRules: agent.defaultNegativeRules,
         }
         : undefined,
-      extraNegativeRules: operationScenario || !hasGenerationConfig ? [] : agent.defaultNegativeRules,
+      extraNegativeRules: [
+        ...(operationScenario || !hasGenerationConfig ? [] : agent.defaultNegativeRules),
+        ...(semanticNegativePrompt ? [semanticNegativePrompt] : []),
+      ],
+      semanticPlanning: Boolean(semanticPlan),
       usePromptOrchestrator: hasGenerationConfig && !operationScenario && request.usePromptOrchestrator !== false,
       orchestrationContext: {
-        selectedImage: {
-          referenceLabel: primaryAsset.referenceLabel,
-          filename: primaryAsset.filename,
-          mimeType: primaryAsset.mimeType,
-          width: primaryAssetWidth,
-          height: primaryAssetHeight,
-          sizeBytes: primaryAsset.sizeBytes,
-        },
+        selectedImage: selectionAssets.length
+          ? {
+            referenceLabel: primaryAsset.referenceLabel,
+            filename: primaryAsset.filename,
+            mimeType: primaryAsset.mimeType,
+            width: primaryAssetWidth,
+            height: primaryAssetHeight,
+            sizeBytes: primaryAsset.sizeBytes,
+          }
+          : undefined,
         selectedImages: selectionAssets.map((asset, index) => ({
           referenceLabel: asset.referenceLabel || `图${index + 1}`,
           filename: asset.filename,

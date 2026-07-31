@@ -72,3 +72,16 @@ test("remote config writes are serialized in call order", async () => {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
 });
+
+test("built-in scenario agents cannot be deleted", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-config-"));
+
+  try {
+    const store = new ConfigStore(dataDir);
+
+    assert.equal(store.deleteScenarioAgent("finance-app-icon-planner"), false);
+    assert.equal(store.listScenarioAgents().some((agent) => agent.id === "finance-app-icon-planner"), true);
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});

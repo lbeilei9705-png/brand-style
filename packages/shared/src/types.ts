@@ -92,6 +92,8 @@ export interface ScenarioAgentConfig {
   forbiddenRules?: string[];
   memoryPolicy?: string;
   caseReferencePolicy?: string;
+  mergeWithStyleConfig?: boolean;
+  builtIn?: boolean;
   fixedPositivePrompt?: string;
   fixedNegativePrompt?: string;
   outputMode: ScenarioAgentOutputMode;
@@ -350,6 +352,7 @@ export interface CreateTaskRequest {
   operationScenarioPrompt?: OperationScenarioPrompt;
   directPrompt?: PromptBundle;
   extraNegativeRules?: string[];
+  semanticPlanning?: boolean;
   usePromptOrchestrator?: boolean;
   orchestrationContext?: PromptOrchestrationContext;
   constraints: Partial<GenerationConstraints>;
@@ -420,6 +423,9 @@ export interface AddConversationMessageRequest {
   };
   shapeArchitectureId?: string;
   operationScenarioId?: string;
+  semanticPlanId?: string;
+  semanticFixedPositivePrompt?: string;
+  semanticNegativePrompt?: string;
   directPrompt?: PromptBundle;
   usePromptOrchestrator?: boolean;
 }

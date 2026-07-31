@@ -81,6 +81,8 @@ const requiredUiProtocol = [
   "const activeGenerations = new Map()",
   "activeGenerations.set(generationId, generationController)",
   "activeGenerationCount: activeGenerations.size",
+  "shouldMergeScenarioAgentWithStyle",
+  "semanticPlanId: shouldMergeScenarioDraft",
 ];
 for (const snippet of requiredUiProtocol) {
   if (!ui.includes(snippet)) {

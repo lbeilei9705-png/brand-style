@@ -99,6 +99,7 @@ export class TaskService {
           colorPrompt: request.colorPrompt,
           shapeArchitecturePrompt: request.shapeArchitecturePrompt,
           extraNegativeRules: request.extraNegativeRules,
+          semanticPlanning: request.semanticPlanning,
         });
     }
 

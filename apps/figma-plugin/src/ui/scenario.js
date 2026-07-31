@@ -30,10 +30,43 @@
         }
       }
 
+      function isScenarioDraftRelatedContent(draft, content) {
+        const original = normalizeScenarioDraftPrompt(draft?.promptMain).replace(/[^\p{L}\p{N}]+/gu, "");
+        const current = normalizeScenarioDraftPrompt(content).replace(/[^\p{L}\p{N}]+/gu, "");
+
+        if (!original || !current) {
+          return false;
+        }
+
+        if (original === current || original.includes(current) || current.includes(original)) {
+          return true;
+        }
+
+        const bigrams = (value) => Array.from(
+          { length: Math.max(0, value.length - 1) },
+          (_, index) => value.slice(index, index + 2),
+        );
+        const originalBigrams = bigrams(original);
+        const currentCounts = new Map();
+        for (const pair of bigrams(current)) {
+          currentCounts.set(pair, (currentCounts.get(pair) || 0) + 1);
+        }
+        let overlap = 0;
+        for (const pair of originalBigrams) {
+          const count = currentCounts.get(pair) || 0;
+          if (count > 0) {
+            overlap += 1;
+            currentCounts.set(pair, count - 1);
+          }
+        }
+        const denominator = originalBigrams.length + Math.max(0, current.length - 1);
+        return denominator > 0 && (2 * overlap) / denominator >= 0.45;
+      }
+
       function getScenarioAgentDraftForContent(content) {
         const normalizedContent = normalizeScenarioDraftPrompt(content);
 
-        if (scenarioAgentDraft && !getScenarioAgentFromContent(content)) {
+        if (scenarioAgentDraft && isScenarioDraftRelatedContent(scenarioAgentDraft, content)) {
           return scenarioAgentDraft;
         }
 
@@ -44,7 +77,7 @@
         try {
           const stored = JSON.parse(sessionStorage.getItem(scenarioAgentDraftStorageKey) || "null");
 
-          if (stored && normalizeScenarioDraftPrompt(stored.promptMain) === normalizedContent) {
+          if (stored && isScenarioDraftRelatedContent(stored, content)) {
             scenarioAgentDraft = stored;
             return stored;
           }
@@ -73,10 +106,18 @@
         return "";
       }
 
+      function shouldMergeScenarioAgentWithStyle(value) {
+        return value?.mergeWithStyleConfig === true;
+      }
+
+      function clearOperationScenarioForSemanticPlanning() {
+        selectedOperationScenarioId = "";
+      }
+
       function buildDirectPromptFromScenarioDraft(content) {
         const draft = getScenarioAgentDraftForContent(content);
 
-        if (!draft) {
+        if (!draft || shouldMergeScenarioAgentWithStyle(draft)) {
           return undefined;
         }
 
@@ -140,7 +181,12 @@
         const context = getSlashContext();
         const value = messageInput.value;
         const insertText = `${agent.trigger} `;
-        clearStyleSelectionsForScenarioAgent();
+        if (!shouldMergeScenarioAgentWithStyle(agent)) {
+          clearStyleSelectionsForScenarioAgent();
+        } else {
+          clearScenarioAgentDraft();
+          clearOperationScenarioForSemanticPlanning();
+        }
 
         if (!context) {
           messageInput.value = value ? `${value}\n${insertText}` : insertText;
@@ -148,7 +194,9 @@
           messageInput.selectionStart = messageInput.selectionEnd = messageInput.value.length;
           hideScenarioPanel();
           resizeMessageInput();
-          selectionStatus.textContent = "已选择场景智能体，请继续输入主题后点击“生成Prompt”。";
+          selectionStatus.textContent = shouldMergeScenarioAgentWithStyle(agent)
+            ? "已选择语义规划 Skill，将保留当前品牌预设和自由搭配。"
+            : "已选择场景智能体，请继续输入主题后点击“生成Prompt”。";
           updateRunState();
           return;
         }
@@ -162,7 +210,9 @@
         messageInput.selectionStart = messageInput.selectionEnd = cursor;
         hideScenarioPanel();
         resizeMessageInput();
-        selectionStatus.textContent = "已选择场景智能体，请继续输入主题后点击“生成Prompt”。";
+        selectionStatus.textContent = shouldMergeScenarioAgentWithStyle(agent)
+          ? "已选择语义规划 Skill，将保留当前品牌预设和自由搭配。"
+          : "已选择场景智能体，请继续输入主题后点击“生成Prompt”。";
         updateRunState();
       }
 
@@ -282,7 +332,8 @@
       }
 
       function buildReferenceDebugText(task) {
-        const references = task.referenceAssets?.length ? task.referenceAssets : task.inputAsset ? [task.inputAsset] : [];
+        const candidates = task.referenceAssets?.length ? task.referenceAssets : task.inputAsset ? [task.inputAsset] : [];
+        const references = candidates.filter((asset) => asset.mimeType?.startsWith("image/"));
 
         if (!references.length) {
           return "无参考图";

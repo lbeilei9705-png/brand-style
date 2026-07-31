@@ -1,4 +1,5 @@
 import type { InputAsset, PromptOrchestrationContext } from "../../../../packages/shared/src/index.ts";
+import { lockedStyleRenderingPrompt } from "./promptBuilder.ts";
 import type { OptimizePromptRequest, ReferenceRolePlan, ValidatedReferenceRolePlan } from "./promptOrchestratorTypes.ts";
 
 function normalizeNegativeRule(rule: string): string {
@@ -285,6 +286,9 @@ export function buildUserContent(request: OptimizePromptRequest): string | Array
     "跨图材质迁移必须拆分职责：目标图只提供结构、轮廓、布局、视觉语义和用户要求保留的颜色；来源图只提供材质、质感、表面工艺、光泽、透明度、厚度、高光和阴影，不要把来源图的物体形状、视觉内容或配色复制过去。",
     "如果用户要求“图形不变”“结构不变”“色彩不变”，最终提示词应以选中图片的识别特征和关系为基础，只改变用户要求的风格、材质、光影和质感。",
     "后台配置中的品牌预设、形状、材质和配色提示词是原始配置资产：除非与更高优先级的用户输入或自由搭配配置重复/冲突，否则 positive 中如需调用必须保留原文，不得改写、摘要、删句或重排配置文案内部内容；你只能按优先级剔除低优先级重复内容，并在配置段落之外补充必要的连接句和执行句。",
+    request.prompt.positive.includes(lockedStyleRenderingPrompt)
+      ? "当前正向提示词中的默认基础渲染句属于锁定文本，必须逐字保留，不得改写、摘要、拆分或另写一套重复的灯光渲染描述。"
+      : "",
     "优先级必须严格执行：用户输入 > 自由搭配（形状 / 配色 / 材质）> 品牌预设 > 默认高清规则。品牌预设提供整体视觉方向，但不得覆盖用户本轮要求和已选择的自由搭配配置。",
     "颜色优先级必须严格执行：用户本轮输入里明确写出的颜色、色值、Hex 或品牌色要求最高；当前启用的配色配置第二（用户手动选择优先，未选择时使用品牌预设默认配色）；品牌预设中未作为默认配色启用的颜色描述最低。冲突时以前者覆盖后者。",
     "上面的优先级、颜色优先级和锁定规则只用于内部编排决策，不要原文复制到 positive；positive 里只保留短的执行结果描述，不要输出“风格智能体规则/当前启用的配色方案/用户选择的形状”等后台字段标签。",

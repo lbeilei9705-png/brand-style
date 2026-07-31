@@ -65,6 +65,8 @@ const gemini31ProModel: ModelConfig = {
   apiStyle: "custom", apiPath: "", purpose: "language", quality: "auto", enabled: true,
   createdAt: "2026-07-21T05:28:00.000Z", updatedAt: "2026-07-21T05:28:00.000Z",
 };
+let seedConfigCache: StoredConfig | undefined;
+let hasLoadedSeedConfig = false;
 
 function withBuiltInModels(models: ModelConfig[]): ModelConfig[] {
   return [gemini31ProModel, mockPreviewModel].reduce((items, builtInModel) => {
@@ -76,16 +78,19 @@ function withBuiltInModels(models: ModelConfig[]): ModelConfig[] {
 }
 
 function readSeedConfig(): StoredConfig | undefined {
+  if (hasLoadedSeedConfig) return seedConfigCache;
+  hasLoadedSeedConfig = true;
   if (![seedConfigPath, seedMaterialsPath, seedCatalogPath].every(fs.existsSync)) return undefined;
   const base = JSON.parse(fs.readFileSync(seedConfigPath, "utf8")) as Partial<StoredConfig>;
   const materials = JSON.parse(fs.readFileSync(seedMaterialsPath, "utf8")) as Pick<StoredConfig, "materials">;
   const catalog = JSON.parse(fs.readFileSync(seedCatalogPath, "utf8")) as Partial<StoredConfig>;
-  return {
+  seedConfigCache = {
     models: base.models || [], agents: base.agents || [], materials: materials.materials || [],
     colorPalettes: catalog.colorPalettes || [], shapeArchitectures: catalog.shapeArchitectures || [],
     operationScenarios: base.operationScenarios || [], scenarioAgents: base.scenarioAgents || [],
     scenarioAgentCases: catalog.scenarioAgentCases || [],
   };
+  return seedConfigCache;
 }
 
 function withBuiltInMaterials(materials: MaterialPresetConfig[]): MaterialPresetConfig[] {
@@ -98,6 +103,18 @@ function withBuiltInMaterials(materials: MaterialPresetConfig[]): MaterialPreset
       ? items.map((material) => (material.id === builtInMaterial.id ? { ...builtInMaterial, ...material } : material))
       : [...items, builtInMaterial];
   }, materials);
+}
+
+function withBuiltInScenarioAgents(agents: ScenarioAgentConfig[]): ScenarioAgentConfig[] {
+  const builtInAgents = (readSeedConfig()?.scenarioAgents || []).filter((agent) => agent.builtIn);
+
+  return builtInAgents.reduce((items, builtInAgent) => {
+    const hasBuiltInAgent = items.some((agent) => agent.id === builtInAgent.id);
+
+    return hasBuiltInAgent
+      ? items.map((agent) => (agent.id === builtInAgent.id ? { ...builtInAgent, ...agent } : agent))
+      : [...items, builtInAgent];
+  }, agents);
 }
 
 function getModelApiKey(model: ModelConfig): string | undefined {
@@ -181,7 +198,9 @@ export function hydrateConfig(config: StoredConfig): StoredConfig {
     colorPalettes: config.colorPalettes.map((palette) => ({ ...palette })),
     shapeArchitectures: config.shapeArchitectures.map((architecture) => ({ ...architecture })),
     operationScenarios: config.operationScenarios.map((scenario) => ({ ...scenario })),
-    scenarioAgents: (config.scenarioAgents?.length ? config.scenarioAgents : defaultScenarioAgents).map((agent) => ({ ...agent })),
+    scenarioAgents: withBuiltInScenarioAgents(
+      config.scenarioAgents?.length ? config.scenarioAgents : defaultScenarioAgents,
+    ).map((agent) => ({ ...agent })),
     scenarioAgentCases: (config.scenarioAgentCases || []).map((item) => ({ ...item })),
   };
 }

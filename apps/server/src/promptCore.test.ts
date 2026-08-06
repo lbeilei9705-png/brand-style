@@ -169,6 +169,35 @@ test("config hydration restores the built-in finance planner", () => {
   );
 });
 
+test("a newer seed version upgrades a stored built-in planner but keeps its enabled state", () => {
+  const config = defaultConfig();
+  const seedPlanner = config.scenarioAgents.find((agent) => agent.id === "finance-app-icon-planner");
+  assert.ok(seedPlanner);
+  config.scenarioAgents = config.scenarioAgents.map((agent) => (
+    agent.id === "finance-app-icon-planner"
+      ? { ...agent, version: "v1.0", coreRules: ["过时规则"], enabled: false }
+      : agent
+  ));
+
+  const upgraded = hydrateConfig(config).scenarioAgents.find((agent) => agent.id === "finance-app-icon-planner");
+  assert.equal(upgraded?.version, seedPlanner.version);
+  assert.equal(upgraded?.coreRules.includes("过时规则"), false);
+  assert.equal(upgraded?.coreRules.some((rule) => rule.includes("3/4 等轴微俯视")), true);
+  assert.equal(upgraded?.enabled, false);
+});
+
+test("matching versions keep admin tweaks to a built-in planner", () => {
+  const config = defaultConfig();
+  config.scenarioAgents = config.scenarioAgents.map((agent) => (
+    agent.id === "finance-app-icon-planner"
+      ? { ...agent, name: "管理员改过的名字" }
+      : agent
+  ));
+
+  const merged = hydrateConfig(config).scenarioAgents.find((agent) => agent.id === "finance-app-icon-planner");
+  assert.equal(merged?.name, "管理员改过的名字");
+});
+
 test("operation scenario prompt keeps fixed and variable sections separate", () => {
   const bundle = buildOperationScenarioPromptBundle(imageAsset, preprocess, {}, {
     name: "春节",

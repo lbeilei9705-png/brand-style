@@ -105,6 +105,13 @@ function withBuiltInMaterials(materials: MaterialPresetConfig[]): MaterialPreset
   }, materials);
 }
 
+function mergeBuiltInScenarioAgent(builtInAgent: ScenarioAgentConfig, agent: ScenarioAgentConfig): ScenarioAgentConfig {
+  // A newer seed version upgrades the stored copy wholesale; matching versions keep admin tweaks.
+  return builtInAgent.version !== agent.version
+    ? { ...agent, ...builtInAgent, enabled: agent.enabled }
+    : { ...builtInAgent, ...agent };
+}
+
 function withBuiltInScenarioAgents(agents: ScenarioAgentConfig[]): ScenarioAgentConfig[] {
   const builtInAgents = (readSeedConfig()?.scenarioAgents || []).filter((agent) => agent.builtIn);
 
@@ -112,7 +119,7 @@ function withBuiltInScenarioAgents(agents: ScenarioAgentConfig[]): ScenarioAgent
     const hasBuiltInAgent = items.some((agent) => agent.id === builtInAgent.id);
 
     return hasBuiltInAgent
-      ? items.map((agent) => (agent.id === builtInAgent.id ? { ...builtInAgent, ...agent } : agent))
+      ? items.map((agent) => (agent.id === builtInAgent.id ? mergeBuiltInScenarioAgent(builtInAgent, agent) : agent))
       : [...items, builtInAgent];
   }, agents);
 }

@@ -182,7 +182,7 @@ test("a newer seed version upgrades a stored built-in planner but keeps its enab
   const upgraded = hydrateConfig(config).scenarioAgents.find((agent) => agent.id === "finance-app-icon-planner");
   assert.equal(upgraded?.version, seedPlanner.version);
   assert.equal(upgraded?.coreRules.includes("过时规则"), false);
-  assert.equal(upgraded?.coreRules.some((rule) => rule.includes("3/4 等轴微俯视")), true);
+  assert.equal(upgraded?.coreRules.some((rule) => rule.includes("正面英雄视角")), true);
   assert.equal(upgraded?.enabled, false);
 });
 

@@ -198,11 +198,11 @@
         return bundle;
       }
 
-      function saveDiagnosticJson(json, suffix = "") {
+      function saveDiagnosticJson(json, filename = `brand-style-diagnostics-${Date.now()}.json`) {
         const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
         const link = document.createElement("a");
         link.href = url;
-        link.download = `brand-style-diagnostics${suffix}-${Date.now()}.json`;
+        link.download = filename;
         link.hidden = true;
         document.body.appendChild(link);
         link.click();
@@ -223,22 +223,35 @@
         }, 2200);
       }
 
-      function downloadDiagnosticBundle(includeText = false) {
+      async function downloadDiagnosticBundle(includeText = false) {
         const clientContext = buildDiagnosticBundle(includeText);
-        saveDiagnosticJson(JSON.stringify(clientContext, null, 2));
-        showDiagnosticFeedback("已下载");
-        void apiFetch("/api/diagnostics/export", {
+        trackEvent("diagnostics_export", { includeText, includesImages: false, includesToken: false });
+
+        try {
+          const response = await apiFetch("/api/diagnostics/export", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ clientSessionId, clientContext }),
-          }).then(async (response) => {
+          });
           if (!response.ok) {
             throw createApiError(response, await response.json().catch(() => ({})), "导出诊断包失败");
           }
-        }).catch((error) => {
+
+          const data = await response.json();
+          if (typeof data?.content !== "string") {
+            throw new Error("服务端没有返回有效的诊断内容。");
+          }
+
+          saveDiagnosticJson(data.content, data.filename);
+          showDiagnosticFeedback("完整诊断包已下载");
+        } catch (error) {
+          saveDiagnosticJson(
+            JSON.stringify(clientContext, null, 2),
+            `brand-style-diagnostics-local-${Date.now()}.json`,
+          );
+          showDiagnosticFeedback("服务端诊断不可用，已下载本地记录", true);
           recordClientError(error, { operation: "diagnostics_export", localFallback: true });
-        });
-        trackEvent("diagnostics_export", { includeText, includesImages: false, includesToken: false });
+        }
       }
 
       function copyDiagnosticInfo(issueId = "") {

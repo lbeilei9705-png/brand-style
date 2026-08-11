@@ -9,7 +9,7 @@ import { ConversationStore } from "./conversationStore.ts";
 import { sendJson } from "./http/response.ts";
 import { handleConfigRoutes } from "./routes/configRoutes.ts";
 import { handleTelemetryRoutes } from "./routes/telemetryRoutes.ts";
-import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, serveStatic, stringHeader } from "./serverHttp.ts";
+import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, sendGenerationError, serveStatic, stringHeader } from "./serverHttp.ts";
 import { MemberAccessStore } from "./memberAccessStore.ts";
 import { bindGenerationCancellation } from "./generationCancellation.ts";
 import { GenerationConcurrencyLimiter } from "./generationConcurrency.ts";
@@ -414,7 +414,7 @@ const server = http.createServer(async (req, res) => {
             recoverable: true,
           },
         }).catch(() => undefined);
-        throw error;
+        sendGenerationError(res, error, issueId, requestId); return;
       } finally {
         cancellation.cleanup();
         generationConcurrency.release(concurrencyKey);

@@ -74,6 +74,8 @@ const requiredUiProtocol = [
   'trackEvent("generation_start"',
   'trackEvent("generation_success"',
   'downloadDiagnosticBundle(false)',
+  "saveDiagnosticJson(data.content, data.filename)",
+  "brand-style-diagnostics-local-",
   'memberLoginForm.addEventListener("submit"',
   'memberLoginButton.addEventListener("click"',
   'let memberSessionToken = ""',

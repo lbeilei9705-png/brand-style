@@ -3,6 +3,7 @@ import type http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import type { CreateTaskRequest, InputType, OutputTarget } from "../../../packages/shared/src/index.ts";
+import { classifyGenerationError } from "./generationError.ts";
 import { parseMultipart, readRequestBody } from "./http/multipart.ts";
 import { send, sendJson } from "./http/response.ts";
 import type { OssAssetStorage } from "./storage/ossAssetStorage.ts";
@@ -48,6 +49,24 @@ export function logError(scope: string, message: string, details: Record<string,
     time: new Date().toISOString(),
     ...details,
   }));
+}
+
+export function sendGenerationError(
+  res: http.ServerResponse,
+  error: unknown,
+  issueId: string,
+  requestId: string,
+): void {
+  const classified = classifyGenerationError(error);
+  if (classified.retryAfter) {
+    res.setHeader("Retry-After", String(classified.retryAfter));
+  }
+  sendJson(res, classified.statusCode, {
+    error: classified.message,
+    code: classified.code,
+    issueId,
+    requestId,
+  });
 }
 
 function summarizeTaskRequest(request: CreateTaskRequest): Record<string, unknown> {

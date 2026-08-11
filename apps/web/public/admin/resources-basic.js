@@ -136,13 +136,19 @@ export function addPaletteColorRow(color = "#D9D9D9") {
   syncPaletteColorsInput();
 }
 
-function renderPaletteColorEditor(colors = []) {
+function isOriginalColorPaletteName(name) {
+  return String(name || "").includes("原图色彩");
+}
+
+function renderPaletteColorEditor(colors = [], allowEmpty = false) {
   qs("#palette-color-editor").innerHTML = "";
   const safeColors = colors.map(normalizeHexColor).filter(Boolean);
 
-  for (const color of safeColors.length ? safeColors : ["#D9D9D9"]) {
+  for (const color of safeColors.length || allowEmpty ? safeColors : ["#D9D9D9"]) {
     addPaletteColorRow(color);
   }
+
+  syncPaletteColorsInput();
 }
 
 export function resetPaletteForm() {
@@ -158,7 +164,7 @@ export function fillPaletteForm(palette) {
   qs("#palette-id").value = palette.id;
   qs("#palette-name").value = palette.name;
   qs("#palette-description").value = palette.description;
-  renderPaletteColorEditor(palette.colors);
+  renderPaletteColorEditor(palette.colors, isOriginalColorPaletteName(palette.name));
   qs("#palette-prompt").value = palette.prompt;
   qs("#palette-enabled").value = String(palette.enabled);
 }
@@ -166,9 +172,17 @@ export function fillPaletteForm(palette) {
 export async function savePalette(event) {
   event.preventDefault();
   const colors = getPaletteEditorColors();
+  const name = qs("#palette-name").value.trim();
+  const prompt = qs("#palette-prompt").value.trim();
+  const isOriginalColorPalette = isOriginalColorPaletteName(name);
 
-  if (!colors.length) {
+  if (!colors.length && !isOriginalColorPalette) {
     alert("请至少配置一个有效的 Hex 色值。");
+    return;
+  }
+
+  if (isOriginalColorPalette && !prompt) {
+    alert("原图色彩配色请填写配色提示词。");
     return;
   }
 
@@ -179,10 +193,10 @@ export async function savePalette(event) {
     },
     body: JSON.stringify({
       id: qs("#palette-id").value || undefined,
-      name: qs("#palette-name").value,
+      name,
       description: qs("#palette-description").value,
       colors,
-      prompt: qs("#palette-prompt").value,
+      prompt,
       enabled: boolValue(qs("#palette-enabled").value),
     }),
   });

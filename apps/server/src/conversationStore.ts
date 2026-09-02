@@ -6,6 +6,8 @@ interface StoredConversations {
   conversations: Conversation[];
 }
 
+const EMPTY_STORE: StoredConversations = { conversations: [] };
+
 export class ConversationStore {
   private readonly filePath: string;
   private readonly retentionMs: number;
@@ -18,12 +20,35 @@ export class ConversationStore {
 
   read(): StoredConversations {
     if (!fs.existsSync(this.filePath)) {
-      const initial = { conversations: [] };
-      this.write(initial);
-      return initial;
+      this.write(EMPTY_STORE);
+      return { conversations: [] };
     }
 
-    const data = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as StoredConversations;
+    let data: StoredConversations;
+
+    try {
+      data = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as StoredConversations;
+    } catch (error) {
+      const backupPath = `${this.filePath}.corrupt.${Date.now()}`;
+      try {
+        fs.renameSync(this.filePath, backupPath);
+      } catch {
+        // If rename fails, still recover with an empty store so the server can boot.
+      }
+
+      console.error(
+        `conversations.json 损坏，已备份为 ${path.basename(backupPath)} 并重置为空：`,
+        error instanceof Error ? error.message : error,
+      );
+      this.write(EMPTY_STORE);
+      return { conversations: [] };
+    }
+
+    if (!Array.isArray(data?.conversations)) {
+      this.write(EMPTY_STORE);
+      return { conversations: [] };
+    }
+
     const cutoff = Date.now() - this.retentionMs;
     const conversations = data.conversations.filter((conversation) => {
       const updatedAt = Date.parse(conversation.updatedAt);
@@ -38,7 +63,22 @@ export class ConversationStore {
   }
 
   write(data: StoredConversations): void {
-    fs.writeFileSync(this.filePath, `${JSON.stringify(data, null, 2)}\n`);
+    const payload = `${JSON.stringify(data, null, 2)}\n`;
+    const tempPath = `${this.filePath}.${process.pid}.${Date.now()}.tmp`;
+
+    try {
+      fs.writeFileSync(tempPath, payload);
+      fs.renameSync(tempPath, this.filePath);
+    } catch (error) {
+      try {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      } catch {
+        // Best-effort cleanup of the temp file.
+      }
+      throw error;
+    }
   }
 
   list(): Conversation[] {

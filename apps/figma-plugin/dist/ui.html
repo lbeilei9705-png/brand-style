@@ -2004,11 +2004,17 @@
 
       .legal-links {
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
-        gap: 12px;
+        gap: 6px 12px;
         padding: 8px 12px 14px;
         color: #8e8e93;
         font-size: 10px;
+      }
+
+      .legal-links .version-warning {
+        color: #c2410c;
+        font-weight: 700;
       }
 
       .legal-links a {
@@ -2230,6 +2236,7 @@
       </section>
       <nav class="legal-links" aria-label="法律信息">
         <button id="diagnostics-button" type="button" title="默认不含图片、Token 或消息正文；按住 Option/Shift 可附最近消息与当前 Prompt">诊断</button>
+        <span id="version-label" title="插件版本"></span>
         <a href="https://brand-style.fintopia-social-media-ads-tools.tech/privacy.html" target="_blank" rel="noreferrer">隐私政策</a>
         <a href="https://brand-style.fintopia-social-media-ads-tools.tech/terms.html" target="_blank" rel="noreferrer">使用条款</a>
       </nav>
@@ -2256,7 +2263,7 @@
       </div>
     </section>
 
-    <script>
+    <script>const pluginBuild = Object.freeze({"version":"1.0.0","commit":"7011458"});
       const apiBase = "https://brand-style.fintopia-social-media-ads-tools.tech";
       const defaultModelId = "nano-banana-pro";
       const modelSelect = document.querySelector("#model-select");
@@ -2293,6 +2300,7 @@
       const memberSessionLabel = document.querySelector("#member-session-label");
       const memberLogoutButton = document.querySelector("#member-logout-button");
       const diagnosticsButton = document.querySelector("#diagnostics-button");
+      const versionLabel = document.querySelector("#version-label");
       const loginCopyDiagnosticsButton = document.querySelector("#login-copy-diagnostics");
       const loginExportDiagnosticsButton = document.querySelector("#login-export-diagnostics");
       const scenarioAgentDraftStorageKey = "brand-style-scenario-agent-draft";
@@ -2323,8 +2331,11 @@
       let materialPanelCloseTimer = null;
       let palettePanelCloseTimer = null;
       let palettePanelDeletePointer = null;
+      let latestPointerPosition = null;
       let memberSessionToken = "";
       let memberSession = null;
+      let serverBuild = null;
+      let versionWarning = "";
       const fixedWindowHeight = 780;
       const fixedWindowWidth = 300;
       let expandedWindowSize = {
@@ -2466,6 +2477,8 @@
           headers: {
             "Content-Type": "application/json",
             "x-client-session-id": clientSessionId,
+            "x-client-version": pluginBuild.version,
+            "x-client-commit": pluginBuild.commit,
             ...(memberSessionToken ? { Authorization: `Bearer ${memberSessionToken}` } : {}),
           },
           body,
@@ -2529,6 +2542,8 @@
             userAgent: navigator.userAgent,
             language: navigator.language,
             viewport: { width: window.innerWidth, height: window.innerHeight },
+            pluginBuild,
+            serverBuild,
           },
           state: {
             authenticated: Boolean(memberSession),
@@ -2645,6 +2660,8 @@
           ...(options.headers || {}),
           "x-client-session-id": clientSessionId,
           "x-client-request-id": clientRequestId,
+          "x-client-version": pluginBuild.version,
+          "x-client-commit": pluginBuild.commit,
         };
 
         if (memberSessionToken && !options.skipAuth) {
@@ -2765,7 +2782,7 @@
       }
 
       function showMemberLogin(message = "") {
-        memberLoginStatus.textContent = message;
+        memberLoginStatus.textContent = message || versionWarning;
         memberLoginOverlay.hidden = false;
         window.setTimeout(() => memberInviteCodeInput.focus(), 0);
       }
@@ -2815,6 +2832,49 @@
         renderMemberSession();
       }
 
+      function compareVersions(left, right) {
+        const leftParts = String(left || "0").split(".").map((part) => Number(part) || 0);
+        const rightParts = String(right || "0").split(".").map((part) => Number(part) || 0);
+        const length = Math.max(leftParts.length, rightParts.length);
+        for (let index = 0; index < length; index += 1) {
+          const difference = (leftParts[index] || 0) - (rightParts[index] || 0);
+          if (difference) return difference;
+        }
+        return 0;
+      }
+
+      async function initializeVersionCompatibility() {
+        try {
+          versionLabel.textContent = `v${pluginBuild.version}`;
+          versionLabel.title = `插件 ${pluginBuild.version} · ${pluginBuild.commit}`;
+          const response = await apiFetch("/api/health", { skipAuth: true });
+          if (!response.ok) return;
+          const health = await response.json();
+          serverBuild = health.build || null;
+          const minimumVersion = serverBuild?.minimumClientVersion;
+          const outdated = minimumVersion && compareVersions(pluginBuild.version, minimumVersion) < 0;
+          if (outdated) {
+            versionWarning = `当前插件版本过旧，请更新到 v${minimumVersion} 或更高版本。`;
+            versionLabel.textContent = `v${pluginBuild.version} · 请更新`;
+            versionLabel.classList.add("version-warning");
+            addMessage("system", versionWarning);
+            if (!memberLoginOverlay.hidden) memberLoginStatus.textContent = versionWarning;
+          }
+        } catch (error) {
+          recordClientError(error, { operation: "version_check" });
+        }
+      }
+
+      function trackPluginStarted() {
+        trackEvent("plugin_started", {
+          clientVersion: pluginBuild.version,
+          clientCommit: pluginBuild.commit,
+          serverVersion: serverBuild?.version,
+          minimumClientVersion: serverBuild?.minimumClientVersion,
+          outdated: Boolean(serverBuild?.minimumClientVersion
+            && compareVersions(pluginBuild.version, serverBuild.minimumClientVersion) < 0),
+        });
+      }
       function getImageExtension(imageUrl) {
         const dataUrlMatch = imageUrl.match(/^data:image\/([^;]+)/);
 
@@ -3444,6 +3504,28 @@
           : `材质 ${materialPresetIds.length}`;
       }
 
+      function rememberPointerPosition(event) {
+        latestPointerPosition = { x: event.clientX, y: event.clientY };
+      }
+
+      function isPointerInside(element) {
+        if (!latestPointerPosition || !element) {
+          return false;
+        }
+        const bounds = element.getBoundingClientRect();
+        return latestPointerPosition.x >= bounds.left
+          && latestPointerPosition.x <= bounds.right
+          && latestPointerPosition.y >= bounds.top
+          && latestPointerPosition.y <= bounds.bottom;
+      }
+
+      function isPanelInteractionActive(panel, trigger) {
+        return panel.contains(document.activeElement)
+          || trigger?.contains(document.activeElement)
+          || isPointerInside(panel)
+          || isPointerInside(trigger);
+      }
+
       function cancelMaterialPanelAutoClose() {
         if (materialPanelCloseTimer) {
           clearTimeout(materialPanelCloseTimer);
@@ -3454,6 +3536,10 @@
       function scheduleMaterialPanelAutoClose() {
         cancelMaterialPanelAutoClose();
         materialPanelCloseTimer = setTimeout(() => {
+          if (isPanelInteractionActive(materialPanel, materialSelectButton)) {
+            materialPanelCloseTimer = null;
+            return;
+          }
           materialPanel.classList.remove("open");
           materialPanelCloseTimer = null;
         }, 220);
@@ -3499,7 +3585,7 @@
 
         cancelPalettePanelAutoClose();
         palettePanelCloseTimer = setTimeout(() => {
-          if (paletteInlineEditor.contains(document.activeElement)) {
+          if (isPanelInteractionActive(paletteInlineEditor, paletteSelectWrap)) {
             palettePanelCloseTimer = null;
             return;
           }
@@ -4934,13 +5020,17 @@
         materialPanel.classList.toggle("open");
       });
       materialSelectButton.addEventListener("mouseenter", openMaterialPanel);
-      materialSelectButton.addEventListener("mouseleave", () => {
+      materialSelectButton.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
         if (materialPanel.classList.contains("open")) {
           scheduleMaterialPanelAutoClose();
         }
       });
       materialPanel.addEventListener("mouseenter", cancelMaterialPanelAutoClose);
-      materialPanel.addEventListener("mouseleave", scheduleMaterialPanelAutoClose);
+      materialPanel.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
+        scheduleMaterialPanelAutoClose();
+      });
       colorPaletteSelect.addEventListener("focus", async () => {
         await loadConfig();
         openPalettePanel();
@@ -4949,7 +5039,8 @@
         cancelPalettePanelAutoClose();
         openPalettePanel();
       });
-      paletteSelectWrap.addEventListener("mouseleave", () => {
+      paletteSelectWrap.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
         if (paletteInlineEditor.classList.contains("open")) {
           schedulePalettePanelAutoClose();
         }
@@ -4975,8 +5066,13 @@
         addPluginPaletteColorRow();
       });
       paletteInlineEditor.addEventListener("mouseenter", cancelPalettePanelAutoClose);
-      paletteInlineEditor.addEventListener("mouseleave", schedulePalettePanelAutoClose);
+      paletteInlineEditor.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
+        schedulePalettePanelAutoClose();
+      });
+      document.addEventListener("pointerdown", rememberPointerPosition, { capture: true });
       document.addEventListener("pointermove", (event) => {
+        rememberPointerPosition(event);
         if (!palettePanelDeletePointer) {
           return;
         }
@@ -5119,14 +5215,14 @@
           }
         }
       };
-
-      initializeMemberSession()
-        .then(async (isAuthenticated) => {
+      Promise.all([initializeVersionCompatibility(), initializeMemberSession()])
+        .then(async ([, isAuthenticated]) => {
           if (!isAuthenticated) {
             updateRunState();
             return;
           }
 
+          trackPluginStarted();
           await loadConfig();
           updateRunState();
           scheduleInitialComposerActionsScroll();

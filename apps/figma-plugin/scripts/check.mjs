@@ -64,9 +64,13 @@ if (!scriptMatch) {
 new Function(scriptMatch[1]);
 
 const requiredUiProtocol = [
+  "const pluginBuild = Object.freeze",
   'const telemetrySessionStorageKey = "brand-style-client-session-id"',
   '"x-client-session-id": clientSessionId',
   '"x-client-request-id": clientRequestId',
+  '"x-client-version": pluginBuild.version',
+  "initializeVersionCompatibility()",
+  "minimumClientVersion",
   'response.headers.get("x-request-id")',
   'fetch(`${apiBase}${telemetryEndpoint}`',
   'Authorization: `Bearer ${memberSessionToken}`',
@@ -85,6 +89,8 @@ const requiredUiProtocol = [
   "activeGenerationCount: activeGenerations.size",
   "shouldMergeScenarioAgentWithStyle",
   "semanticPlanId: shouldMergeScenarioDraft",
+  "isPanelInteractionActive(materialPanel, materialSelectButton)",
+  "isPanelInteractionActive(paletteInlineEditor, paletteSelectWrap)",
 ];
 for (const snippet of requiredUiProtocol) {
   if (!ui.includes(snippet)) {

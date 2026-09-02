@@ -59,7 +59,7 @@ export function classifyGenerationError(error: unknown): GenerationErrorResponse
     };
   }
 
-  if (contains(text, /(?:\b50[0234]\b|bad gateway|service unavailable|upstream|服务不可用|无法连接|fetch failed|enotfound|econn)/i)) {
+  if (contains(text, /(?:\b50[0234]\b|bad gateway|service unavailable|upstream|服务.{0,6}不可用|无法连接|fetch failed|enotfound|econn)/i)) {
     return {
       statusCode: 503,
       code: "MODEL_UPSTREAM_UNAVAILABLE",

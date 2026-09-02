@@ -51,7 +51,7 @@
           <article class="overview-card">
             <span>Routing</span>
             <strong>Models</strong>
-            <p>统一管理图片模型、语言模型和 API key 来源。</p>
+            <p>统一管理图片模型、语言模型和 API Key 环境变量来源。</p>
           </article>
           <article class="overview-card">
             <span>Prompt System</span>
@@ -69,7 +69,7 @@
           <header class="page-header">
             <div>
               <h2>模型管理</h2>
-              <p class="muted">配置插件和品牌预设可选择的模型，包含 provider、版本、quality 和 API key。</p>
+              <p class="muted">配置插件和品牌预设可选择的模型；密钥只从服务器环境变量读取，不写入配置文件。</p>
             </div>
             <button id="new-model-button" class="primary-button" type="button">新建模型</button>
           </header>
@@ -484,8 +484,8 @@
             <input id="model-api-path" type="text" placeholder="/v1/images/generations，可用 {model} 作为模型占位" />
           </label>
           <label class="admin-field">
-            <span>API Key</span>
-            <input id="model-api-key" type="password" autocomplete="off" />
+            <span>API Key 环境变量名</span>
+            <input id="model-api-key-env" type="text" placeholder="例如 YUNWU_IMAGE_API_KEY" pattern="[A-Z][A-Z0-9_]{2,80}" />
           </label>
           <label class="admin-field">
             <span>启用</span>

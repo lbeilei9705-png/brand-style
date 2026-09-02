@@ -25,6 +25,7 @@ export interface ModelConfig {
   apiVersion?: string;
   apiStyle?: ImageApiStyle;
   apiPath?: string;
+  apiKeyEnv?: string;
   purpose?: ModelPurpose;
   quality: "low" | "medium" | "high" | "auto";
   enabled: boolean;

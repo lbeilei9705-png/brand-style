@@ -11,7 +11,7 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-api-contract-"));
 const dataDir = path.join(temporaryRoot, "data");
 const telemetryDir = path.join(temporaryRoot, "telemetry");
-const adminToken = "contract-admin-token";
+const adminToken = "contract-secure-token-at-least-32-characters";
 let child;
 
 function getRandomPort() {
@@ -121,9 +121,11 @@ async function main() {
   });
   await waitForServer(child, port);
 
-  const health = await request(baseUrl, "/api/health");
+  const health = await request(baseUrl, "/api/health", { headers: adminHeaders() });
   assert.equal(health.response.status, 200);
   assert.equal(health.body.ok, true);
+  assert.equal(health.body.ready, true);
+  assert.equal(health.body.build.minimumClientVersion, "1.0.0");
   assert.equal(health.body.provider, "mock");
   assert.equal(health.body.storage.telemetry, "local");
 
@@ -258,7 +260,7 @@ async function main() {
         eventId: "contract-event-1",
         name: "generation_success",
         level: "info",
-        at: "2026-07-25T00:00:00.000Z",
+        at: new Date().toISOString(),
         metadata: { durationMs: 12, taskId: createdTask.body.taskId },
       }],
     }),

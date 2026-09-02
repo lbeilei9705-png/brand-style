@@ -4,6 +4,8 @@
           ...(options.headers || {}),
           "x-client-session-id": clientSessionId,
           "x-client-request-id": clientRequestId,
+          "x-client-version": pluginBuild.version,
+          "x-client-commit": pluginBuild.commit,
         };
 
         if (memberSessionToken && !options.skipAuth) {
@@ -124,7 +126,7 @@
       }
 
       function showMemberLogin(message = "") {
-        memberLoginStatus.textContent = message;
+        memberLoginStatus.textContent = message || versionWarning;
         memberLoginOverlay.hidden = false;
         window.setTimeout(() => memberInviteCodeInput.focus(), 0);
       }

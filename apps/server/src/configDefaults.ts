@@ -52,6 +52,22 @@ const modelApiKeyEnvNames: Record<string, string[]> = {
   "nano-banana-pro": ["YUNWU_IMAGE_API_KEY", "FINTOPIA_CUSTOM_API_KEY", "FINTOPIA_API_KEY"],
 };
 
+export function isAllowedModelApiKeyEnv(value: string | undefined): boolean {
+  return Boolean(
+    value
+    && /^[A-Z][A-Z0-9_]{2,80}$/.test(value)
+    && /_(?:API_KEY|API_TOKEN)$/.test(value)
+    && !/^(?:BRAND_STYLE|SUPABASE|OSS)_/.test(value),
+  );
+}
+
+function getDefaultModelApiKeyEnv(model: ModelConfig): string | undefined {
+  if ((model.apiUrl || "").includes("/functions/v1/gemini-proxy") || model.model.startsWith("gemini-")) {
+    return "GOOGLE_API_TOKEN";
+  }
+  return modelApiKeyEnvNames[model.id]?.[0];
+}
+
 const mockPreviewModel: ModelConfig = {
   id: "mock-preview", name: "Mock Preview", provider: "mock", model: "mock-preview",
   purpose: "image", quality: "auto", enabled: true,
@@ -127,8 +143,8 @@ function withBuiltInScenarioAgents(agents: ScenarioAgentConfig[]): ScenarioAgent
 function getModelApiKey(model: ModelConfig): string | undefined {
   const isGoogleGeminiProxyModel = (model.apiUrl || "").includes("/functions/v1/gemini-proxy");
 
-  if (model.provider === "mock" || (model.apiKey && !isGoogleGeminiProxyModel)) {
-    return model.apiKey;
+  if (model.provider === "mock") {
+    return undefined;
   }
 
   const normalizedId = model.id.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
@@ -142,6 +158,7 @@ function getModelApiKey(model: ModelConfig): string | undefined {
     ? ["GOOGLE_API_TOKEN"]
     : [];
   const envNames = [
+    ...(isAllowedModelApiKeyEnv(model.apiKeyEnv) ? [model.apiKeyEnv as string] : []),
     `MODEL_API_KEY_${normalizedId}`,
     ...googlePurposeEnvNames,
     ...yunwuPurposeEnvNames,
@@ -156,7 +173,7 @@ function getModelApiKey(model: ModelConfig): string | undefined {
     }
   }
 
-  return model.apiKey;
+  return undefined;
 }
 
 function getGoogleGeminiProxyUrl(): string {
@@ -194,10 +211,14 @@ export function hydrateConfig(config: StoredConfig): StoredConfig {
   return {
     models: withBuiltInModels(config.models).map((model) => {
       const normalizedModel = normalizeNanoImageModel(model);
+      const modelWithKeySource = {
+        ...normalizedModel,
+        apiKeyEnv: normalizedModel.apiKeyEnv || getDefaultModelApiKeyEnv(normalizedModel),
+      };
 
       return {
-        ...normalizedModel,
-        apiKey: getModelApiKey(normalizedModel),
+        ...modelWithKeySource,
+        apiKey: getModelApiKey(modelWithKeySource),
       };
     }),
     agents: config.agents.map((agent) => ({ ...agent })),

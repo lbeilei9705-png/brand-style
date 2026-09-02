@@ -17,10 +17,18 @@ Figma 选中对象 / Web 上传素材 → Input Parser → Preprocess → Style 
 
 ## 启动后端和 Web 验证端
 
-当前机器没有可用 `npm`，可以直接用 Cursor 自带 Node 运行：
+需要 Node.js 22.6 或更高版本。开发启动：
 
 ```bash
-/Applications/Cursor.app/Contents/Resources/app/resources/helpers/node --experimental-strip-types apps/server/src/index.ts
+npm run dev
+```
+
+生产环境可使用宝塔的“Node 项目”执行 `npm start`，或使用 PM2：
+
+```bash
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup
 ```
 
 打开：
@@ -67,11 +75,11 @@ http://localhost:5180/admin.html
 
 后台可配置：
 
-- 模型：显示名、provider、模型 ID、API URL、API version、quality、API key、启用状态
+- 模型：显示名、provider、模型 ID、API URL、API version、quality、API Key 环境变量名、启用状态
 - Agent：名称、描述、系统提示词、默认风格模板、默认负向规则、驱动模型、启用状态
 - Markdown 导入：上传 `.md` 后生成 Agent 草稿，确认后保存
 
-当前是本地开发期后台，API key 会保存到 `data/config.json`。正式产品需要增加登录、权限和密钥加密。
+API Key 只从服务器环境变量读取，不会写入本地或 Supabase 配置。后台模型表单填写的是环境变量名称，例如 `YUNWU_IMAGE_API_KEY`，不是密钥内容。
 
 ## 生产安全配置
 
@@ -85,11 +93,15 @@ BRAND_STYLE_PLUGIN_RATE_WINDOW_MS=60000
 BRAND_STYLE_CONVERSATION_RETENTION_DAYS=30
 BRAND_STYLE_MEMBER_DAILY_LIMIT=20
 BRAND_STYLE_MEMBER_SESSION_TTL_DAYS=30
+BRAND_STYLE_MIN_CLIENT_VERSION=1.0.0
+YUNWU_IMAGE_API_KEY=真实密钥
 ```
 
 插件使用后台生成的一次性成员邀请码登录。服务端只保存邀请码和会话令牌的哈希，成员会话支持立即撤销、每日生成额度和自动过期；插件写请求还会按来源地址限流。后台写操作、素材上传、调试接口和对话列表仍需要 `BRAND_STYLE_ADMIN_TOKEN`。旧的 `BRAND_STYLE_ACCESS_TOKEN` 仅作为部署迁移期兼容项。
 
 `BRAND_STYLE_ADMIN_TOKEN` 未配置时，后台 API 会拒绝访问，生产部署前必须先设置。成员访问数据当前保存在本机 `data/member-access.json`，只能运行单个 Node.js 服务实例；如果使用 PM2 cluster 或多副本部署，应先迁移到支持事务的数据库存储。
+
+`GET /api/health` 同时返回服务版本、就绪状态和模型密钥缺失项。可每分钟执行 `npm run healthcheck`；设置 `BRAND_STYLE_ALERT_WEBHOOK_URL` 后，失败时会向兼容 JSON Webhook 发送告警。
 
 生产隐私政策和使用条款：
 

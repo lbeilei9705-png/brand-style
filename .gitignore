@@ -4,5 +4,6 @@ node_modules
 .env.local
 data/*.json
 data/telemetry/
+backups/
 .playwright-cli/
 output/playwright/

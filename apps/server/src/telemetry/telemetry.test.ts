@@ -118,7 +118,7 @@ test("service falls back locally and exposes diagnostic events", async () => {
   const service = new TelemetryService({
     primary: remote,
     fallback: local,
-    now: () => new Date("2026-07-25T00:00:00.000Z"),
+    now: () => new Date(),
     createId: (() => {
       let id = 0;
       return () => `event-${++id}`;

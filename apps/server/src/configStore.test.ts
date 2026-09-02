@@ -85,3 +85,84 @@ test("built-in scenario agents cannot be deleted", () => {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
 });
+
+test("model API keys are never persisted locally or remotely", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-config-"));
+  let remoteConfig: StoredConfig | undefined;
+  const remoteStore: RemoteConfigStore<StoredConfig> = {
+    enabled: true,
+    async read() {
+      return undefined;
+    },
+    async write(config) {
+      remoteConfig = config;
+    },
+  };
+
+  try {
+    const config = emptyConfig("secure-model");
+    config.models[0].apiKey = "must-not-be-stored";
+    config.models[0].apiKeyEnv = "SECURE_MODEL_API_KEY";
+    const store = new ConfigStore(dataDir, remoteStore);
+    store.write(config);
+    await waitFor(() => Boolean(remoteConfig));
+
+    const local = fs.readFileSync(path.join(dataDir, "config.json"), "utf8");
+    assert.equal(local.includes("must-not-be-stored"), false);
+    assert.equal(remoteConfig?.models[0].apiKey, undefined);
+    assert.equal(remoteConfig?.models[0].apiKeyEnv, "SECURE_MODEL_API_KEY");
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test("initial remote sync strips environment secrets and rejects system secret names", async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-config-"));
+  const originalToken = process.env.GOOGLE_API_TOKEN;
+  let remoteConfig: StoredConfig | undefined;
+  const remoteStore: RemoteConfigStore<StoredConfig> = {
+    enabled: true,
+    async read() {
+      return undefined;
+    },
+    async write(config) {
+      remoteConfig = config;
+    },
+  };
+
+  try {
+    process.env.GOOGLE_API_TOKEN = "environment-secret";
+    const store = new ConfigStore(dataDir, remoteStore);
+    await store.syncFromRemote();
+    assert.equal(remoteConfig?.models.some((model) => Boolean(model.apiKey)), false);
+    assert.throws(() => store.upsertModel({
+      name: "unsafe",
+      provider: "fintopia",
+      model: "unsafe",
+      apiKeyEnv: "SUPABASE_SERVICE_ROLE_API_KEY",
+    }), /环境变量名无效/);
+  } finally {
+    if (originalToken === undefined) delete process.env.GOOGLE_API_TOKEN;
+    else process.env.GOOGLE_API_TOKEN = originalToken;
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test("local legacy secrets block configuration writes until environment migration", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-config-"));
+  const config = emptyConfig("legacy-model");
+  config.models[0].provider = "fintopia";
+  config.models[0].apiKey = "legacy-secret";
+  fs.writeFileSync(path.join(dataDir, "config.json"), JSON.stringify(config));
+
+  try {
+    const store = new ConfigStore(dataDir);
+    assert.throws(() => store.upsertModel({
+      ...config.models[0],
+      name: "updated",
+    }), /尚未迁移到环境变量/);
+    assert.equal(fs.readFileSync(path.join(dataDir, "config.json"), "utf8").includes("legacy-secret"), true);
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});

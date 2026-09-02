@@ -45,13 +45,17 @@
         materialPanel.classList.toggle("open");
       });
       materialSelectButton.addEventListener("mouseenter", openMaterialPanel);
-      materialSelectButton.addEventListener("mouseleave", () => {
+      materialSelectButton.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
         if (materialPanel.classList.contains("open")) {
           scheduleMaterialPanelAutoClose();
         }
       });
       materialPanel.addEventListener("mouseenter", cancelMaterialPanelAutoClose);
-      materialPanel.addEventListener("mouseleave", scheduleMaterialPanelAutoClose);
+      materialPanel.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
+        scheduleMaterialPanelAutoClose();
+      });
       colorPaletteSelect.addEventListener("focus", async () => {
         await loadConfig();
         openPalettePanel();
@@ -60,7 +64,8 @@
         cancelPalettePanelAutoClose();
         openPalettePanel();
       });
-      paletteSelectWrap.addEventListener("mouseleave", () => {
+      paletteSelectWrap.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
         if (paletteInlineEditor.classList.contains("open")) {
           schedulePalettePanelAutoClose();
         }
@@ -86,8 +91,13 @@
         addPluginPaletteColorRow();
       });
       paletteInlineEditor.addEventListener("mouseenter", cancelPalettePanelAutoClose);
-      paletteInlineEditor.addEventListener("mouseleave", schedulePalettePanelAutoClose);
+      paletteInlineEditor.addEventListener("mouseleave", (event) => {
+        rememberPointerPosition(event);
+        schedulePalettePanelAutoClose();
+      });
+      document.addEventListener("pointerdown", rememberPointerPosition, { capture: true });
       document.addEventListener("pointermove", (event) => {
+        rememberPointerPosition(event);
         if (!palettePanelDeletePointer) {
           return;
         }

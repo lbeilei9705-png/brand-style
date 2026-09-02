@@ -4,6 +4,7 @@ export const MAX_CLIENT_TELEMETRY_BATCH = 100;
 export const MAX_CLIENT_TELEMETRY_NAME_LENGTH = 100;
 
 export const DEFAULT_CLIENT_TELEMETRY_EVENT_NAMES = new Set([
+  "plugin_started",
   "client_error",
   "diagnostics_export",
   "diagnostics_copy",

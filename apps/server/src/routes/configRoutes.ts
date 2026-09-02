@@ -28,8 +28,12 @@ export async function handleConfigRoutes(input: {
     }
 
     if (req.method === "POST" && pathname === "/api/config/models") {
-      const model = configStore.upsertModel(await readJsonRequest(req) as Parameters<ConfigStore["upsertModel"]>[0]);
-      sendJson(res, 200, { model });
+      try {
+        const model = configStore.upsertModel(await readJsonRequest(req) as Parameters<ConfigStore["upsertModel"]>[0]);
+        sendJson(res, 200, { model });
+      } catch (error) {
+        sendJson(res, 400, { error: error instanceof Error ? error.message : "模型配置无效。" });
+      }
       return true;
     }
 

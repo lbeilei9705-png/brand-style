@@ -35,6 +35,7 @@
       const memberSessionLabel = document.querySelector("#member-session-label");
       const memberLogoutButton = document.querySelector("#member-logout-button");
       const diagnosticsButton = document.querySelector("#diagnostics-button");
+      const versionLabel = document.querySelector("#version-label");
       const loginCopyDiagnosticsButton = document.querySelector("#login-copy-diagnostics");
       const loginExportDiagnosticsButton = document.querySelector("#login-export-diagnostics");
       const scenarioAgentDraftStorageKey = "brand-style-scenario-agent-draft";
@@ -65,8 +66,11 @@
       let materialPanelCloseTimer = null;
       let palettePanelCloseTimer = null;
       let palettePanelDeletePointer = null;
+      let latestPointerPosition = null;
       let memberSessionToken = "";
       let memberSession = null;
+      let serverBuild = null;
+      let versionWarning = "";
       const fixedWindowHeight = 780;
       const fixedWindowWidth = 300;
       let expandedWindowSize = {

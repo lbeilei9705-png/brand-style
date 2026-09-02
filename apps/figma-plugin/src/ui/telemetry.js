@@ -116,6 +116,8 @@
           headers: {
             "Content-Type": "application/json",
             "x-client-session-id": clientSessionId,
+            "x-client-version": pluginBuild.version,
+            "x-client-commit": pluginBuild.commit,
             ...(memberSessionToken ? { Authorization: `Bearer ${memberSessionToken}` } : {}),
           },
           body,
@@ -179,6 +181,8 @@
             userAgent: navigator.userAgent,
             language: navigator.language,
             viewport: { width: window.innerWidth, height: window.innerHeight },
+            pluginBuild,
+            serverBuild,
           },
           state: {
             authenticated: Boolean(memberSession),

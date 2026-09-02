@@ -3,6 +3,7 @@ import type { FintopiaConfig } from "./config.ts";
 import type { ConfigStore } from "./configStore.ts";
 import type { ConversationStore } from "./conversationStore.ts";
 import { applyPriorityDedupeToStylePrompt, getHighestReferencedImageIndex, makeId, now, parseRequestedImageCount, titleFromMessage } from "./conversationUtils.ts";
+import { classifyGenerationError } from "./generationError.ts";
 import { PromptOrchestrator } from "./pipeline/promptOrchestrator.ts";
 import { FintopiaImageProvider } from "./providers/fintopiaImageProvider.ts";
 import type { ImageProvider } from "./providers/imageProvider.ts";
@@ -246,15 +247,15 @@ export class ConversationGenerationService {
         throw error;
       }
 
-      fallbackReason = error instanceof Error ? error.message : "当前模型调用失败。";
+      fallbackReason = classifyGenerationError(error).message;
       activeModel = fallbackModel;
-      const fallbackTaskService = new TaskService(this.taskStore, this.createProvider(fallbackModel), this.createPromptOrchestrator());
 
       try {
+        const fallbackTaskService = new TaskService(this.taskStore, this.createProvider(fallbackModel), this.createPromptOrchestrator());
         taskResponse = await fallbackTaskService.createTask(taskRequest, signal);
       } catch (fallbackError) {
         signal?.throwIfAborted();
-        const fallbackMessage = fallbackError instanceof Error ? fallbackError.message : "备用模型调用失败。";
+        const fallbackMessage = classifyGenerationError(fallbackError).message;
         throw new Error(`当前模型「${model.name}」调用失败：${fallbackReason} 备用模型「${fallbackModel.name}」也失败：${fallbackMessage}`);
       }
     }
@@ -270,7 +271,7 @@ export class ConversationGenerationService {
       id: makeId("msg"),
       role: "assistant",
       content: fallbackReason
-        ? `「${model.name}」长时间未返回，已自动改用「${activeModel.name}」生成 ${taskResponse.task.results.length} 张图片。`
+        ? `${fallbackReason} 已自动改用「${activeModel.name}」生成 ${taskResponse.task.results.length} 张图片。`
         : `已使用「${agent.name}」和「${activeModel.name}」生成 ${taskResponse.task.results.length} 张图片。`,
       createdAt: timestamp,
       taskId: taskResponse.taskId,

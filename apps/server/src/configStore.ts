@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { AgentConfig, ColorPaletteConfig, MaterialPresetConfig, ModelConfig, OperationScenarioConfig, ScenarioAgentCaseConfig, ScenarioAgentConfig, ShapeArchitectureConfig, StyleSkillConfig } from "../../../packages/shared/src/index.ts";
-import { defaultConfig, hydrateConfig, now, sortByLeadingNameNumber } from "./configDefaults.ts";
+import { defaultConfig, hydrateConfig, isAllowedModelApiKeyEnv, now, sortByLeadingNameNumber } from "./configDefaults.ts";
 import { defaultScenarioAgents } from "./pipeline/scenarioAgentDefaults.ts";
 import type { RemoteConfigStore } from "./storage/supabaseConfigStore.ts";
 
@@ -14,6 +14,13 @@ export interface StoredConfig {
   operationScenarios: OperationScenarioConfig[];
   scenarioAgents?: ScenarioAgentConfig[];
   scenarioAgentCases?: ScenarioAgentCaseConfig[];
+}
+
+function withoutPersistedSecrets(config: StoredConfig): StoredConfig {
+  return {
+    ...config,
+    models: config.models.map(({ apiKey: _apiKey, ...model }) => model),
+  };
 }
 
 export class ConfigStore {
@@ -35,11 +42,22 @@ export class ConfigStore {
     const remoteConfig = await this.remoteStore.read();
 
     if (remoteConfig) {
-      this.writeLocal(hydrateConfig(remoteConfig));
+      const safeConfig = withoutPersistedSecrets(remoteConfig);
+      const hydrated = hydrateConfig(safeConfig);
+      this.writeLocal(hydrated);
+      const legacyModelIds = remoteConfig.models.filter((model) => Boolean(model.apiKey)).map((model) => model.id);
+      const missingEnvironmentKeys = legacyModelIds.filter((modelId) => (
+        !hydrated.models.find((model) => model.id === modelId)?.apiKey
+      ));
+      if (missingEnvironmentKeys.length) {
+        console.error(`Legacy model secrets were not removed remotely because environment keys are missing: ${missingEnvironmentKeys.join(", ")}`);
+      } else if (legacyModelIds.length) {
+        await this.remoteStore.write(safeConfig);
+      }
       return;
     }
 
-    await this.remoteStore.write(this.read());
+    await this.remoteStore.write(withoutPersistedSecrets(this.read()));
   }
 
   read(): StoredConfig {
@@ -113,10 +131,12 @@ export class ConfigStore {
   }
 
   write(config: StoredConfig): void {
-    this.writeLocal(config);
+    this.assertLocalSecretMigrationReady(config);
+    const safeConfig = withoutPersistedSecrets(config);
+    this.writeLocal(safeConfig);
     if (this.remoteStore?.enabled) {
       this.remoteWriteQueue = this.remoteWriteQueue
-        .then(() => this.remoteStore?.write(config))
+        .then(() => this.remoteStore?.write(safeConfig))
         .then(() => undefined)
         .catch((error) => {
           console.error(error instanceof Error ? error.message : error);
@@ -125,7 +145,19 @@ export class ConfigStore {
   }
 
   private writeLocal(config: StoredConfig): void {
-    fs.writeFileSync(this.filePath, `${JSON.stringify(config, null, 2)}\n`);
+    fs.writeFileSync(this.filePath, `${JSON.stringify(withoutPersistedSecrets(config), null, 2)}\n`);
+  }
+
+  private assertLocalSecretMigrationReady(config: StoredConfig): void {
+    if (!fs.existsSync(this.filePath)) return;
+    const persisted = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as Partial<StoredConfig>;
+    const missingEnvironmentKeys = (persisted.models || [])
+      .filter((model) => Boolean(model.apiKey))
+      .filter((model) => !config.models.find((item) => item.id === model.id)?.apiKey)
+      .map((model) => model.id);
+    if (missingEnvironmentKeys.length) {
+      throw new Error(`检测到尚未迁移到环境变量的模型密钥：${missingEnvironmentKeys.join(", ")}。请先配置对应环境变量，再修改后台配置。`);
+    }
   }
 
   listModels(): ModelConfig[] {
@@ -133,6 +165,9 @@ export class ConfigStore {
   }
 
   upsertModel(model: Partial<ModelConfig> & Pick<ModelConfig, "name" | "provider" | "model">): ModelConfig {
+    if (model.apiKeyEnv && !isAllowedModelApiKeyEnv(model.apiKeyEnv)) {
+      throw new Error("模型密钥环境变量名无效，只允许非系统级的 *_API_KEY 或 *_API_TOKEN。");
+    }
     const config = this.read();
     const timestamp = now();
     const id = model.id || `model_${Date.now()}`;
@@ -143,7 +178,7 @@ export class ConfigStore {
       provider: model.provider,
       model: model.model,
       apiUrl: model.apiUrl,
-      apiKey: model.apiKey ?? existing?.apiKey,
+      apiKeyEnv: model.apiKeyEnv || existing?.apiKeyEnv,
       apiVersion: model.apiVersion,
       apiStyle: model.apiStyle || existing?.apiStyle || "azure",
       apiPath: model.apiPath,

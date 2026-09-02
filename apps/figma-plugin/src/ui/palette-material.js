@@ -16,6 +16,28 @@
           : `材质 ${materialPresetIds.length}`;
       }
 
+      function rememberPointerPosition(event) {
+        latestPointerPosition = { x: event.clientX, y: event.clientY };
+      }
+
+      function isPointerInside(element) {
+        if (!latestPointerPosition || !element) {
+          return false;
+        }
+        const bounds = element.getBoundingClientRect();
+        return latestPointerPosition.x >= bounds.left
+          && latestPointerPosition.x <= bounds.right
+          && latestPointerPosition.y >= bounds.top
+          && latestPointerPosition.y <= bounds.bottom;
+      }
+
+      function isPanelInteractionActive(panel, trigger) {
+        return panel.contains(document.activeElement)
+          || trigger?.contains(document.activeElement)
+          || isPointerInside(panel)
+          || isPointerInside(trigger);
+      }
+
       function cancelMaterialPanelAutoClose() {
         if (materialPanelCloseTimer) {
           clearTimeout(materialPanelCloseTimer);
@@ -26,6 +48,10 @@
       function scheduleMaterialPanelAutoClose() {
         cancelMaterialPanelAutoClose();
         materialPanelCloseTimer = setTimeout(() => {
+          if (isPanelInteractionActive(materialPanel, materialSelectButton)) {
+            materialPanelCloseTimer = null;
+            return;
+          }
           materialPanel.classList.remove("open");
           materialPanelCloseTimer = null;
         }, 220);
@@ -71,7 +97,7 @@
 
         cancelPalettePanelAutoClose();
         palettePanelCloseTimer = setTimeout(() => {
-          if (paletteInlineEditor.contains(document.activeElement)) {
+          if (isPanelInteractionActive(paletteInlineEditor, paletteSelectWrap)) {
             palettePanelCloseTimer = null;
             return;
           }

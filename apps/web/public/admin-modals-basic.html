@@ -58,8 +58,8 @@
             <input id="model-api-path" type="text" placeholder="/v1/images/generations，可用 {model} 作为模型占位" />
           </label>
           <label class="admin-field">
-            <span>API Key</span>
-            <input id="model-api-key" type="password" autocomplete="off" />
+            <span>API Key 环境变量名</span>
+            <input id="model-api-key-env" type="text" placeholder="例如 YUNWU_IMAGE_API_KEY" pattern="[A-Z][A-Z0-9_]{2,80}" />
           </label>
           <label class="admin-field">
             <span>启用</span>

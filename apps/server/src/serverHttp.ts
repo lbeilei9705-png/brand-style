@@ -323,6 +323,15 @@ export function hasAdminCredentials(req: http.IncomingMessage): boolean {
     && req.headers["x-brand-style-token"] === adminAccessToken;
 }
 
+export function getServerSecurityStatus(): { ready: boolean; adminTokenConfigured: boolean } {
+  const configured = adminAccessToken.length >= 24
+    && !/replace-with|changeme|password|admin/i.test(adminAccessToken);
+  return {
+    ready: configured,
+    adminTokenConfigured: configured,
+  };
+}
+
 export function stringHeader(value: string | string[] | undefined): string | undefined {
   const text = Array.isArray(value) ? value[0] : value;
   return text && text.length <= 160 ? text : undefined;

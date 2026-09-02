@@ -10,6 +10,8 @@ import { sendJson } from "./http/response.ts";
 import { handleConfigRoutes } from "./routes/configRoutes.ts";
 import { handleTelemetryRoutes } from "./routes/telemetryRoutes.ts";
 import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, sendGenerationError, serveStatic, stringHeader } from "./serverHttp.ts";
+import { sendHealthResponse } from "./runtimeHealth.ts";
+import { installServerLifecycle } from "./runtimeLifecycle.ts";
 import { MemberAccessStore } from "./memberAccessStore.ts";
 import { bindGenerationCancellation } from "./generationCancellation.ts";
 import { GenerationConcurrencyLimiter } from "./generationConcurrency.ts";
@@ -85,12 +87,15 @@ const server = http.createServer(async (req, res) => {
   const requestId = `req_${randomUUID()}`;
   const issueId = `issue_${randomUUID()}`;
   const clientSessionId = stringHeader(req.headers["x-client-session-id"]);
+  const clientVersion = stringHeader(req.headers["x-client-version"]);
+  const clientCommit = stringHeader(req.headers["x-client-commit"]);
   let actorId: string | undefined;
   const startedAt = Date.now();
   const url = new URL(req.url || "/", `http://localhost:${port}`);
   const pathname = url.pathname;
   res.setHeader("x-request-id", requestId);
   res.setHeader("x-issue-id", issueId);
+  res.setHeader("x-server-version", process.env.BRAND_STYLE_VERSION || process.env.npm_package_version || "1.0.0");
   res.on("finish", () => {
     const failed = res.statusCode >= 400;
     logInfo("http", "request completed", {
@@ -114,6 +119,8 @@ const server = http.createServer(async (req, res) => {
         pathname,
         statusCode: res.statusCode,
         durationMs: Date.now() - startedAt,
+        clientVersion,
+        clientCommit,
       },
     }).catch((error) => logError("telemetry", "failed to record request", {
       requestId,
@@ -135,17 +142,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && pathname === "/api/health") {
-      sendJson(res, 200, {
-        ok: true,
-        name: "3D Icon Style Engine",
-        provider: appConfig.imageProvider,
-        model: appConfig.imageProvider === "fintopia" ? appConfig.fintopia?.model : undefined,
-        storage: {
-          supabase: Boolean(remoteConfigStore?.enabled),
-          oss: assetStorage.enabled,
-          telemetry: appConfig.telemetry.store,
-        },
-      });
+      const models = configStore.listModels();
+      sendHealthResponse(res, appConfig, models, Boolean(remoteConfigStore?.enabled), assetStorage.enabled, hasAdminCredentials(req));
       return;
     }
 
@@ -495,6 +493,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+installServerLifecycle(server);
 server.listen(port, () => {
   console.log(`3D Icon Style Engine listening on http://localhost:${port}`);
 });

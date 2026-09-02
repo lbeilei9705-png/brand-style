@@ -104,7 +104,7 @@ export function fillModelForm(model) {
   qs("#model-api-version").value = model.apiVersion || "";
   qs("#model-api-style").value = model.apiStyle || "azure";
   qs("#model-api-path").value = model.apiPath || "";
-  qs("#model-api-key").value = model.apiKey || "";
+  qs("#model-api-key-env").value = model.apiKeyEnv || "";
   qs("#model-quality").value = model.quality;
   qs("#model-purpose").value = model.purpose || "image";
   qs("#model-enabled").value = String(model.enabled);
@@ -126,7 +126,7 @@ export async function saveModel(event) {
       apiVersion: qs("#model-api-version").value || "",
       apiStyle: qs("#model-api-style").value,
       apiPath: qs("#model-api-path").value || undefined,
-      apiKey: qs("#model-api-key").value || undefined,
+      apiKeyEnv: qs("#model-api-key-env").value.trim() || undefined,
       purpose: qs("#model-purpose").value,
       quality: qs("#model-quality").value,
       enabled: boolValue(qs("#model-enabled").value),

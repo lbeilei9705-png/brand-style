@@ -14,12 +14,12 @@
 
         agentSelect.value = "";
         aspectRatioSelect.value = "auto";
-        resolutionSelect.value = "2k";
+        resolutionSelect.value = "1k";
         batchSizeSelect.value = "1";
         colorPaletteSelect.value = "";
         shapeArchitectureSelect.value = "";
         aspectRatio = "auto";
-        resolution = "2k";
+        resolution = "1k";
         batchSize = 1;
         selectedAssets = [];
         materialPresetIds = [];

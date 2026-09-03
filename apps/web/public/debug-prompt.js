@@ -164,7 +164,7 @@ function buildRequestFromForm(overrides = {}) {
     selectionAssets: buildSelectionAssets(referenceCount),
     batchSize: 4,
     aspectRatio: "1:1",
-    resolution: "2k",
+    resolution: "1k",
     materialPresetIds,
     colorPaletteId: qs("#palette-select").value || undefined,
     shapeArchitectureId: qs("#shape-select").value || undefined,

@@ -43,7 +43,7 @@
       let selectedAssets = [];
       let batchSize = 1;
       let aspectRatio = "auto";
-      let resolution = "2k";
+      let resolution = "1k";
       let materials = [];
       let materialPresetIds = [];
       let colorPalettes = [];

@@ -19,6 +19,7 @@
               <section class="result-actions">
                 <button class="insert-result-button" type="button">插入 Figma</button>
                 <button class="download-result-button" type="button">下载原图</button>
+                <button class="add-reference-result-button" type="button" aria-pressed="false">加入选中图</button>
               </section>
             </div>
           `;
@@ -28,6 +29,16 @@
           });
           card.querySelector(".download-result-button").addEventListener("click", async () => {
             await downloadOriginalImage(result);
+          });
+          const addReferenceButton = card.querySelector(".add-reference-result-button");
+          if (isGeneratedResultSelected(task.id, result)) {
+            addReferenceButton.textContent = "已加入选中图";
+            addReferenceButton.disabled = true;
+            addReferenceButton.classList.add("is-added");
+            addReferenceButton.setAttribute("aria-pressed", "true");
+          }
+          addReferenceButton.addEventListener("click", async () => {
+            await addGeneratedResultAsReference(addReferenceButton, task.id, result);
           });
           grid.appendChild(card);
         }

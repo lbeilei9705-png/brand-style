@@ -228,7 +228,7 @@ export class ConversationGenerationService {
         variationStrength: "medium",
         batchSize,
         aspectRatio: request.aspectRatio || "1:1",
-        resolution: request.resolution || "2k",
+        resolution: request.resolution || "1k",
       },
       target: "figma",
     };

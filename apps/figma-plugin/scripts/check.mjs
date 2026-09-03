@@ -91,6 +91,11 @@ const requiredUiProtocol = [
   "semanticPlanId: shouldMergeScenarioDraft",
   "isPanelInteractionActive(materialPanel, materialSelectButton)",
   "isPanelInteractionActive(paletteInlineEditor, paletteSelectWrap)",
+  "addGeneratedResultAsReference",
+  "add-reference-result-button",
+  'trackEvent("result_reference_success"',
+  '<option value="1k" selected>1K</option>',
+  'let resolution = "1k"',
 ];
 for (const snippet of requiredUiProtocol) {
   if (!ui.includes(snippet)) {

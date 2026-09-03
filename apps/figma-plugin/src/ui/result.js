@@ -78,12 +78,11 @@
         });
       }
 
-      async function normalizeImageForFigma(dataUrl) {
+      async function normalizeImageForFigma(dataUrl, maxFigmaSide = 4096) {
         const figmaSupportedDataUrl = /^data:image\/(?:png|jpe?g|gif);base64,/i.test(dataUrl);
         const image = await loadImageElement(dataUrl);
         const width = Math.max(1, image.naturalWidth || image.width || 1);
         const height = Math.max(1, image.naturalHeight || image.height || 1);
-        const maxFigmaSide = 4096;
         const scale = Math.min(1, maxFigmaSide / Math.max(width, height));
         const needsCanvas = !figmaSupportedDataUrl || scale < 1;
 
@@ -109,7 +108,7 @@
         };
       }
 
-      async function prepareImageForFigma(result) {
+      async function prepareImageForFigma(result, maxSide = 4096) {
         let dataUrl = result.imageUrl;
 
         if (!dataUrl.startsWith("data:")) {
@@ -122,7 +121,77 @@
           dataUrl = await blobToDataUrl(await response.blob());
         }
 
-        return normalizeImageForFigma(dataUrl);
+        return normalizeImageForFigma(dataUrl, maxSide);
+      }
+
+      function getGeneratedResultAssetId(taskId, result) {
+        return `generated-result:${result.id || `${taskId}:${result.rank}`}`;
+      }
+
+      function isGeneratedResultSelected(taskId, result) {
+        const id = getGeneratedResultAssetId(taskId, result);
+        return selectedAssets.some((asset) => getAssetIdentity(asset) === id);
+      }
+
+      function estimateDataUrlSize(dataUrl) {
+        const payload = dataUrl.split(",", 2)[1] || "";
+        const padding = payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0;
+        return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
+      }
+
+      async function addGeneratedResultAsReference(button, taskId, result) {
+        const assetId = getGeneratedResultAssetId(taskId, result);
+        if (isGeneratedResultSelected(taskId, result)) {
+          button.textContent = "已加入选中图";
+          button.disabled = true;
+          button.classList.add("is-added");
+          return;
+        }
+
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = "正在添加…";
+        trackEvent("result_reference_start", { taskId, rank: result.rank });
+
+        try {
+          const prepared = await prepareImageForFigma(result, 1024);
+          const mimeType = prepared.imageUrl.match(/^data:(image\/[^;]+)/i)?.[1] || "image/png";
+          const extension = getImageExtension(prepared.imageUrl);
+          const asset = {
+            id: assetId,
+            name: `生成结果 ${result.rank}`,
+            filename: `brand-style-result-${result.rank}.${extension}`,
+            mimeType,
+            sizeBytes: estimateDataUrlSize(prepared.imageUrl),
+            width: prepared.width || result.width,
+            height: prepared.height || result.height,
+            assetDataUrl: prepared.imageUrl,
+          };
+          selectedAssets = mergeSelectedAssets([asset]);
+          updateAspectRatioAutoLabel();
+          renderAttachments();
+          selectionBar.textContent = `已添加 ${selectedAssets.length} 张参考图`;
+          selectionStatus.textContent = `图片 ${result.rank} 已加入选中图，可直接作为图${selectedAssets.length}继续生成。`;
+          button.textContent = "已加入选中图";
+          button.classList.add("is-added");
+          button.setAttribute("aria-pressed", "true");
+          const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+          attachmentRow.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+          trackEvent("result_reference_success", {
+            taskId,
+            rank: result.rank,
+            referenceCount: selectedAssets.length,
+          });
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = originalText;
+          addMessage("system", getReadableError(error));
+          trackEvent("result_reference_fail", {
+            taskId,
+            rank: result.rank,
+            issueId: ensureIssueId(error),
+          });
+        }
       }
 
       async function insertGeneratedResult(button, result) {

@@ -237,6 +237,12 @@
         gap: 6px;
       }
 
+      .add-reference-result-button {
+        grid-column: 1 / -1;
+        min-height: 28px;
+        border-radius: 10px;
+      }
+
       .debug-panel {
         border: 1px solid #283244;
         border-radius: 16px;

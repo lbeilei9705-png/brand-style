@@ -16,7 +16,7 @@ const defaultConstraints: GenerationConstraints = {
   variationStrength: "medium",
   batchSize: 1,
   aspectRatio: "1:1",
-  resolution: "2k",
+  resolution: "1k",
 };
 
 const resolutions: OutputResolution[] = ["1k", "2k", "4k"];

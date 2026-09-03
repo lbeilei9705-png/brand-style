@@ -7,8 +7,9 @@
 3. 安装完成后，Finder 会自动定位 `manifest.json`。
 4. 在 Figma Desktop 中通过“插件 → 开发 → 从 manifest 导入插件”选择该文件。
 
-工具会把插件安装到 `~/BrandStyleFigmaPlugin`。首次导入完成后不要移动该目录，
-以后不需要重新导入插件，也不要求用户安装 Git 或 Node.js。
+工具会优先把插件安装到桌面的 `BrandStyleFigmaPlugin` 文件夹；如果桌面目录不可用，
+则回退到 `~/BrandStyleFigmaPlugin`。首次导入完成后不要移动该目录，以后不需要
+重新导入插件，也不要求用户安装 Git 或 Node.js。已有旧位置的安装仍会正常更新。
 
 ## 日常更新
 

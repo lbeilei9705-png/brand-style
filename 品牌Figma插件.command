@@ -3,7 +3,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="${0:A:h}"
-DEFAULT_INSTALL_DIR="${BRAND_STYLE_PLUGIN_INSTALL_DIR:-${HOME}/BrandStyleFigmaPlugin}"
+LEGACY_INSTALL_DIR="${HOME}/BrandStyleFigmaPlugin"
+DESKTOP_INSTALL_DIR="${HOME}/Desktop/BrandStyleFigmaPlugin"
+if [[ -n "${BRAND_STYLE_PLUGIN_INSTALL_DIR:-}" ]]; then
+  DEFAULT_INSTALL_DIR="$BRAND_STYLE_PLUGIN_INSTALL_DIR"
+elif [[ -d "${HOME}/Desktop" && -w "${HOME}/Desktop" ]]; then
+  DEFAULT_INSTALL_DIR="$DESKTOP_INSTALL_DIR"
+else
+  DEFAULT_INSTALL_DIR="$LEGACY_INSTALL_DIR"
+fi
 ARCHIVE_URL="${BRAND_STYLE_PLUGIN_ARCHIVE_URL:-https://github.com/lbeilei9705-png/brand-style/archive/refs/heads/main.zip}"
 LOG_FILE="${TMPDIR:-/tmp}/brand-style-plugin-setup.log"
 GENERATED_FILES=(
@@ -131,6 +139,8 @@ if has_manifest "$SCRIPT_DIR"; then
   TARGET_DIR="$SCRIPT_DIR"
 elif has_manifest "$DEFAULT_INSTALL_DIR"; then
   TARGET_DIR="$DEFAULT_INSTALL_DIR"
+elif [[ "$DEFAULT_INSTALL_DIR" != "$LEGACY_INSTALL_DIR" ]] && has_manifest "$LEGACY_INSTALL_DIR"; then
+  TARGET_DIR="$LEGACY_INSTALL_DIR"
 else
   if [[ "${1:-}" == "--check" ]]; then
     print "检查通过：当前为首次安装模式，安装位置是 ${DEFAULT_INSTALL_DIR}。"

@@ -65,6 +65,11 @@ IMAGE_PROVIDER=mock
 6. 在底部对话框输入需求并点击“发送并生成”。
 7. 选择候选结果并点击“插入 Figma”。
 
+本地开发版可以把 `首次安装Figma插件.command` 单独发给用户。首次导入后，用户
+双击安装目录中的 `更新Figma插件.command` 即可获取最新版，无需重复导入
+`manifest.json`，也不要求安装 Git 或 Node.js。完整说明见
+[`docs/figma-plugin-update.md`](docs/figma-plugin-update.md)。
+
 ## 后台管理
 
 打开：

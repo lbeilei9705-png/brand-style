@@ -27,7 +27,7 @@ interface MemberSession {
   memberId: string;
   tokenHash: string;
   createdAt: string;
-  expiresAt: string;
+  expiresAt?: string;
   lastSeenAt: string;
   revokedAt?: string;
   usageByDate: Record<string, number>;
@@ -46,7 +46,6 @@ export interface MemberSessionInfo {
   dailyLimit: number;
   usedToday: number;
   remainingToday: number;
-  expiresAt: string;
   lastSeenAt: string;
 }
 
@@ -93,12 +92,10 @@ function normalizeInviteCode(value: string): string {
 export class MemberAccessStore {
   private readonly filePath: string;
   private readonly defaultDailyLimit: number;
-  private readonly sessionTtlMs: number;
 
-  constructor(dataDir: string, defaultDailyLimit = 20, sessionTtlDays = 30) {
+  constructor(dataDir: string, defaultDailyLimit = 20) {
     this.filePath = path.join(dataDir, "member-access.json");
     this.defaultDailyLimit = Math.max(1, defaultDailyLimit);
-    this.sessionTtlMs = Math.max(1, sessionTtlDays) * 24 * 60 * 60 * 1_000;
     fs.mkdirSync(dataDir, { recursive: true });
   }
 
@@ -108,7 +105,32 @@ export class MemberAccessStore {
       return structuredClone(EMPTY_DATA);
     }
 
-    return JSON.parse(fs.readFileSync(this.filePath, "utf8")) as MemberAccessData;
+    const data = JSON.parse(fs.readFileSync(this.filePath, "utf8")) as MemberAccessData;
+    let migrated = false;
+
+    for (const session of data.sessions) {
+      if (!session.expiresAt) {
+        continue;
+      }
+
+      const expiresAt = Date.parse(session.expiresAt);
+      if (!session.revokedAt && Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+        session.revokedAt = session.expiresAt;
+      }
+      delete session.expiresAt;
+      migrated = true;
+    }
+
+    if (migrated) {
+      const backupPath = `${this.filePath}.pre-permanent-sessions`;
+      if (!fs.existsSync(backupPath)) {
+        fs.copyFileSync(this.filePath, backupPath);
+        fs.chmodSync(backupPath, 0o600);
+      }
+      this.write(data);
+    }
+
+    return data;
   }
 
   private write(data: MemberAccessData): void {
@@ -186,7 +208,6 @@ export class MemberAccessStore {
       memberId: member.id,
       tokenHash: hashSecret(sessionToken),
       createdAt: timestamp,
-      expiresAt: new Date(Date.now() + this.sessionTtlMs).toISOString(),
       lastSeenAt: timestamp,
       usageByDate: {},
     };
@@ -214,7 +235,7 @@ export class MemberAccessStore {
       ? data.members.find((item) => item.id === session.memberId)
       : undefined;
 
-    if (!session || !member || !member.enabled || session.revokedAt || Date.parse(session.expiresAt) <= Date.now()) {
+    if (!session || !member || !member.enabled || session.revokedAt) {
       return undefined;
     }
 
@@ -236,7 +257,7 @@ export class MemberAccessStore {
       ? data.members.find((item) => item.id === session.memberId)
       : undefined;
 
-    if (!session || !member || !member.enabled || session.revokedAt || Date.parse(session.expiresAt) <= Date.now()) {
+    if (!session || !member || !member.enabled || session.revokedAt) {
       return undefined;
     }
 
@@ -270,10 +291,6 @@ export class MemberAccessStore {
     const date = getUsageDate();
     session.usageByDate[date] = Math.max(0, (session.usageByDate[date] || 0) - Math.max(1, Math.ceil(amount)));
     this.write(data);
-  }
-
-  revokeCurrentSession(sessionId: string): boolean {
-    return this.revokeSession(sessionId);
   }
 
   revokeSession(sessionId: string): boolean {
@@ -353,7 +370,7 @@ export class MemberAccessStore {
             ...member,
             usedToday,
             remainingToday: Math.max(0, member.dailyLimit - usedToday),
-            sessionCount: sessions.filter((session) => !session.revokedAt && Date.parse(session.expiresAt) > timestamp).length,
+            sessionCount: sessions.filter((session) => !session.revokedAt).length,
           };
         })
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
@@ -385,7 +402,6 @@ export class MemberAccessStore {
       dailyLimit: quota.dailyLimit,
       usedToday: quota.usedToday,
       remainingToday: quota.remainingToday,
-      expiresAt: session.expiresAt,
       lastSeenAt: session.lastSeenAt,
     };
   }

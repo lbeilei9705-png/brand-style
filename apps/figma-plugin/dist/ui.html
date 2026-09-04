@@ -2288,7 +2288,7 @@
       </div>
     </section>
 
-    <script>const pluginBuild = Object.freeze({"version":"1.0.0","commit":"15b1d6a"});
+    <script>const pluginBuild = Object.freeze({"version":"1.0.0","commit":"0712847"});
       const apiBase = "https://brand-style.fintopia-social-media-ads-tools.tech";
       const defaultModelId = "nano-banana-pro";
       const modelSelect = document.querySelector("#model-select");
@@ -5099,20 +5099,19 @@
       });
       loginExportDiagnosticsButton.addEventListener("click", () => downloadDiagnosticBundle(false));
 
-      memberLogoutButton.addEventListener("click", async () => {
-        memberLogoutButton.disabled = true;
-
-        try {
-          if (memberSessionToken) {
-            await apiFetch("/api/member/session", {
-              method: "DELETE",
-            });
-          }
-        } finally {
-          clearMemberSession();
-          showMemberLogin("已退出当前成员账号。");
-          memberLogoutButton.disabled = false;
+      memberLogoutButton.addEventListener("click", () => {
+        if (memberLogoutButton.dataset.confirmLogout !== "true") {
+          memberLogoutButton.dataset.confirmLogout = "true";
+          memberLogoutButton.textContent = "再次点击确认";
+          selectionStatus.textContent = "退出只清除本机登录；再次登录需要管理员生成新邀请码。";
+          window.setTimeout(() => {
+            delete memberLogoutButton.dataset.confirmLogout;
+            memberLogoutButton.textContent = "退出";
+          }, 5_000);
+          return;
         }
+        clearMemberSession();
+        showMemberLogin("已清除本机登录信息；后台成员权限仍保持有效。");
       });
 
       modelSelect.addEventListener("focus", loadConfig);

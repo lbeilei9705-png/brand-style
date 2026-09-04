@@ -37,10 +37,6 @@ const memberDailyLimit = Math.max(
   1,
   Number(process.env.BRAND_STYLE_MEMBER_DAILY_LIMIT || 20),
 );
-const memberSessionTtlDays = Math.max(
-  1,
-  Number(process.env.BRAND_STYLE_MEMBER_SESSION_TTL_DAYS || 30),
-);
 const maxParallelGenerations = Math.max(1, Number(process.env.BRAND_STYLE_MAX_PARALLEL_GENERATIONS || 3));
 const dataDir = path.resolve(projectRoot, process.env.BRAND_STYLE_DATA_DIR || "data");
 appConfig.telemetry.localDir = path.resolve(projectRoot, appConfig.telemetry.localDir);
@@ -57,7 +53,7 @@ await configStore.syncFromRemote().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
 });
 const conversationStore = new ConversationStore(dataDir, conversationRetentionDays);
-const memberAccessStore = new MemberAccessStore(dataDir, memberDailyLimit, memberSessionTtlDays);
+const memberAccessStore = new MemberAccessStore(dataDir, memberDailyLimit);
 const generationConcurrency = new GenerationConcurrencyLimiter(maxParallelGenerations);
 conversationStore.list();
 const conversationCleanupTimer = setInterval(() => {
@@ -224,9 +220,9 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Compatibility shim for older plugins; logout is local-only and never revokes access.
     if (req.method === "DELETE" && pathname === "/api/member/session" && memberSession) {
-      memberAccessStore.revokeCurrentSession(memberSession.id);
-      sendJson(res, 200, { revoked: true });
+      sendJson(res, 200, { revoked: false, localOnly: true });
       return;
     }
 

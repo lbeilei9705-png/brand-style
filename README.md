@@ -97,12 +97,14 @@ BRAND_STYLE_PLUGIN_GLOBAL_RATE_LIMIT=60
 BRAND_STYLE_PLUGIN_RATE_WINDOW_MS=60000
 BRAND_STYLE_CONVERSATION_RETENTION_DAYS=30
 BRAND_STYLE_MEMBER_DAILY_LIMIT=20
-BRAND_STYLE_MEMBER_SESSION_TTL_DAYS=30
 BRAND_STYLE_MIN_CLIENT_VERSION=1.0.0
 YUNWU_IMAGE_API_KEY=真实密钥
 ```
 
-插件使用后台生成的一次性成员邀请码登录。服务端只保存邀请码和会话令牌的哈希，成员会话支持立即撤销、每日生成额度和自动过期；插件写请求还会按来源地址限流。后台写操作、素材上传、调试接口和对话列表仍需要 `BRAND_STYLE_ADMIN_TOKEN`。旧的 `BRAND_STYLE_ACCESS_TOKEN` 仅作为部署迁移期兼容项。
+插件使用后台生成的一次性成员邀请码登录。服务端只保存邀请码和会话令牌的哈希；邀请码兑换成功后，成员会话不会自动过期，只能由后台撤销，同时仍支持每日生成额度。插件写请求还会按来源地址限流。后台写操作、素材上传、调试接口和对话列表仍需要 `BRAND_STYLE_ADMIN_TOKEN`。旧的 `BRAND_STYLE_ACCESS_TOKEN` 仅作为部署迁移期兼容项。
+
+升级到永久会话时，服务端会保留已过期旧会话的失效状态，并在迁移前生成
+`data/member-access.json.pre-permanent-sessions` 备份；尚未到期的旧会话会转为永久有效。
 
 `BRAND_STYLE_ADMIN_TOKEN` 未配置时，后台 API 会拒绝访问，生产部署前必须先设置。成员访问数据当前保存在本机 `data/member-access.json`，只能运行单个 Node.js 服务实例；如果使用 PM2 cluster 或多副本部署，应先迁移到支持事务的数据库存储。
 

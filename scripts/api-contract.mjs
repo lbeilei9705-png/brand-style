@@ -173,6 +173,14 @@ async function main() {
   });
   assert.equal(session.response.status, 200);
   assert.equal(session.body.session.memberName, "API Contract Member");
+  assert.equal("expiresAt" in session.body.session, false);
+
+  const localLogout = await request(baseUrl, "/api/member/session", {
+    method: "DELETE",
+    headers: memberHeaders(memberToken),
+  });
+  assert.equal(localLogout.response.status, 200);
+  assert.equal(localLogout.body.revoked, false);
 
   const config = await request(baseUrl, "/api/config/models", {
     headers: memberHeaders(memberToken),
@@ -302,6 +310,21 @@ async function main() {
   assert.equal(bundle.health.ok, true);
   assert.equal(bundle.clientContext.source, "api-contract");
   assert.ok(bundle.events.some((event) => event.name === "generation_success"));
+
+  const revokeSession = await request(
+    baseUrl,
+    `/api/admin/member-sessions/${session.body.session.id}`,
+    {
+      method: "DELETE",
+      headers: adminHeaders(),
+    },
+  );
+  assert.equal(revokeSession.response.status, 200);
+  assert.equal(revokeSession.body.revoked, true);
+  const revokedSession = await request(baseUrl, "/api/member/session/me", {
+    headers: memberHeaders(memberToken),
+  });
+  assert.equal(revokedSession.response.status, 401);
 
   assert.ok(fs.existsSync(path.join(dataDir, "config.json")));
   assert.ok(fs.existsSync(path.join(dataDir, "member-access.json")));

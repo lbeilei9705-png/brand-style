@@ -9,7 +9,7 @@ test("member invite redemption, quota, refund and revocation persist safely", ()
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-members-"));
 
   try {
-    const store = new MemberAccessStore(dataDir, 2, 1);
+    const store = new MemberAccessStore(dataDir, 2);
     const created = store.createInvite({
       memberName: "  Test Member  ",
       dailyLimit: 2,
@@ -39,7 +39,9 @@ test("member invite redemption, quota, refund and revocation persist safely", ()
     assert.throws(() => store.redeemInvite(created.code), /无效、已使用或已过期/);
     assert.equal(store.resolveSession("wrong-token"), undefined);
     assert.equal(store.resolveSession(redeemed.sessionToken)?.id, redeemed.session.id);
+    assert.equal("expiresAt" in redeemed.session, false);
 
+    const accessFilePath = path.join(dataDir, "member-access.json");
     assert.deepEqual(store.consumeQuota(redeemed.session.id, 1)?.allowed, true);
     const denied = store.consumeQuota(redeemed.session.id, 2);
     assert.equal(denied?.allowed, false);
@@ -47,12 +49,12 @@ test("member invite redemption, quota, refund and revocation persist safely", ()
 
     store.refundQuota(redeemed.session.id, 1);
     assert.equal(store.resolveSession(redeemed.sessionToken)?.remainingToday, 2);
-    assert.equal(store.revokeCurrentSession(redeemed.session.id), true);
-    assert.equal(store.revokeCurrentSession(redeemed.session.id), false);
+    assert.equal(store.revokeSession(redeemed.session.id), true);
+    assert.equal(store.revokeSession(redeemed.session.id), false);
     assert.equal(store.resolveSession(redeemed.sessionToken), undefined);
 
     const persisted = JSON.parse(
-      fs.readFileSync(path.join(dataDir, "member-access.json"), "utf8"),
+      fs.readFileSync(accessFilePath, "utf8"),
     ) as {
       invites: Array<Record<string, unknown>>;
       sessions: Array<Record<string, unknown>>;
@@ -61,6 +63,41 @@ test("member invite redemption, quota, refund and revocation persist safely", ()
     assert.equal("tokenHash" in persisted.sessions[0], true);
     assert.equal(JSON.stringify(persisted).includes(created.code), false);
     assert.equal(JSON.stringify(persisted).includes(redeemed.sessionToken), false);
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
+test("legacy session expiry migrates without reviving expired access", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-members-"));
+
+  try {
+    const store = new MemberAccessStore(dataDir, 2);
+    const expired = store.redeemInvite(store.createInvite({ memberName: "expired" }).code);
+    const active = store.redeemInvite(store.createInvite({ memberName: "active" }).code);
+    const accessFilePath = path.join(dataDir, "member-access.json");
+    const legacyData = JSON.parse(fs.readFileSync(accessFilePath, "utf8")) as {
+      sessions: Array<Record<string, unknown>>;
+    };
+    legacyData.sessions[0].expiresAt = "2000-01-01T00:00:00.000Z";
+    legacyData.sessions[1].expiresAt = "2999-01-01T00:00:00.000Z";
+    fs.writeFileSync(accessFilePath, `${JSON.stringify(legacyData, null, 2)}\n`);
+
+    assert.equal(store.resolveSession(expired.sessionToken), undefined);
+    assert.equal(store.resolveSession(active.sessionToken)?.id, active.session.id);
+
+    const migrated = JSON.parse(fs.readFileSync(accessFilePath, "utf8")) as {
+      sessions: Array<Record<string, unknown>>;
+    };
+    assert.equal("expiresAt" in migrated.sessions[0], false);
+    assert.equal("expiresAt" in migrated.sessions[1], false);
+    assert.equal(migrated.sessions[0].revokedAt, "2000-01-01T00:00:00.000Z");
+    assert.equal("revokedAt" in migrated.sessions[1], false);
+    assert.equal(fs.existsSync(`${accessFilePath}.pre-permanent-sessions`), true);
+
+    assert.equal(store.revokeMember(active.session.memberId), true);
+    assert.equal(store.resolveSession(active.sessionToken), undefined);
+    assert.equal(store.consumeQuota(active.session.id, 1), undefined);
   } finally {
     fs.rmSync(dataDir, { recursive: true, force: true });
   }

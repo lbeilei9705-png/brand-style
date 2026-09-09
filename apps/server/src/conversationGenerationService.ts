@@ -293,10 +293,10 @@ export class ConversationGenerationService {
       updatedAt: timestamp,
     };
 
-    this.conversationStore.save(updated);
+    const savedConversation = this.conversationStore.save(updated);
 
     return {
-      conversation: updated,
+      conversation: savedConversation,
       task: taskResponse.task,
     };
   }

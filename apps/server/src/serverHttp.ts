@@ -69,6 +69,13 @@ export function sendGenerationError(
   });
 }
 
+export function sendConversationStorageUnavailable(res: http.ServerResponse): void {
+  sendJson(res, 503, {
+    error: "历史会话存储正在保护模式，暂时无法开始新的生图任务。",
+    code: "CONVERSATION_STORAGE_DEGRADED",
+  });
+}
+
 function summarizeTaskRequest(request: CreateTaskRequest): Record<string, unknown> {
   return {
     inputType: request.inputType,

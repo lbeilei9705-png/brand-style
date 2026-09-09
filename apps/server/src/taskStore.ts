@@ -2,9 +2,20 @@ import type { GenerationTask } from "../../../packages/shared/src/index.ts";
 
 export class TaskStore {
   private readonly tasks = new Map<string, GenerationTask>();
+  private readonly maximumTasks: number;
+
+  constructor(maximumTasks = 12) {
+    this.maximumTasks = maximumTasks;
+  }
 
   save(task: GenerationTask): GenerationTask {
+    this.tasks.delete(task.id);
     this.tasks.set(task.id, task);
+    while (this.tasks.size > Math.max(1, this.maximumTasks)) {
+      const oldestTaskId = this.tasks.keys().next().value;
+      if (!oldestTaskId) break;
+      this.tasks.delete(oldestTaskId);
+    }
     return task;
   }
 

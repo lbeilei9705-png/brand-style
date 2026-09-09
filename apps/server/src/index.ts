@@ -5,11 +5,11 @@ import { fileURLToPath } from "url";
 import { getAppConfig, loadDotEnv } from "./config.ts";
 import { ConfigStore, type StoredConfig } from "./configStore.ts";
 import { ConversationService } from "./conversationService.ts";
-import { ConversationStore } from "./conversationStore.ts";
+import { createConversationStore } from "./conversationStore.ts";
 import { sendJson } from "./http/response.ts";
 import { handleConfigRoutes } from "./routes/configRoutes.ts";
 import { handleTelemetryRoutes } from "./routes/telemetryRoutes.ts";
-import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, sendGenerationError, serveStatic, stringHeader } from "./serverHttp.ts";
+import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, sendConversationStorageUnavailable, sendGenerationError, serveStatic, stringHeader } from "./serverHttp.ts";
 import { sendHealthResponse } from "./runtimeHealth.ts";
 import { installServerLifecycle } from "./runtimeLifecycle.ts";
 import { MemberAccessStore } from "./memberAccessStore.ts";
@@ -38,6 +38,7 @@ const memberDailyLimit = Math.max(
   Number(process.env.BRAND_STYLE_MEMBER_DAILY_LIMIT || 20),
 );
 const maxParallelGenerations = Math.max(1, Number(process.env.BRAND_STYLE_MAX_PARALLEL_GENERATIONS || 3));
+const maxInMemoryTasks = Math.max(1, Number(process.env.BRAND_STYLE_MAX_IN_MEMORY_TASKS || 12));
 const dataDir = path.resolve(projectRoot, process.env.BRAND_STYLE_DATA_DIR || "data");
 appConfig.telemetry.localDir = path.resolve(projectRoot, appConfig.telemetry.localDir);
 const telemetry = createTelemetryService(appConfig.telemetry);
@@ -52,15 +53,14 @@ const configStore = new ConfigStore(dataDir, remoteConfigStore);
 await configStore.syncFromRemote().catch((error) => {
   console.error(error instanceof Error ? error.message : error);
 });
-const conversationStore = new ConversationStore(dataDir, conversationRetentionDays);
+const conversationStore = await createConversationStore(dataDir, conversationRetentionDays);
 const memberAccessStore = new MemberAccessStore(dataDir, memberDailyLimit);
 const generationConcurrency = new GenerationConcurrencyLimiter(maxParallelGenerations);
-conversationStore.list();
 const conversationCleanupTimer = setInterval(() => {
   conversationStore.list();
 }, 24 * 60 * 60 * 1_000);
 conversationCleanupTimer.unref();
-const store = new TaskStore();
+const store = new TaskStore(maxInMemoryTasks);
 const assetStorage = new OssAssetStorage({
   enabled: appConfig.oss?.enabled ?? false,
   accessKeyId: appConfig.oss?.accessKeyId || "",
@@ -139,7 +139,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "GET" && pathname === "/api/health") {
       const models = configStore.listModels();
-      sendHealthResponse(res, appConfig, models, Boolean(remoteConfigStore?.enabled), assetStorage.enabled, hasAdminCredentials(req));
+      sendHealthResponse(res, appConfig, models, Boolean(remoteConfigStore?.enabled), assetStorage.enabled, !conversationStore.degraded, hasAdminCredentials(req));
       return;
     }
 
@@ -323,6 +323,7 @@ const server = http.createServer(async (req, res) => {
     const conversationMessageMatch = pathname.match(/^\/api\/conversations\/([^/]+)\/messages$/);
 
     if (req.method === "POST" && conversationMessageMatch) {
+      if (conversationStore.degraded) return sendConversationStorageUnavailable(res);
       let response: Awaited<ReturnType<ConversationService["addMessage"]>>;
       const messageRequest = await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1];
       const concurrencyKey = memberSession?.id || clientSessionId || actorId || req.socket.remoteAddress || "anonymous";

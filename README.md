@@ -97,6 +97,7 @@ BRAND_STYLE_PLUGIN_GLOBAL_RATE_LIMIT=60
 BRAND_STYLE_PLUGIN_RATE_WINDOW_MS=60000
 BRAND_STYLE_CONVERSATION_RETENTION_DAYS=30
 BRAND_STYLE_MEMBER_DAILY_LIMIT=20
+BRAND_STYLE_MAX_IN_MEMORY_TASKS=12
 BRAND_STYLE_MIN_CLIENT_VERSION=1.0.0
 YUNWU_IMAGE_API_KEY=真实密钥
 ```
@@ -109,6 +110,13 @@ YUNWU_IMAGE_API_KEY=真实密钥
 `BRAND_STYLE_ADMIN_TOKEN` 未配置时，后台 API 会拒绝访问，生产部署前必须先设置。成员访问数据当前保存在本机 `data/member-access.json`，只能运行单个 Node.js 服务实例；如果使用 PM2 cluster 或多副本部署，应先迁移到支持事务的数据库存储。
 
 `GET /api/health` 同时返回服务版本、就绪状态和模型密钥缺失项。可每分钟执行 `npm run healthcheck`；设置 `BRAND_STYLE_ALERT_WEBHOOK_URL` 后，失败时会向兼容 JSON Webhook 发送告警。
+
+历史会话只保存参考图的文件名、尺寸等元数据，不会把 Base64 图片写入
+`data/conversations.json`。升级时如果旧会话文件超过 8MB，服务端会在解析前流式移除
+内嵌图片，并将原文件改名为 `conversations.json.embedded-assets.*.bak` 作为临时备份；
+确认历史文字记录正常后可以删除该备份。如果迁移失败且原文件仍超过 128MB，服务会
+保护原文件、暂停会话读写并在 `/api/health` 报告未就绪，避免再次因解析大文件崩溃。
+服务端同时只保留最近 12 个生成任务，防止模型返回的 Base64 成图在内存中无限累积。
 
 生产隐私政策和使用条款：
 

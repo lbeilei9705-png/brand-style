@@ -10,6 +10,7 @@ export function createHealthResponse(input: {
   models: ModelConfig[];
   remoteConfigEnabled: boolean;
   ossEnabled: boolean;
+  conversationStorageReady: boolean;
   includeDetails?: boolean;
 }): Record<string, unknown> {
   const modelReadiness = getModelReadiness(input.models, input.appConfig.imageProvider === "mock");
@@ -17,7 +18,7 @@ export function createHealthResponse(input: {
   const build = getRuntimeBuildInfo();
   const response: Record<string, unknown> = {
     ok: true,
-    ready: modelReadiness.ready && security.ready,
+    ready: modelReadiness.ready && security.ready && input.conversationStorageReady,
     name: "3D Icon Style Engine",
     build: {
       version: build.version,
@@ -34,6 +35,7 @@ export function createHealthResponse(input: {
       supabase: input.remoteConfigEnabled,
       oss: input.ossEnabled,
       telemetry: input.appConfig.telemetry.store,
+      conversations: input.conversationStorageReady ? "ready" : "degraded",
     },
     security,
     models: modelReadiness,
@@ -46,6 +48,7 @@ export function sendHealthResponse(
   models: ModelConfig[],
   remoteConfigEnabled: boolean,
   ossEnabled: boolean,
+  conversationStorageReady: boolean,
   includeDetails = false,
 ): void {
   sendJson(res, 200, createHealthResponse({
@@ -53,6 +56,7 @@ export function sendHealthResponse(
     models,
     remoteConfigEnabled,
     ossEnabled,
+    conversationStorageReady,
     includeDetails,
   }));
 }

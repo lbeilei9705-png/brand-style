@@ -95,6 +95,21 @@ test("selectResult selects a result that belongs to the task", () => {
   assert.deepEqual(selected?.results.map((result) => result.selected), [false, true]);
 });
 
+test("task store evicts oldest image results to bound memory usage", () => {
+  const store = new TaskStore(2);
+  const first = { ...createTask(), id: "task_first" };
+  const second = { ...createTask(), id: "task_second" };
+  const third = { ...createTask(), id: "task_third" };
+
+  store.save(first);
+  store.save(second);
+  store.save(third);
+
+  assert.equal(store.get(first.id), undefined);
+  assert.equal(store.get(second.id)?.id, second.id);
+  assert.equal(store.get(third.id)?.id, third.id);
+});
+
 test("createTask uses a UUID-backed task id", async () => {
   const store = new TaskStore();
   const service = new TaskService(store, {

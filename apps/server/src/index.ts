@@ -9,7 +9,7 @@ import { createConversationStore } from "./conversationStore.ts";
 import { sendJson } from "./http/response.ts";
 import { handleConfigRoutes } from "./routes/configRoutes.ts";
 import { handleTelemetryRoutes } from "./routes/telemetryRoutes.ts";
-import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, sendConversationStorageUnavailable, sendGenerationError, serveStatic, stringHeader } from "./serverHttp.ts";
+import { configureServerHttp, consumePluginRateLimit, getMemberToken, handleAssetUpload, handleCreateTask, handleMemberLoginInvite, hasAdminCredentials, isAuthorizedRequest, isProtectedPluginRequest, logError, logInfo, readJsonRequest, redirectOssAsset, routeEventName, sendConversationStorageUnavailable, sendGenerationError, serveStatic, stringHeader } from "./serverHttp.ts";
 import { sendHealthResponse } from "./runtimeHealth.ts";
 import { installServerLifecycle } from "./runtimeLifecycle.ts";
 import { MemberAccessStore } from "./memberAccessStore.ts";
@@ -263,6 +263,8 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, revoked ? 200 : 404, { revoked });
       return;
     }
+
+    if (await handleMemberLoginInvite(req, res, pathname, memberAccessStore)) return;
 
     const revokeMemberMatch = pathname.match(/^\/api\/admin\/members\/([^/]+)$/);
 

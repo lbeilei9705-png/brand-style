@@ -6,6 +6,7 @@ import type { CreateTaskRequest, InputType, OutputTarget } from "../../../packag
 import { classifyGenerationError } from "./generationError.ts";
 import { parseMultipart, readRequestBody } from "./http/multipart.ts";
 import { send, sendJson } from "./http/response.ts";
+import type { MemberAccessStore } from "./memberAccessStore.ts";
 import type { OssAssetStorage } from "./storage/ossAssetStorage.ts";
 import type { TaskService } from "./taskService.ts";
 
@@ -74,6 +75,26 @@ export function sendConversationStorageUnavailable(res: http.ServerResponse): vo
     error: "历史会话存储正在保护模式，暂时无法开始新的生图任务。",
     code: "CONVERSATION_STORAGE_DEGRADED",
   });
+}
+
+export async function handleMemberLoginInvite(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  pathname: string,
+  memberAccessStore: MemberAccessStore,
+): Promise<boolean> {
+  const match = pathname.match(/^\/api\/admin\/members\/([^/]+)\/login-invite$/);
+  if (req.method !== "POST" || !match) return false;
+  try {
+    const body = await readJsonRequest(req) as { expiresInHours?: number } | null;
+    sendJson(res, 201, memberAccessStore.createMemberLoginInvite(match[1], body.expiresInHours));
+  } catch (error) {
+    const missing = error instanceof Error && error.message === "成员不存在或已撤销。";
+    sendJson(res, missing ? 404 : 400, {
+      error: missing ? error.message : "重新登录邀请码创建失败，请检查输入后重试。",
+    });
+  }
+  return true;
 }
 
 function summarizeTaskRequest(request: CreateTaskRequest): Record<string, unknown> {

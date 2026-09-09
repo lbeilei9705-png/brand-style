@@ -103,6 +103,43 @@ test("legacy session expiry migrates without reviving expired access", () => {
   }
 });
 
+test("member relogin preserves identity and quota while revoking old sessions", () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-members-"));
+
+  try {
+    const store = new MemberAccessStore(dataDir, 3);
+    const initial = store.redeemInvite(store.createInvite({
+      memberName: "Returning Member",
+      dailyLimit: 3,
+    }).code);
+    assert.equal(store.consumeQuota(initial.session.id, 2)?.allowed, true);
+
+    const reloginInvite = store.createMemberLoginInvite(initial.session.memberId);
+    const replacement = store.redeemInvite(reloginInvite.code);
+
+    assert.equal(replacement.session.memberId, initial.session.memberId);
+    assert.equal(replacement.session.usedToday, 2);
+    assert.equal(replacement.session.remainingToday, 1);
+    assert.equal(store.resolveSession(initial.sessionToken), undefined);
+    assert.equal(store.resolveSession(replacement.sessionToken)?.id, replacement.session.id);
+    assert.equal(store.listForAdmin().members.length, 1);
+    assert.throws(() => store.redeemInvite(reloginInvite.code), /无效、已使用或已过期/);
+
+    store.refundQuota(initial.session.id, 1);
+    assert.equal(store.resolveSession(replacement.sessionToken)?.usedToday, 1);
+    const pendingInvite = store.createMemberLoginInvite(initial.session.memberId);
+    store.revokeMember(initial.session.memberId);
+    const revokedInvite = store.listForAdmin().invites.find((item) => item.id === pendingInvite.invite.id);
+    assert.equal(revokedInvite?.status, "revoked");
+    assert.throws(
+      () => store.createMemberLoginInvite(initial.session.memberId),
+      /成员不存在或已撤销/,
+    );
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
+});
+
 test("invite validation and configured bounds are deterministic", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-members-"));
 

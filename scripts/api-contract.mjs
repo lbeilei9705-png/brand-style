@@ -311,9 +311,31 @@ async function main() {
   assert.equal(bundle.clientContext.source, "api-contract");
   assert.ok(bundle.events.some((event) => event.name === "generation_success"));
 
+  const reloginInvite = await request(
+    baseUrl,
+    `/api/admin/members/${session.body.session.memberId}/login-invite`,
+    {
+      method: "POST",
+      headers: adminHeaders(),
+      body: JSON.stringify({ expiresInHours: 24 }),
+    },
+  );
+  assert.equal(reloginInvite.response.status, 201);
+  const relogin = await request(baseUrl, "/api/member/session/redeem", {
+    method: "POST",
+    body: JSON.stringify({ code: reloginInvite.body.code }),
+  });
+  assert.equal(relogin.response.status, 201);
+  assert.equal(relogin.body.session.memberId, session.body.session.memberId);
+  assert.equal(relogin.body.session.remainingToday, 0);
+  const replacedSession = await request(baseUrl, "/api/member/session/me", {
+    headers: memberHeaders(memberToken),
+  });
+  assert.equal(replacedSession.response.status, 401);
+
   const revokeSession = await request(
     baseUrl,
-    `/api/admin/member-sessions/${session.body.session.id}`,
+    `/api/admin/member-sessions/${relogin.body.session.id}`,
     {
       method: "DELETE",
       headers: adminHeaders(),
@@ -322,7 +344,7 @@ async function main() {
   assert.equal(revokeSession.response.status, 200);
   assert.equal(revokeSession.body.revoked, true);
   const revokedSession = await request(baseUrl, "/api/member/session/me", {
-    headers: memberHeaders(memberToken),
+    headers: memberHeaders(relogin.body.sessionToken),
   });
   assert.equal(revokedSession.response.status, 401);
 

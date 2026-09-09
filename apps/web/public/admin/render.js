@@ -327,7 +327,8 @@ export function renderMemberAccess() {
       <td>${renderStatus(member.enabled)}</td>
       <td>
         ${member.enabled
-          ? `<button class="danger-button" data-action="revoke-member" data-id="${escapeHtml(member.id)}" type="button">撤销访问</button>`
+          ? `<button class="secondary-button" data-action="relogin-member" data-id="${escapeHtml(member.id)}" type="button">重新登录</button>
+             <button class="danger-button" data-action="revoke-member" data-id="${escapeHtml(member.id)}" type="button">撤销访问</button>`
           : '<span class="muted">已撤销</span>'}
       </td>
     </tr>

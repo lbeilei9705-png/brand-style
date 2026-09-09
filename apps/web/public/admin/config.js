@@ -8,21 +8,29 @@ export async function loadMemberAccess() {
   renderMemberAccess();
 }
 
+function showGeneratedInvite(code, memberName) {
+  qs("#generated-invite-code").textContent = code;
+  qs("#generated-invite-label").textContent = `「${memberName}」的邀请码仅在本次显示，请复制后发送给成员`;
+  const panel = qs("#generated-invite");
+  panel.hidden = false;
+  panel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
 export async function createMemberInvite(event) {
   event.preventDefault();
+  const memberName = qs("#member-invite-name").value.trim();
   const data = await requestJson("/api/admin/member-invites", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      memberName: qs("#member-invite-name").value.trim(),
+      memberName,
       dailyLimit: Number(qs("#member-invite-daily-limit").value),
       expiresInHours: Number(qs("#member-invite-expiry").value),
     }),
   });
-  qs("#generated-invite-code").textContent = data.code;
-  qs("#generated-invite").hidden = false;
+  showGeneratedInvite(data.code, memberName);
   qs("#member-invite-name").value = "";
   await loadMemberAccess();
 }
@@ -38,6 +46,27 @@ export async function revokeMember(memberId) {
     method: "DELETE",
   });
   await loadMemberAccess();
+}
+
+export async function createMemberReloginInvite(memberId) {
+  const member = state.members.find((item) => item.id === memberId);
+  if (!member || !confirm(`为「${member.name}」生成重新登录邀请码？兑换后该成员其他设备的旧登录会失效。`)) {
+    return;
+  }
+
+  try {
+    const data = await requestJson(`/api/admin/members/${memberId}/login-invite`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresInHours: 24 }),
+    });
+    showGeneratedInvite(data.code, `${member.name}（重新登录）`);
+    await loadMemberAccess();
+  } catch (error) {
+    alert(error instanceof Error ? error.message : "重新登录邀请码创建失败。");
+  }
 }
 
 export async function revokeMemberInvite(inviteId) {

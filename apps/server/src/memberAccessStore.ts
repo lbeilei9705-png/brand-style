@@ -4,6 +4,7 @@ import path from "path";
 
 interface MemberInvite {
   id: string;
+  memberId?: string;
   memberName: string;
   codeHash: string;
   dailyLimit: number;
@@ -171,6 +172,41 @@ export class MemberAccessStore {
     return { invite: safeInvite, code };
   }
 
+  createMemberLoginInvite(memberId: string, expiresInHours = 24): {
+    invite: Omit<MemberInvite, "codeHash">;
+    code: string;
+  } {
+    const data = this.read();
+    const member = data.members.find((item) => item.id === memberId && item.enabled);
+    if (!member) {
+      throw new Error("成员不存在或已撤销。");
+    }
+
+    const timestamp = now();
+    for (const invite of data.invites.filter((item) => (
+      item.memberId === memberId && !item.redeemedAt && !item.revokedAt
+    ))) {
+      invite.revokedAt = timestamp;
+    }
+
+    const code = createInviteCode();
+    const invite: MemberInvite = {
+      id: `invite_${crypto.randomUUID()}`,
+      memberId,
+      memberName: member.name,
+      codeHash: hashSecret(code),
+      dailyLimit: member.dailyLimit,
+      createdAt: timestamp,
+      expiresAt: new Date(
+        Date.now() + Math.max(1, Math.min(168, Number(expiresInHours) || 24)) * 60 * 60 * 1_000,
+      ).toISOString(),
+    };
+    data.invites.push(invite);
+    this.write(data);
+    const { codeHash: _codeHash, ...safeInvite } = invite;
+    return { invite: safeInvite, code };
+  }
+
   redeemInvite(rawCode: string): {
     sessionToken: string;
     session: MemberSessionInfo;
@@ -194,7 +230,13 @@ export class MemberAccessStore {
     }
 
     const timestamp = now();
-    const member: Member = {
+    const existingMember = invite.memberId
+      ? data.members.find((item) => item.id === invite.memberId && item.enabled)
+      : undefined;
+    if (invite.memberId && !existingMember) {
+      throw new Error("成员不存在或已撤销。");
+    }
+    const member: Member = existingMember || {
       id: `member_${crypto.randomUUID()}`,
       name: invite.memberName,
       enabled: true,
@@ -202,6 +244,19 @@ export class MemberAccessStore {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
+    const usageByDate: Record<string, number> = {};
+    if (existingMember) {
+      member.updatedAt = timestamp;
+      const usageDate = getUsageDate();
+      for (const previous of data.sessions.filter((item) => item.memberId === member.id)) {
+        usageByDate[usageDate] = (usageByDate[usageDate] || 0)
+          + (previous.usageByDate[usageDate] || 0);
+        previous.usageByDate = {};
+        if (!previous.revokedAt) {
+          previous.revokedAt = timestamp;
+        }
+      }
+    }
     const sessionToken = `bst_${crypto.randomBytes(32).toString("base64url")}`;
     const session: MemberSession = {
       id: `session_${crypto.randomUUID()}`,
@@ -209,10 +264,12 @@ export class MemberAccessStore {
       tokenHash: hashSecret(sessionToken),
       createdAt: timestamp,
       lastSeenAt: timestamp,
-      usageByDate: {},
+      usageByDate,
     };
     invite.redeemedAt = timestamp;
-    data.members.push(member);
+    if (!existingMember) {
+      data.members.push(member);
+    }
     data.sessions.push(session);
     this.write(data);
     return {
@@ -289,7 +346,13 @@ export class MemberAccessStore {
     }
 
     const date = getUsageDate();
-    session.usageByDate[date] = Math.max(0, (session.usageByDate[date] || 0) - Math.max(1, Math.ceil(amount)));
+    const quotaSession = session.revokedAt
+      ? data.sessions.find((item) => item.memberId === session.memberId && !item.revokedAt) || session
+      : session;
+    quotaSession.usageByDate[date] = Math.max(
+      0,
+      (quotaSession.usageByDate[date] || 0) - Math.max(1, Math.ceil(amount)),
+    );
     this.write(data);
   }
 
@@ -320,6 +383,11 @@ export class MemberAccessStore {
 
     for (const session of data.sessions.filter((item) => item.memberId === memberId && !item.revokedAt)) {
       session.revokedAt = timestamp;
+    }
+    for (const invite of data.invites.filter((item) => (
+      item.memberId === memberId && !item.redeemedAt && !item.revokedAt
+    ))) {
+      invite.revokedAt = timestamp;
     }
 
     this.write(data);

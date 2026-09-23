@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Brand Style · AI 创作工作台</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="工作台导航">
+        <a class="brand" href="/app" aria-label="Brand Style 首页">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 28 28"><path d="M6 7.5 14 3l8 4.5v9L14 21l-8-4.5v-9Z"/><path d="m9.5 9.5 4.5-2.6 4.5 2.6V15L14 17.6 9.5 15V9.5Z"/></svg>
+          </span>
+          <span><strong>Brand Style</strong><small>AI Creative Studio</small></span>
+        </a>
+        <button id="new-chat-button" class="new-chat-button" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          新建创作
+        </button>
+        <section class="sidebar-section" aria-labelledby="recent-title">
+          <div class="section-label"><span id="recent-title">本次任务</span><span id="task-count">0</span></div>
+          <div id="task-list" class="task-list">
+            <div class="sidebar-empty">生成任务会显示在这里</div>
+          </div>
+        </section>
+        <div class="sidebar-footer">
+          <div class="member-mini">
+            <span class="avatar" id="member-avatar">B</span>
+            <span><strong id="member-name">未登录</strong><small id="member-quota">输入邀请码开始</small></span>
+          </div>
+          <button id="logout-button" class="icon-button" type="button" aria-label="退出登录" title="退出登录">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M14 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5"/></svg>
+          </button>
+        </div>
+      </aside>
+
+      <main id="main-content" class="main-content">
+        <header class="topbar">
+          <button id="menu-button" class="icon-button mobile-only" type="button" aria-label="打开导航">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div>
+            <p class="eyebrow">创作工作台</p>
+            <h1>把想法变成品牌视觉</h1>
+          </div>
+          <div class="topbar-actions">
+            <span id="service-status" class="status-pill"><i></i>服务检查中</span>
+            <button id="settings-toggle" class="icon-button mobile-only" type="button" aria-label="打开生成设置">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21h-4v-.09A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.58 15 1.7 1.7 0 0 0 3 14H3v-4h.09A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88L4.2 7l2.83-2.83.06.06A1.7 1.7 0 0 0 8.97 4.6 1.7 1.7 0 0 0 10 3.03V3h4v.09A1.7 1.7 0 0 0 15.05 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06L19.82 7l-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 21 10v4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="workspace">
+          <section class="canvas-panel">
+            <div id="empty-state" class="empty-state">
+              <span class="hero-icon" aria-hidden="true">
+                <svg viewBox="0 0 48 48"><path d="m24 5 5.2 10.5L41 17.2l-8.5 8.2 2 11.6L24 31.5 13.5 37l2-11.6L7 17.2l11.8-1.7L24 5Z"/></svg>
+              </span>
+              <p class="eyebrow">Brand Style AI</p>
+              <h2>今天想创造什么？</h2>
+              <p>描述视觉目标，选择品牌预设和材质，或上传参考图开始创作。</p>
+              <div class="suggestions">
+                <button type="button" data-prompt="一组金融 App 功能图标，主体清晰，前后层次丰富">金融功能图标</button>
+                <button type="button" data-prompt="高级感 3D 品牌视觉，适合产品运营主视觉">品牌运营视觉</button>
+                <button type="button" data-prompt="将参考图转化为统一品牌风格的 3D 图标">参考图风格化</button>
+              </div>
+            </div>
+            <div id="feed" class="feed" aria-live="polite"></div>
+            <section id="results-section" class="results-section" hidden>
+              <div class="results-heading">
+                <div><p class="eyebrow">生成结果</p><h2>本次候选图片</h2></div>
+                <span id="result-summary" class="muted"></span>
+              </div>
+              <div id="result-grid" class="result-grid"></div>
+            </section>
+
+            <div class="composer-wrap">
+              <div id="attachments" class="attachments" hidden></div>
+              <form id="composer-form" class="composer">
+                <label class="sr-only" for="prompt-input">描述要生成的画面</label>
+                <textarea id="prompt-input" rows="3" placeholder="描述你想生成的画面，也可以在右侧选择 Skill…"></textarea>
+                <div class="composer-actions">
+                  <label class="attach-button" for="file-input">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.4 11.6 12 21a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 1 1-2.8-2.8l8.5-8.5"/></svg>
+                    添加参考图
+                  </label>
+                  <input id="file-input" type="file" accept="image/*" multiple hidden />
+                  <span id="composer-hint">最多 4 张，每张不超过 10MB</span>
+                  <button id="generate-button" class="generate-button" type="submit">
+                    <span>开始生成</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 12-7-3.5 7L18 19 6 12Z"/></svg>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <aside id="settings-panel" class="settings-panel" aria-label="生成设置">
+            <div class="settings-header"><div><p class="eyebrow">Generation</p><h2>生成设置</h2></div><button id="settings-close" class="icon-button mobile-only" type="button" aria-label="关闭设置">×</button></div>
+            <label class="field"><span>模型</span><select id="model-select"></select></label>
+            <label class="field"><span>品牌预设</span><select id="style-select"><option value="">未选择品牌预设</option></select></label>
+            <label class="field"><span>Skill</span><select id="skill-select"><option value="">不使用 Skill</option></select></label>
+            <label class="field"><span>配色</span><select id="palette-select"><option value="">未选择配色</option></select></label>
+            <label class="field"><span>形状</span><select id="shape-select"><option value="">未选择形状</option></select></label>
+            <fieldset class="field">
+              <legend>材质 <small>可多选</small></legend>
+              <div id="material-list" class="material-list"><span class="muted">正在加载…</span></div>
+            </fieldset>
+            <div class="setting-row">
+              <label class="field"><span>比例</span><select id="ratio-select"><option>1:1</option><option>4:3</option><option>3:4</option><option>16:9</option><option>9:16</option></select></label>
+              <label class="field"><span>清晰度</span><select id="resolution-select"><option value="1k">1K</option><option value="2k">2K</option><option value="4k">4K</option></select></label>
+            </div>
+            <label class="field"><span>生成张数</span><select id="batch-select"><option value="1">1 张</option><option value="2">2 张</option><option value="3">3 张</option><option value="4">4 张</option></select></label>
+            <div class="settings-note"><strong>配置会自动记忆</strong><span>Web 与 Figma 插件共用后端和成员额度。</span></div>
+          </aside>
+        </div>
+      </main>
+    </div>
+    <button id="mobile-scrim" class="mobile-scrim" type="button" aria-label="关闭侧边面板"></button>
+
+    <dialog id="login-dialog" class="login-dialog">
+      <form id="login-form" method="dialog">
+        <span class="login-mark" aria-hidden="true"><svg viewBox="0 0 28 28"><path d="M6 7.5 14 3l8 4.5v9L14 21l-8-4.5v-9Z"/></svg></span>
+        <p class="eyebrow">Welcome to Brand Style</p>
+        <h2>使用邀请码登录</h2>
+        <p>登录后即可与 Figma 插件共用生成额度。</p>
+        <label class="field" for="invite-input"><span>邀请码</span><input id="invite-input" autocomplete="one-time-code" placeholder="例如 BRAND-XXXX-XXXX" required /></label>
+        <p id="login-error" class="form-error" role="alert"></p>
+        <button id="login-button" class="primary-button" type="submit">进入创作工作台</button>
+      </form>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/app/bindings.js"></script>
+  </body>
+</html>

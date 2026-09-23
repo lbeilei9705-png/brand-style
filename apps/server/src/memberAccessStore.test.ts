@@ -103,7 +103,7 @@ test("legacy session expiry migrates without reviving expired access", () => {
   }
 });
 
-test("member relogin preserves identity and quota while revoking old sessions", () => {
+test("member relogin preserves shared quota across concurrent sessions", () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "icon-style-members-"));
 
   try {
@@ -120,15 +120,19 @@ test("member relogin preserves identity and quota while revoking old sessions", 
     assert.equal(replacement.session.memberId, initial.session.memberId);
     assert.equal(replacement.session.usedToday, 2);
     assert.equal(replacement.session.remainingToday, 1);
-    assert.equal(store.resolveSession(initial.sessionToken), undefined);
+    assert.equal(store.resolveSession(initial.sessionToken)?.id, initial.session.id);
     assert.equal(store.resolveSession(replacement.sessionToken)?.id, replacement.session.id);
     assert.equal(store.listForAdmin().members.length, 1);
+    assert.equal(store.listForAdmin().members[0].sessionCount, 2);
+    assert.equal(store.consumeQuota(replacement.session.id, 2)?.allowed, false);
     assert.throws(() => store.redeemInvite(reloginInvite.code), /无效、已使用或已过期/);
 
     store.refundQuota(initial.session.id, 1);
     assert.equal(store.resolveSession(replacement.sessionToken)?.usedToday, 1);
     const pendingInvite = store.createMemberLoginInvite(initial.session.memberId);
     store.revokeMember(initial.session.memberId);
+    assert.equal(store.resolveSession(initial.sessionToken), undefined);
+    assert.equal(store.resolveSession(replacement.sessionToken), undefined);
     const revokedInvite = store.listForAdmin().invites.find((item) => item.id === pendingInvite.invite.id);
     assert.equal(revokedInvite?.status, "revoked");
     assert.throws(

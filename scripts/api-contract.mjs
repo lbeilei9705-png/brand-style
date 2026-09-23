@@ -129,6 +129,13 @@ async function main() {
   assert.equal(health.body.provider, "mock");
   assert.equal(health.body.storage.telemetry, "local");
 
+  const webApp = await fetch(`${baseUrl}/app`);
+  assert.equal(webApp.status, 200);
+  assert.match(await webApp.text(), /id="login-dialog"/);
+  const webClientScript = await fetch(`${baseUrl}/app/bindings.js`);
+  assert.equal(webClientScript.status, 200);
+  assert.match(webClientScript.headers.get("content-type") || "", /javascript/);
+
   const preflight = await fetch(`${baseUrl}/api/member/session/redeem`, {
     method: "OPTIONS",
     headers: {
@@ -331,7 +338,8 @@ async function main() {
   const replacedSession = await request(baseUrl, "/api/member/session/me", {
     headers: memberHeaders(memberToken),
   });
-  assert.equal(replacedSession.response.status, 401);
+  assert.equal(replacedSession.response.status, 200);
+  assert.equal(replacedSession.body.session.remainingToday, 0);
 
   const revokeSession = await request(
     baseUrl,

@@ -328,7 +328,7 @@ const server = http.createServer(async (req, res) => {
       if (conversationStore.degraded) return sendConversationStorageUnavailable(res);
       let response: Awaited<ReturnType<ConversationService["addMessage"]>>;
       const messageRequest = await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1];
-      const concurrencyKey = memberSession?.id || clientSessionId || actorId || req.socket.remoteAddress || "anonymous";
+      const concurrencyKey = memberSession?.memberId || clientSessionId || actorId || req.socket.remoteAddress || "anonymous";
 
       if (!generationConcurrency.tryAcquire(concurrencyKey)) {
         sendJson(res, 429, {

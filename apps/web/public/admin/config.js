@@ -50,7 +50,7 @@ export async function revokeMember(memberId) {
 
 export async function createMemberReloginInvite(memberId) {
   const member = state.members.find((item) => item.id === memberId);
-  if (!member || !confirm(`为「${member.name}」生成重新登录邀请码？兑换后该成员其他设备的旧登录会失效。`)) {
+  if (!member || !confirm(`为「${member.name}」生成新的登录邀请码？现有设备会保持登录，并共用同一份额度。`)) {
     return;
   }
 

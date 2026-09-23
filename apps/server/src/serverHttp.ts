@@ -280,6 +280,8 @@ export function redirectOssAsset(pathname: string, res: http.ServerResponse, ass
 export function serveStatic(pathname: string, res: http.ServerResponse): void {
   const routeAliases: Record<string, string> = {
     "/": "/showcase.html",
+    "/app": "/app/index.html",
+    "/app/": "/app/index.html",
     "/debug-prompt": "/debug-prompt.html",
     "/figma-ai": "/figma-ai.html",
     "/figma-cover": "/figma-cover.html",

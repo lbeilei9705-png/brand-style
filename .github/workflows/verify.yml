@@ -24,3 +24,4 @@ jobs:
           IMAGE_PROVIDER: mock
           TELEMETRY_STORE: local
           BRAND_STYLE_ADMIN_TOKEN: ci-admin-token
+      - run: git diff --exit-code -- apps/web/public/app

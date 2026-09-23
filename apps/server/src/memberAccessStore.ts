@@ -244,18 +244,8 @@ export class MemberAccessStore {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
-    const usageByDate: Record<string, number> = {};
     if (existingMember) {
       member.updatedAt = timestamp;
-      const usageDate = getUsageDate();
-      for (const previous of data.sessions.filter((item) => item.memberId === member.id)) {
-        usageByDate[usageDate] = (usageByDate[usageDate] || 0)
-          + (previous.usageByDate[usageDate] || 0);
-        previous.usageByDate = {};
-        if (!previous.revokedAt) {
-          previous.revokedAt = timestamp;
-        }
-      }
     }
     const sessionToken = `bst_${crypto.randomBytes(32).toString("base64url")}`;
     const session: MemberSession = {
@@ -264,7 +254,7 @@ export class MemberAccessStore {
       tokenHash: hashSecret(sessionToken),
       createdAt: timestamp,
       lastSeenAt: timestamp,
-      usageByDate,
+      usageByDate: {},
     };
     invite.redeemedAt = timestamp;
     if (!existingMember) {
@@ -274,7 +264,7 @@ export class MemberAccessStore {
     this.write(data);
     return {
       sessionToken,
-      session: this.toSessionInfo(member, session),
+      session: this.toSessionInfo(member, session, data.sessions),
     };
   }
 
@@ -301,7 +291,7 @@ export class MemberAccessStore {
       this.write(data);
     }
 
-    return this.toSessionInfo(member, session);
+    return this.toSessionInfo(member, session, data.sessions);
   }
 
   consumeQuota(sessionId: string, amount: number): {
@@ -320,20 +310,21 @@ export class MemberAccessStore {
 
     const date = getUsageDate();
     const requestedAmount = Math.max(1, Math.ceil(amount));
-    const usedToday = session.usageByDate[date] || 0;
+    const memberSessions = data.sessions.filter((item) => item.memberId === member.id);
+    const usedToday = this.memberUsageToday(memberSessions);
 
     if (usedToday + requestedAmount > member.dailyLimit) {
       return {
         allowed: false,
-        quota: this.toQuota(member, session),
+        quota: this.toQuota(member, memberSessions),
       };
     }
 
-    session.usageByDate[date] = usedToday + requestedAmount;
+    session.usageByDate[date] = (session.usageByDate[date] || 0) + requestedAmount;
     this.write(data);
     return {
       allowed: true,
-      quota: this.toQuota(member, session),
+      quota: this.toQuota(member, memberSessions),
     };
   }
 
@@ -346,12 +337,9 @@ export class MemberAccessStore {
     }
 
     const date = getUsageDate();
-    const quotaSession = session.revokedAt
-      ? data.sessions.find((item) => item.memberId === session.memberId && !item.revokedAt) || session
-      : session;
-    quotaSession.usageByDate[date] = Math.max(
+    session.usageByDate[date] = Math.max(
       0,
-      (quotaSession.usageByDate[date] || 0) - Math.max(1, Math.ceil(amount)),
+      (session.usageByDate[date] || 0) - Math.max(1, Math.ceil(amount)),
     );
     this.write(data);
   }
@@ -453,7 +441,7 @@ export class MemberAccessStore {
               dailyLimit: 0,
               createdAt: session.createdAt,
               updatedAt: session.createdAt,
-            }, session),
+            }, session, data.sessions),
             revokedAt: session.revokedAt,
           };
         })
@@ -461,8 +449,12 @@ export class MemberAccessStore {
     };
   }
 
-  private toSessionInfo(member: Member, session: MemberSession): MemberSessionInfo {
-    const quota = this.toQuota(member, session);
+  private toSessionInfo(
+    member: Member,
+    session: MemberSession,
+    sessions: MemberSession[] = [session],
+  ): MemberSessionInfo {
+    const quota = this.toQuota(member, sessions);
     return {
       id: session.id,
       memberId: member.id,
@@ -474,8 +466,15 @@ export class MemberAccessStore {
     };
   }
 
-  private toQuota(member: Member, session: MemberSession): MemberQuota {
-    const usedToday = session.usageByDate[getUsageDate()] || 0;
+  private memberUsageToday(sessions: MemberSession[]): number {
+    const date = getUsageDate();
+    return sessions.reduce((total, session) => total + (session.usageByDate[date] || 0), 0);
+  }
+
+  private toQuota(member: Member, sessions: MemberSession[]): MemberQuota {
+    const usedToday = this.memberUsageToday(
+      sessions.filter((session) => session.memberId === member.id),
+    );
     return {
       dailyLimit: member.dailyLimit,
       usedToday,

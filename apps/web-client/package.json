@@ -1,0 +1,9 @@
+{
+  "name": "@icon-style/web-client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs"
+  }
+}

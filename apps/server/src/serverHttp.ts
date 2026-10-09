@@ -389,7 +389,9 @@ const protectedPluginGetRoutes = new Set([
 
 export function isProtectedPluginRequest(method: string | undefined, pathname: string): boolean {
   if (method === "GET") {
-    return protectedPluginGetRoutes.has(pathname);
+    return protectedPluginGetRoutes.has(pathname)
+      || pathname === "/api/conversations"
+      || /^\/api\/conversations\/conv_[0-9a-f-]{36}$/i.test(pathname);
   }
 
   if (method === "POST") {

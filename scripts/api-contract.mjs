@@ -207,7 +207,36 @@ async function main() {
   });
   assert.equal(createdConversation.response.status, 201);
   assert.match(createdConversation.body.conversation.id, /^conv_[0-9a-f-]{36}$/);
+  assert.equal(createdConversation.body.conversation.memberId, session.body.session.memberId);
   const conversationId = createdConversation.body.conversation.id;
+
+  const otherInvite = await request(baseUrl, "/api/admin/member-invites", {
+    method: "POST",
+    headers: adminHeaders(),
+    body: JSON.stringify({ memberName: "Other Member", dailyLimit: 1, expiresInHours: 1 }),
+  });
+  const otherRedeem = await request(baseUrl, "/api/member/session/redeem", {
+    method: "POST",
+    body: JSON.stringify({ code: otherInvite.body.code }),
+  });
+  const otherToken = otherRedeem.body.sessionToken;
+  const memberConversations = await request(baseUrl, "/api/conversations", {
+    headers: memberHeaders(memberToken),
+  });
+  assert.equal(memberConversations.body.conversations.length, 1);
+  const otherConversations = await request(baseUrl, "/api/conversations", {
+    headers: memberHeaders(otherToken),
+  });
+  assert.equal(otherConversations.body.conversations.length, 0);
+  const inaccessibleConversation = await request(baseUrl, `/api/conversations/${conversationId}`, {
+    headers: memberHeaders(otherToken),
+  });
+  assert.equal(inaccessibleConversation.response.status, 404);
+  const inaccessibleDelete = await request(baseUrl, `/api/conversations/${conversationId}`, {
+    method: "DELETE",
+    headers: memberHeaders(otherToken),
+  });
+  assert.equal(inaccessibleDelete.response.status, 404);
 
   const messageBody = {
     content: "生成一个确定性测试图标",
@@ -220,6 +249,17 @@ async function main() {
     resolution: "1k",
     usePromptOrchestrator: false,
   };
+  const inaccessibleMessage = await request(baseUrl, `/api/conversations/${conversationId}/messages`, {
+    method: "POST",
+    headers: memberHeaders(otherToken),
+    body: JSON.stringify(messageBody),
+  });
+  assert.equal(inaccessibleMessage.response.status, 404);
+  const unaffectedOtherSession = await request(baseUrl, "/api/member/session/me", {
+    headers: memberHeaders(otherToken),
+  });
+  assert.equal(unaffectedOtherSession.body.session.remainingToday, 1);
+
   const firstMessage = await request(baseUrl, `/api/conversations/${conversationId}/messages`, {
     method: "POST",
     headers: memberHeaders(memberToken),

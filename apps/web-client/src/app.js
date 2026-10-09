@@ -50,6 +50,9 @@ const state = {
   conversationId: null,
   assets: [],
   tasks: [],
+  conversations: [],
+  renderHistory: null,
+  refreshHistory: null,
   workspaceId: 0,
   config: { models: [], styles: [], skills: [], materials: [], palettes: [], shapes: [] },
   activeRequests: new Map(),
@@ -103,6 +106,7 @@ function clearSession() {
   state.token = "";
   state.session = null;
   state.tasks = [];
+  state.conversations = [];
   localStorage.removeItem(TOKEN_KEY);
   resetWorkspace();
   renderTasks();
@@ -271,26 +275,7 @@ function addMessage(kind, content, pending = false) {
 }
 
 function renderTasks() {
-  elements.taskCount.textContent = String(state.tasks.length);
-  elements.taskList.replaceChildren();
-  if (!state.tasks.length) {
-    const empty = document.createElement("div");
-    empty.className = "sidebar-empty";
-    empty.textContent = "生成任务会显示在这里";
-    elements.taskList.append(empty);
-    return;
-  }
-  for (const task of state.tasks) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `task-item ${task.status}`;
-    const dot = document.createElement("i");
-    const label = document.createElement("span");
-    label.textContent = task.prompt || "图片生成任务";
-    button.append(dot, label);
-    button.addEventListener("click", () => task.anchor?.scrollIntoView({ behavior: "smooth", block: "center" }));
-    elements.taskList.prepend(button);
-  }
+  state.renderHistory?.();
 }
 
 function renderResults(task, prompt, anchor) {
@@ -359,6 +344,7 @@ async function ensureConversation(snapshot, workspaceId) {
   });
   const data = await responseJson(response, "创建对话失败");
   if (workspaceId === state.workspaceId) state.conversationId = data.conversation.id;
+  state.refreshHistory?.().catch(() => undefined);
   return data.conversation.id;
 }
 
@@ -459,6 +445,7 @@ async function generate(content) {
     taskEntry.anchor = pending;
     if (workspaceId === state.workspaceId) renderResults(data.task, content, pending);
     if (state.token) refreshSession().catch(() => toast("图片已生成，但额度刷新暂时失败"));
+    state.refreshHistory?.().catch(() => undefined);
   } catch (error) {
     pending.className = "message error";
     pending.textContent = error.name === "AbortError" ? "任务已暂停，额度将自动退回。" : error.message;
@@ -489,10 +476,11 @@ function resetWorkspace() {
   elements.empty.hidden = false;
   elements.prompt.value = "";
   renderAttachments();
+  renderTasks();
 }
 
 export {
-  $, TOKEN_KEY, api, checkHealth, clearSession, elements, fileToAsset, generate,
+  $, TOKEN_KEY, addMessage, api, checkHealth, clearSession, elements, fileToAsset, generate,
   loadConfig, refreshSession, renderAttachments, renderMember, renderTasks,
   resetWorkspace, responseJson, saveSettings, showLogin, state, toast,
   updateGenerateState,

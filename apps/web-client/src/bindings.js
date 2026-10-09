@@ -1,9 +1,16 @@
 import {
-  $, TOKEN_KEY, api, checkHealth, clearSession, elements, fileToAsset, generate,
+  $, TOKEN_KEY, addMessage, api, checkHealth, clearSession, elements, fileToAsset, generate,
   loadConfig, refreshSession, renderAttachments, renderMember, renderTasks,
   resetWorkspace, responseJson, saveSettings, showLogin, state, toast,
   updateGenerateState,
 } from "./app.js";
+import { createHistoryController } from "./history.js";
+
+const history = createHistoryController({
+  api, responseJson, elements, state, resetWorkspace, addMessage, toast,
+});
+state.renderHistory = history.render;
+state.refreshHistory = history.load;
 
 elements.loginDialog.addEventListener("cancel", (event) => {
   if (!state.token) event.preventDefault();
@@ -26,6 +33,7 @@ elements.loginForm.addEventListener("submit", async (event) => {
     elements.loginDialog.close();
     try {
       await loadConfig();
+      await history.load();
       updateGenerateState();
     } catch (error) {
       elements.generate.disabled = true;
@@ -115,6 +123,7 @@ async function bootstrap() {
   try {
     await refreshSession();
     await loadConfig();
+    await history.load();
     updateGenerateState();
   } catch (error) {
     if (!state.token) showLogin(error.message);

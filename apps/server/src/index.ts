@@ -278,8 +278,6 @@ const server = http.createServer(async (req, res) => {
       await handleAssetUpload(req, res, assetStorage);
       return;
     }
-
-
     if (await handleConfigRoutes({
       req,
       res,
@@ -289,29 +287,25 @@ const server = http.createServer(async (req, res) => {
     })) {
       return;
     }
-
-
     if (req.method === "GET" && pathname === "/api/conversations") {
-      sendJson(res, 200, { conversations: conversationService.list() });
-      return;
+      return sendJson(res, 200, { conversations: conversationService.list(memberSession?.memberId) });
     }
 
     if (req.method === "POST" && pathname === "/api/conversations") {
-      const conversation = conversationService.create(await readJsonRequest(req) as Parameters<ConversationService["create"]>[0]);
-      sendJson(res, 201, { conversation });
-      return;
+      const body = await readJsonRequest(req) as Parameters<ConversationService["create"]>[0];
+      const conversation = conversationService.create(body, memberSession?.memberId);
+      return sendJson(res, 201, { conversation });
     }
 
     const conversationMatch = pathname.match(/^\/api\/conversations\/([^/]+)$/);
 
     if (req.method === "DELETE" && conversationMatch) {
-      const deleted = conversationStore.delete(conversationMatch[1]);
-      sendJson(res, deleted ? 200 : 404, { deleted });
-      return;
+      const deleted = conversationService.delete(conversationMatch[1], memberSession?.memberId);
+      return sendJson(res, deleted ? 200 : 404, { deleted });
     }
 
     if (req.method === "GET" && conversationMatch) {
-      const conversation = conversationService.get(conversationMatch[1]);
+      const conversation = conversationService.get(conversationMatch[1], memberSession?.memberId);
 
       if (!conversation) {
         sendJson(res, 404, { error: "Conversation not found." });
@@ -326,6 +320,10 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === "POST" && conversationMessageMatch) {
       if (conversationStore.degraded) return sendConversationStorageUnavailable(res);
+      if (!conversationService.get(conversationMessageMatch[1], memberSession?.memberId)) {
+        sendJson(res, 404, { error: "Conversation not found." });
+        return;
+      }
       let response: Awaited<ReturnType<ConversationService["addMessage"]>>;
       const messageRequest = await readJsonRequest(req) as Parameters<ConversationService["addMessage"]>[1];
       const concurrencyKey = memberSession?.memberId || clientSessionId || actorId || req.socket.remoteAddress || "anonymous";
@@ -369,7 +367,8 @@ const server = http.createServer(async (req, res) => {
             attachmentCount: messageRequest.selectionAssets?.length || 0,
           },
         }).catch(() => undefined);
-        response = await conversationService.addMessage(conversationMessageMatch[1], messageRequest, cancellation.signal);
+        response = await conversationService.addMessage(conversationMessageMatch[1], messageRequest,
+          cancellation.signal, memberSession?.memberId);
         void telemetry.record({
           name: "generation.succeeded",
           category: "generation",

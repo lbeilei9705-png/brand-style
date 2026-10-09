@@ -389,6 +389,7 @@ export interface ConversationMessage {
 
 export interface Conversation {
   id: string;
+  memberId?: string;
   title: string;
   modelId: string;
   agentId: string;

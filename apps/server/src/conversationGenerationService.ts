@@ -29,18 +29,23 @@ export class ConversationGenerationService {
     this.fintopiaConfig = fintopiaConfig;
   }
 
-  list(): Conversation[] {
-    return this.conversationStore.list();
+  list(memberId?: string): Conversation[] {
+    return this.conversationStore.list()
+      .filter((conversation) => !memberId || conversation.memberId === memberId);
   }
 
-  get(conversationId: string): Conversation | undefined {
-    return this.conversationStore.get(conversationId);
+  get(conversationId: string, memberId?: string): Conversation | undefined {
+    const conversation = this.conversationStore.get(conversationId);
+    return conversation && (!memberId || conversation.memberId === memberId)
+      ? conversation
+      : undefined;
   }
 
-  create(request: CreateConversationRequest): Conversation {
+  create(request: CreateConversationRequest, memberId?: string): Conversation {
     const timestamp = now();
     const conversation: Conversation = {
       id: makeId("conv"),
+      memberId,
       title: request.title || "新对话",
       modelId: request.modelId,
       agentId: request.agentId,
@@ -53,8 +58,18 @@ export class ConversationGenerationService {
     return this.conversationStore.save(conversation);
   }
 
-  async addMessage(conversationId: string, request: AddConversationMessageRequest, signal?: AbortSignal): Promise<AddConversationMessageResponse> {
-    const conversation = this.conversationStore.get(conversationId);
+  delete(conversationId: string, memberId?: string): boolean {
+    if (!this.get(conversationId, memberId)) return false;
+    return this.conversationStore.delete(conversationId);
+  }
+
+  async addMessage(
+    conversationId: string,
+    request: AddConversationMessageRequest,
+    signal?: AbortSignal,
+    memberId?: string,
+  ): Promise<AddConversationMessageResponse> {
+    const conversation = this.get(conversationId, memberId);
 
     if (!conversation) {
       throw new Error("Conversation not found.");

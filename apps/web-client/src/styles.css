@@ -59,6 +59,12 @@ svg { width: 20px; fill: none; stroke: currentColor; stroke-linecap: round; stro
 .task-item.processing i { background: var(--accent); box-shadow: 0 0 12px rgba(168, 255, 120, .5); }
 .task-item.failed i { background: var(--danger); }
 .task-item span { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.history-item { display: grid; grid-template-columns: minmax(0, 1fr) 34px; align-items: center; }
+.history-conversation { width: 100%; grid-template-columns: 9px minmax(0, 1fr) auto; }
+.history-conversation[aria-current="true"] { border-color: #46546a; background: var(--surface-strong); }
+.history-conversation small { color: #697488; font-size: 9px; }
+.history-delete { display: grid; width: 34px; height: 34px; place-items: center; border: 0; border-radius: 9px; color: #697488; background: transparent; }
+.history-delete:hover { color: var(--danger); background: rgba(255, 123, 134, .08); }
 .cancel-task { min-height: 34px; margin: 10px 0 0; border: 1px solid #39465a; border-radius: 9px; padding: 0 10px; color: #c9d0db; background: #1a2230; font-size: 11px; }
 .cancel-task:hover { border-color: #65758d; color: white; }
 .sidebar-footer { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px 2px; border-top: 1px solid var(--border); }
